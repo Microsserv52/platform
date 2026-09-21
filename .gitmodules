@@ -4,3 +4,6 @@
 [submodule "api/order-service"]
 	path = api/order-service
 	url = git@github.com:Microsserv52/order-service.git
+[submodule "api/gateway"]
+	path = api/gateway
+	url = git@github.com:Microsserv52/gateway.git
