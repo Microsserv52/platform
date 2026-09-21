@@ -1,0 +1,6 @@
+[submodule "api/order"]
+	path = api/order
+	url = git@github.com:Microsserv52/order.git
+[submodule "api/order-service"]
+	path = api/order-service
+	url = git@github.com:Microsserv52/order-service.git
