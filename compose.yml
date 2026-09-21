@@ -1,0 +1,83 @@
+name: platform
+
+services:
+  database:
+    image: Microsserv52-postgres:latest
+    hostname: database
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=platform
+    deploy:
+      replicas: 1
+
+  product:
+    image: Microsserv52-product:latest
+    hostname: product
+    environment:
+      - LOG_LEVEL=info
+    deploy:
+      replicas: 3
+    depends_on:
+      - database
+
+  order:
+    image: Microsserv52-order:latest
+    hostname: order
+    environment:
+      - LOG_LEVEL=info
+    deploy:
+      replicas: 3
+    depends_on:
+      - database
+      - product
+
+  exchange:
+    image: Microsserv52-exchange:latest
+    hostname: exchange
+    environment:
+      - LOG_LEVEL=info
+    deploy:
+      replicas: 3
+
+  account:
+    image: Microsserv52-account:latest
+    hostname: account
+    environment:
+      - LOG_LEVEL=info
+    deploy:
+      replicas: 3
+    depends_on:
+      - database
+
+  auth:
+    image: Microsserv52-auth:latest
+    hostname: auth
+    environment:
+      - LOG_LEVEL=info
+    deploy:
+      replicas: 3
+    depends_on:
+      - database
+      - account
+
+  gateway:
+    image: Microsserv52-gateway:latest
+    hostname: gateway
+    environment:
+      - LOG_LEVEL=info
+    deploy:
+      replicas: 3
+    depends_on:
+      - account
+      - auth
+
+  nginx:
+  image: nginx:alpine
+  hostname: nginx
+  ports:
+    - 8080:80
+  volumes:
+    - $SETUP/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  depends_on:
+    - gateway

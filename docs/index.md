@@ -13,6 +13,9 @@ O projeto é uma aplicação web que permite aos usuários comprar e vender prod
 ```mermaid
 flowchart LR
     subgraph api [Trusted Layer]
+        loadbalancer@{shape: hexagon, label: "Load Balancer"}
+        gateway
+        loadbalancer --> gateway
         gateway --> account
         gateway --> auth
         account --> db@{ shape: cyl, label: "Database" }
@@ -25,7 +28,7 @@ flowchart LR
         order --> product
     end
     exchange --> 3partyapi@{label: "3rd-party API"}
-    internet -->|request| gateway
+    internet -->|request| loadbalancer
     click product "services/product" "Product API"
     click order "services/order" "Order API"
     click exchange "services/exchange" "Exchange API"
