@@ -22,7 +22,7 @@ environments.
 10. Publish deployment, test and rollback evidence.
 
 The repository currently publishes documentation through
-[`.github/workflows/docs.yml`](../.github/workflows/docs.yml). Service
+[`.github/workflows/docs.yml`](../../.github/workflows/docs.yml). Service
 repositories should own their build and image workflows; the integration
 repository should own cross-service validation and deployment coordination.
 

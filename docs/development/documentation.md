@@ -13,6 +13,16 @@ pages. Service pages describe both the exercise contract and the implementation
 status visible in this repository; they do not imply that an absent submodule
 has already been implemented.
 
+## Documentation structure
+
+| Directory | Contents |
+| --- | --- |
+| [`project/`](../project/) | Scope, organization, rules and delivery |
+| [`development/`](./) | Setup, development, testing and CI/CD |
+| [`infrastructure/`](../infrastructure/) | AWS, EKS, deployment and costs |
+| [`operations/`](../operations/) | Observability, performance and load testing |
+| [`services/`](../services/) | API contracts and service reference |
+
 ## Commands
 
 * [`zensical new`][new] - Create a new project

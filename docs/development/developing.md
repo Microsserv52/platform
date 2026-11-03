@@ -12,6 +12,11 @@ api/
   order/          Java Order API submodule
   order-service/  Order integration/service-layer submodule
 docs/             Zensical documentation
+  project/        Scope, organization and delivery
+  development/    Local development and CI/CD
+  infrastructure/ AWS, EKS, deployment and costs
+  operations/     Observability, performance and load testing
+  services/       Service contracts and endpoint reference
 compose.yml       Local service topology
 zensical.toml     Documentation configuration
 .github/workflows/ CI and GitHub Pages workflow
@@ -26,7 +31,7 @@ exchange rates from Exchange.
 
 The current Java Order submodule uses Spring Boot and OpenFeign. Its client
 contract is visible in `api/order/src/main/java/Microsserv52/order/OrderController.java`;
-the complete endpoint behavior is specified in [Order API](services/order/endpoints.md).
+the complete endpoint behavior is specified in [Order API](../services/order/endpoints.md).
 
 ## Local workflow
 
@@ -42,6 +47,6 @@ Do not commit generated `site/` output, Maven `target/` output or credentials.
 ## Contract changes
 
 When an endpoint or payload changes, update the owning service page and
-[Service Contracts](services/contracts.md) in the same change. Document
+[Service Contracts](../services/contracts.md) in the same change. Document
 authentication, status codes, validation rules and an example request and
 response.

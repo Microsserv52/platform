@@ -16,6 +16,7 @@ This microservice is implemented in Java using the [Spring Boot](https://spring.
 The Java service is tracked in the [`api/order`](../../../api/order/) submodule.
 The integration/service-layer repository is tracked in
 [`api/order-service`](../../../api/order-service/). See [Endpoints](endpoints.md)
-for the contract and [Developing](../../developing.md) for the local workflow.
+for the contract and [Developing](../../development/developing.md) for the
+local workflow.
 
 This service follows the [Order API exercise](https://insper.github.io/platform/2026.2/exercises/order/).

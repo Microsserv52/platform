@@ -16,5 +16,5 @@ uv sync
 uv run zensical serve
 ```
 
-Start with the [project overview](docs/project.md) or the
-[getting started guide](docs/get_started.md).
+Start with the [project overview](docs/project/index.md) or the
+[getting started guide](docs/development/get_started.md).

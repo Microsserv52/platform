@@ -13,9 +13,9 @@ single place to run the complete platform.
 
 | Path | Role |
 | --- | --- |
-| [`api/gateway`](../api/gateway/) | Gateway submodule |
-| [`api/order`](../api/order/) | Java Order API submodule |
-| [`api/order-service`](../api/order-service/) | Order service-layer submodule |
+| [`api/gateway`](../../api/gateway/) | Gateway submodule |
+| [`api/order`](../../api/order/) | Java Order API submodule |
+| [`api/order-service`](../../api/order-service/) | Order service-layer submodule |
 | `docs/` | Project and service documentation |
 | `compose.yml` | Local service topology |
 | `.github/workflows/` | Repository automation |

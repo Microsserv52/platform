@@ -19,7 +19,7 @@ uv run zensical build --clean
 
 ## Application deployment
 
-The application topology is declared in [`compose.yml`](../compose.yml). The
+The application topology is declared in [`compose.yml`](../../compose.yml). The
 stack contains PostgreSQL, Product, Order, Exchange, Account, Auth, Gateway
 and Nginx. Nginx listens on port `8080` and forwards traffic to the gateway.
 

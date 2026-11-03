@@ -54,9 +54,11 @@ endpoint shapes.
 
 ## Project workstreams
 
-The project also includes [AWS](aws.md), [EKS](eks.md), [CI/CD](cicd.md),
-[load testing](load-testing.md), [bottleneck analysis](bottlenecks.md),
-[cost/PaaS/SLA analysis](costs.md), [observability](observability.md) and
+The project also includes [AWS](../infrastructure/aws.md),
+[EKS](../infrastructure/eks.md), [CI/CD](../development/cicd.md),
+[load testing](../operations/load-testing.md), [bottleneck analysis](../operations/bottlenecks.md),
+[cost/PaaS/SLA analysis](../infrastructure/costs.md),
+[observability](../operations/observability.md) and
 [delivery evidence](delivery.md). These are part of the system deliverable,
 not optional operational extras.
 
