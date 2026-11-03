@@ -13,6 +13,7 @@ course](https://insper.github.io/platform/2026.2/exercises/project/).
 | Start here | What you will find |
 | --- | --- |
 | [Project](project/project.md) | Scope, architecture, requirements and delivery checklist |
+| [Architecture](project/architecture.md) | Complete repository, runtime and deployment architecture |
 | [Organization](project/organization.md) | Repository model, ownership and contribution workflow |
 | [Get started](development/get_started.md) | Prerequisites and how to run the repository |
 | [Developing](development/developing.md) | Repository layout, submodules and development workflow |

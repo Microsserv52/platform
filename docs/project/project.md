@@ -4,6 +4,9 @@ icon: lucide/layers
 
 # Project
 
+See the [complete architecture](architecture.md) for repositories, services,
+images, external systems and deployment workflows.
+
 ## Purpose
 
 The platform lets authenticated users browse products, create orders and
