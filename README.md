@@ -1,13 +1,20 @@
 # Platform
 
-Aplicação web que permite aos usuários comprar e vender produtos
+Web application that allows authenticated users to buy and sell products
+through a set of microservices.
 
 ## Documentation
 
-This project is documented using [Zensical](https://zensical.com). To view the documentation, you can run the following command in the project root directory:
+The complete project and service documentation is published at
+[https://microsserv52.github.io/platform/](https://microsserv52.github.io/platform/).
+It is built with [Zensical](https://zensical.com).
+
+To preview it locally from the project root:
 
 ```bash
-zensical serve
+uv sync
+uv run zensical serve
 ```
 
-Alternatively, you can view the documentation online at the deployed github page: [https://microsserv52.github.io/platform/](https://microsserv52.github.io/platform/).
+Start with the [project overview](docs/project.md) or the
+[getting started guide](docs/get_started.md).

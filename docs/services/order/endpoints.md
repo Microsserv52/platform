@@ -45,11 +45,11 @@
                     "product": {
                         "id": "0195abfe-e416-7052-be3b-27cdaf12a984"
                     },
-                    "quantity": 10,
-                    "total": 6.2
+                    "quantity": 1,
+                    "total": 0.62
                 }
             ],
-            "total": 26.44
+            "total": 20.86
         }
         ```
         ```bash
@@ -111,13 +111,13 @@
                 {
                     "id": "01961b9b-08fd-76a5-8508-cdb6cd5c27ab",
                     "product": {
-                        "id": "0195abfe-e416-7052-be3b-27cdaf12a984",
+                        "id": "0195abfe-e416-7052-be3b-27cdaf12a984"
                     },
-                    "quantity": 10,
-                    "total": 6.2
+                    "quantity": 1,
+                    "total": 0.62
                 }
             ],
-            "total": 26.44
+            "total": 20.86
         }
         ```
         ```bash
@@ -144,13 +144,13 @@
                 {
                     "id": "01961b9b-08fd-76a5-8508-cdb6cd5c27ab",
                     "product": {
-                        "id": "0195abfe-e416-7052-be3b-27cdaf12a984",
+                        "id": "0195abfe-e416-7052-be3b-27cdaf12a984"
                     },
-                    "quantity": 10,
-                    "total": 37.20
+                    "quantity": 1,
+                    "total": 3.72
                 }
             ],
-            "total": 158.64
+            "total": 125.16
         }
         ```
         ```bash

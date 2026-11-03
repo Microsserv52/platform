@@ -6,7 +6,7 @@
 
 !!! info "GET /exchanges/{from}/{to}"
 
-    Get the current exchange rate from one currency to another. E.g. `GET /exchange/USD/EUR`.
+    Get the current exchange rate from one currency to another. E.g. `GET /exchanges/USD/EUR`.
 
     === "Response"
 
@@ -21,3 +21,9 @@
         ```bash
         Response code: 200 (ok)
         ```
+
+    The `{from}` and `{to}` path parameters are ISO 4217 currency codes. The
+    response is produced from the configured third-party provider and should
+    include a timestamp for the rate used. Unsupported currencies should
+    return `422 (unprocessable entity)`; provider failures should return an
+    explicit `502 (bad gateway)` or equivalent service-unavailable response.
