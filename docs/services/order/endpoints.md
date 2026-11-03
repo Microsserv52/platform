@@ -1,3 +1,7 @@
+---
+icon: lucide/route
+---
+
 # Endpoints
 
 !!! warning "Attention"

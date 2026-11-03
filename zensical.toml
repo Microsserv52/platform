@@ -27,7 +27,7 @@ language = "en"
 features = [
   "announce.dismiss",
   # "content.action.edit",
-  # "content.action.view",
+  "content.action.view",
   "content.code.annotate",
   "content.code.copy",
   "content.code.select",
@@ -53,7 +53,7 @@ features = [
   # "toc.integrate",
 ]
 
-# logo = "assets/logo.png"
+logo = "assets/logo.png"
 
 # [project.theme.icon]
 # logo = "lucide/smile"

@@ -1,3 +1,7 @@
+---
+icon: lucide/dollar-sign
+---
+
 # Third-party service
 
 Exchange must obtain rates from an external provider. The provider is an
