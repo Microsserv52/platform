@@ -13,8 +13,11 @@ edit_uri = "edit/main/docs/"
 #   { "Markdown in 5min" = "zensical/markdown.md" },
 # ]
 
-# extra_css = ["stylesheets/extra.css"]
+extra_css = ["stylesheets/extra.css"]
 # extra_javascript = ["javascripts/extra.js"]
+
+[project.extra]
+generator = false
 
 [project.theme]
 # variant = "classic"
@@ -33,7 +36,7 @@ features = [
   "content.tooltips",
   # "header.autohide",
   # "navigation.expand",
-  "navigation.footer",
+  # "navigation.footer",
   "navigation.indexes",
   "navigation.instant",
   "navigation.instant.prefetch",

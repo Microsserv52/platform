@@ -12,7 +12,7 @@ course](https://insper.github.io/platform/2026.2/exercises/project/).
 
 | Start here | What you will find |
 | --- | --- |
-| [Project](project/index.md) | Scope, architecture, requirements and delivery checklist |
+| [Project](project/project.md) | Scope, architecture, requirements and delivery checklist |
 | [Organization](project/organization.md) | Repository model, ownership and contribution workflow |
 | [Get started](development/get_started.md) | Prerequisites and how to run the repository |
 | [Developing](development/developing.md) | Repository layout, submodules and development workflow |
@@ -37,7 +37,7 @@ The platform is split into independently deployable services:
 - [Order API](services/order/index.md): authenticated orders and totals.
 - [Exchange API](services/exchange/index.md): currency conversion backed by a third-party provider.
 - Gateway, Auth and Account are required platform services. Their contracts and
-  integration responsibilities are documented in [Project](project/index.md); their
+  integration responsibilities are documented in [Project](project/project.md); their
   implementation is not present in this repository snapshot.
 
 ```mermaid
