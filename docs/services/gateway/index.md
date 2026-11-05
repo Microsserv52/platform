@@ -16,9 +16,9 @@ ports.
 - Return consistent errors without exposing internal service details.
 - Provide a health endpoint that does not require user authentication.
 
-## Current status
+## Implementation
 
-The Gateway implementation is not present in this repository snapshot. The
-compose topology expects an image named `Microsserv52-gateway`. Its public
-routes and upstream mapping must be documented here when the service contract
-is finalized.
+The implementation is tracked in the [`api/gateway`](../../../api/gateway/)
+submodule. Spring Cloud Gateway MVC routes Auth, Account, Order, Product and
+Exchange, validates the JWT at the public boundary, and exposes only the
+health endpoint without authentication.

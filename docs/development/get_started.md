@@ -8,7 +8,7 @@ icon: lucide/rocket
 
 - Git with submodule support.
 - Docker and Docker Compose.
-- Java 25 and Maven (only required to build the Java Order API locally).
+- Java 25 and Maven (only required to build the Java services locally).
 - Python 3.14 and `uv` (only required to work on the documentation).
 
 ## Clone the repository
@@ -43,6 +43,12 @@ docker compose up -d
 docker compose ps
 docker compose logs -f gateway
 ```
+
+The local edge is Nginx on `http://localhost:8080`. Service containers are
+replicated in the Compose topology and the gateway remains the only application
+entry point exposed through the proxy.
+
+For MicroK8s or EKS, see the [Kubernetes deployment guide](../../k8s/README.md).
 
 The gateway is exposed on port `8080` by the compose configuration. The
 repository snapshot currently contains the Order API and documentation

@@ -77,16 +77,16 @@ flowchart TB
     orderServiceRepo["Microsserv52/order-service\nsubmodule: api/order-service"]
     productRepo["Product repository\nplanned integration"]
     exchangeRepo["Exchange repository\nplanned integration"]
-    accountRepo["Account repository\nplanned integration"]
-    authRepo["Auth repository\nplanned integration"]
+    accountRepo["Microsserv52/account\nsubmodule: api/account"]
+    authRepo["Microsserv52/auth\nsubmodule: api/auth"]
 
     platform --> gatewayRepo
     platform --> orderRepo
     platform --> orderServiceRepo
     platform -. expected .-> productRepo
     platform -. expected .-> exchangeRepo
-    platform -. expected .-> accountRepo
-    platform -. expected .-> authRepo
+    platform --> accountRepo
+    platform --> authRepo
 ```
 
 ### Repository responsibilities
@@ -99,8 +99,8 @@ flowchart TB
 | `Microsserv52/order-service` | Order service-layer integration and image source | Submodule present |
 | Product repository | Product API and product image | Required by target architecture; not a root submodule |
 | Exchange repository | Python Exchange API and provider adapter | Required by target architecture; not a root submodule |
-| Account repository | Registration and account management | Required by target architecture; not a root submodule |
-| Auth repository | Login, token issuance and validation | Required by target architecture; not a root submodule |
+| `Microsserv52/account` | Registration and account management | Submodule present |
+| `Microsserv52/auth` | Login, token issuance and validation | Submodule present |
 
 The root repository records exact submodule commits. A service change is
 implemented and reviewed in its service repository first; the integration
