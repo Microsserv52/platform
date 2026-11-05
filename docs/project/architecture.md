@@ -243,11 +243,10 @@ flowchart LR
 7. The release records service versions, image digests, test results and a
    rollback image.
 
-The currently committed workflow,
-[`.github/workflows/docs.yml`](../../.github/workflows/docs.yml), builds and
-publishes only the documentation to GitHub Pages. Application CI/CD and image
-publishing must be added to the service or platform workflows before they can
-be considered implemented.
+The platform repository also publishes documentation through
+[`.github/workflows/docs.yml`](../../.github/workflows/docs.yml). Application
+CI/CD is owned by each runnable service repository, while this integration
+repository performs cross-service validation and deployment coordination.
 
 ## External systems
 
