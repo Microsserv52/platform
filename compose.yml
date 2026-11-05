@@ -20,10 +20,7 @@ services:
       - database
 
   order:
-    build:
-      context: .
-      dockerfile: api/order-service/Dockerfile
-    image: Microsserv52-order:latest
+    image: ${ORDER_IMAGE:-ghcr.io/microsserv52/order-service:latest}
     hostname: order
     environment:
       - LOG_LEVEL=info
@@ -42,9 +39,7 @@ services:
       replicas: 3
 
   account:
-    build:
-      context: ./api/account
-    image: Microsserv52-account:latest
+    image: ${ACCOUNT_IMAGE:-ghcr.io/microsserv52/account:latest}
     hostname: account
     environment:
       - LOG_LEVEL=info
@@ -56,9 +51,7 @@ services:
       - database
 
   auth:
-    build:
-      context: ./api/auth
-    image: Microsserv52-auth:latest
+    image: ${AUTH_IMAGE:-ghcr.io/microsserv52/auth:latest}
     hostname: auth
     environment:
       - LOG_LEVEL=info
@@ -71,9 +64,7 @@ services:
       - account
 
   gateway:
-    build:
-      context: ./api/gateway
-    image: Microsserv52-gateway:latest
+    image: ${GATEWAY_IMAGE:-ghcr.io/microsserv52/gateway:latest}
     hostname: gateway
     environment:
       - LOG_LEVEL=info

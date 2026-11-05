@@ -19,12 +19,13 @@ uv run zensical serve
 Start with the [project overview](docs/project/project.md) or the
 [getting started guide](docs/development/get_started.md).
 
-## CI/CD and secrets
+## CI/CD and environment variables
 
-The platform CI runs service tests, Spring context/integration tests, JaCoCo
-coverage gates, Compose validation, and container builds. CodeQL runs for Java
-and GitHub Actions. The AWS EKS deployment is manual and uses GitHub OIDC;
-it does not require long-lived AWS access keys.
+Each service repository owns lint, format, tests, JaCoCo quality gates, CodeQL,
+and container publishing to GHCR. Images are tagged
+`ghcr.io/microsserv52/<service>:sha-<commit>`. The platform workflow validates
+the integration and pulls the image for each submodule commit; it builds locally
+only when that immutable image is not available.
 
 Copy [`.env.example`](.env.example) for local development. Do not commit the
 real `.env` file or any secret values.
@@ -45,3 +46,16 @@ For local Compose, put the values in the root `.env`. For MicroK8s, create
 the `platform-secrets` Kubernetes secret as described in
 [`k8s/README.md`](k8s/README.md). For EKS, use an RDS PostgreSQL URL and add
 the values to the **platform** repository's Actions secrets.
+
+### Environment variable locations
+
+| Variable type | Local development | GitHub Actions | Kubernetes/EKS |
+| --- | --- | --- | --- |
+| Service URLs and image tags | Root `.env` | Repository variables or workflow defaults | ConfigMap/deployment values |
+| JWT and internal credentials | Root `.env` (never commit) | Repository **Secrets** | `platform-secrets` |
+| Database URL and credentials | Root `.env` | Platform or service **Secrets** | `platform-secrets` / AWS Secrets Manager |
+| AWS deployment values | Not required | Platform **Secrets** (`AWS_REGION`, `AWS_DEPLOY_ROLE_ARN`, `EKS_CLUSTER_NAME`) | IAM/OIDC and cluster configuration |
+
+The service workflows need `packages: write` to publish GHCR images. The
+platform workflow needs `packages: read` to pull them. Keep GHCR packages
+private unless the deployment policy explicitly requires public images.
