@@ -21,9 +21,10 @@ Auth calls Account to load credentials and user status. Gateway routes public
 account operations. Other business services receive the authenticated user
 identity from Gateway/Auth rather than querying Account directly.
 
-## Current status
+## Implementation
 
-The Account implementation and endpoint contract are not present in this
-repository snapshot. The compose topology expects an image named
-`Microsserv52-account`. Document its registration, profile and error responses
-when the service is integrated.
+The implementation is tracked in the [`api/account`](../../../api/account/)
+submodule. It follows the hands-on split between the HTTP resource, domain
+entity and persistence repository. Registration is public, profile reads and
+deletion require a JWT, and Auth accesses credentials through the protected
+internal header.

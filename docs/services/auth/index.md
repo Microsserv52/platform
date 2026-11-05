@@ -21,9 +21,9 @@ Gateway sends authentication requests to Auth and forwards the resulting
 identity to Product, Order and Exchange. Auth reads account data through the
 Account service; it must not access the Account database directly.
 
-## Current status
+## Implementation
 
-The Auth implementation and its endpoint contract are not present in this
-repository snapshot. The compose topology expects an image named
-`Microsserv52-auth`. Add the login, token validation and failure-response
-examples when that service is integrated.
+The implementation is tracked in the [`api/auth`](../../../api/auth/)
+submodule. `POST /auth/login` validates credentials through Account and issues
+a short-lived HMAC-signed JWT. The signing secret and internal service secret
+are supplied through environment variables.

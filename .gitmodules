@@ -7,3 +7,9 @@
 [submodule "api/gateway"]
 	path = api/gateway
 	url = git@github.com:Microsserv52/gateway.git
+[submodule "api/auth"]
+	path = api/auth
+	url = https://github.com/Microsserv52/auth.git
+[submodule "api/account"]
+	path = api/account
+	url = https://github.com/Microsserv52/account.git
