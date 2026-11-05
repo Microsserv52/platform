@@ -36,3 +36,10 @@ The compose file is a local topology description, not a production
 orchestration manifest. Production deployment must additionally define
 resource limits, replicas, persistent storage, TLS, backups, observability,
 network policies and a rollback strategy.
+
+The repository includes a manual `Deploy to AWS EKS` workflow. Configure
+`AWS_REGION`, `AWS_DEPLOY_ROLE_ARN`, `EKS_CLUSTER_NAME`, `JWT_SECRET`,
+`INTERNAL_SERVICE_SECRET`, `SPRING_DATASOURCE_URL`,
+`SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` as GitHub
+Actions secrets. The AWS role should use OIDC and least-privilege ECR/EKS
+permissions; no long-lived AWS access key is required.
