@@ -21,10 +21,15 @@ environments.
 9. Require approval before production promotion.
 10. Publish deployment, test and rollback evidence.
 
-The repository currently publishes documentation through
-[`.github/workflows/docs.yml`](../../.github/workflows/docs.yml). Service
-repositories should own their build and image workflows; the integration
-repository should own cross-service validation and deployment coordination.
+Each runnable service repository owns its CI/CD workflow:
+`account`, `auth`, `gateway`, and `order-service` run lint, format, tests,
+coverage quality gates, CodeQL, and publish an immutable GHCR image tagged
+with the source commit. The `order` contract runs the same checks except image
+publishing because it is a library.
+
+The platform repository owns cross-service validation and deployment
+coordination. Its integration job pulls `sha-<submodule-commit>` images from
+GHCR and builds only when the matching image is unavailable.
 
 ## Pipeline rules
 
@@ -35,6 +40,8 @@ repository should own cross-service validation and deployment coordination.
 - Make migrations backward-compatible and observable.
 - Keep a previous image available for rollback.
 - Ensure deployment status and commit SHA are visible.
+- Grant service workflows `packages: write` and the platform workflow
+  `packages: read`.
 
 ## Deployment verification
 

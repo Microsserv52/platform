@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   java:
@@ -55,7 +56,26 @@ jobs:
         run: docker compose config
       - name: Build application images
         run: |
-          docker build -t microsserv52-account:ci ./api/account
-          docker build -t microsserv52-auth:ci ./api/auth
-          docker build -t microsserv52-gateway:ci ./api/gateway
-          docker build -t microsserv52-order:ci -f api/order-service/Dockerfile .
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+          pull_or_build() {
+            image="$1"
+            context="$2"
+            dockerfile="$3"
+            if docker pull "$image"; then
+              echo "Using published image $image"
+            elif [ -n "$dockerfile" ]; then
+              docker build -t "$image" -f "$dockerfile" "$context"
+            else
+              docker build -t "$image" "$context"
+            fi
+          }
+
+          account_sha="$(git -C api/account rev-parse HEAD)"
+          auth_sha="$(git -C api/auth rev-parse HEAD)"
+          gateway_sha="$(git -C api/gateway rev-parse HEAD)"
+          order_sha="$(git -C api/order-service rev-parse HEAD)"
+          pull_or_build "ghcr.io/microsserv52/account:sha-${account_sha}" ./api/account ""
+          pull_or_build "ghcr.io/microsserv52/auth:sha-${auth_sha}" ./api/auth ""
+          pull_or_build "ghcr.io/microsserv52/gateway:sha-${gateway_sha}" ./api/gateway ""
+          pull_or_build "ghcr.io/microsserv52/order-service:sha-${order_sha}" . api/order-service/Dockerfile
