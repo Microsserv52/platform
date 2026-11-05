@@ -27,6 +27,12 @@ jobs:
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-      - uses: github/codeql-action/autobuild@v3
+      - name: Build Java services for CodeQL
         if: matrix.language == 'java-kotlin'
+        run: |
+          set -euo pipefail
+          (cd api/order && ./mvnw --batch-mode --no-transfer-progress install -DskipTests -Dspring-boot.repackage.skip=true)
+          for service in account auth gateway order-service; do
+            (cd "api/${service}" && ./mvnw --batch-mode --no-transfer-progress package -DskipTests)
+          done
       - uses: github/codeql-action/analyze@v3
