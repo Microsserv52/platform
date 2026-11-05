@@ -32,7 +32,7 @@ jobs:
       - name: Install reusable Order contract
         if: matrix.service == 'order-service'
         working-directory: api/order
-        run: ./mvnw --batch-mode --no-transfer-progress install -DskipTests
+        run: ./mvnw --batch-mode --no-transfer-progress install -DskipTests -Dspring-boot.repackage.skip=true
       - name: Run unit tests, integration context tests, and coverage gate
         run: ./mvnw --batch-mode --no-transfer-progress verify
       - uses: actions/upload-artifact@v6
