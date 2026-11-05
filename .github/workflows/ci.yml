@@ -29,6 +29,10 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
+      - name: Install reusable Order contract
+        if: matrix.service == 'order-service'
+        working-directory: api/order
+        run: ./mvnw --batch-mode --no-transfer-progress install -DskipTests
       - name: Run unit tests, integration context tests, and coverage gate
         run: ./mvnw --batch-mode --no-transfer-progress verify
       - uses: actions/upload-artifact@v6
