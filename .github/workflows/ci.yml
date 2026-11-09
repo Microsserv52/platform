@@ -17,8 +17,18 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: "3.13"
       - run: python -m unittest discover -s tests/frontend -p 'test_*.py'
+
+  infrastructure:
+    name: Infrastructure mock contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: python -m unittest discover -s tests/infrastructure -p 'test_*.py'
 
   java:
     name: ${{ matrix.service }} tests and coverage
@@ -42,7 +52,7 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: "25"
           cache: maven
       - name: Install reusable Order contract
         if: matrix.service == 'order-service'

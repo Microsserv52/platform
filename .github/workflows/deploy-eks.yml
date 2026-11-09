@@ -21,10 +21,11 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: "25"
           cache: maven
       - name: Verify before deployment
         run: |
+          (cd api/order && ./mvnw --batch-mode --no-transfer-progress install -DskipTests -Dspring-boot.repackage.skip=true)
           for service in account auth gateway order order-service; do
             (cd "api/$service" && ./mvnw --batch-mode --no-transfer-progress verify)
           done
@@ -59,21 +60,39 @@ jobs:
           POSTGRES_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
           SPRING_DATASOURCE_URL: ${{ secrets.SPRING_DATASOURCE_URL }}
           SPRING_DATASOURCE_USERNAME: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
+          PRODUCT_URL: ${{ vars.PRODUCT_URL }}
+          EXCHANGE_URL: ${{ vars.EXCHANGE_URL }}
+          CACHE_REDIS_URL: ${{ secrets.CACHE_REDIS_URL }}
         run: |
+          test -n "$PRODUCT_URL" || { echo "PRODUCT_URL repository variable is required"; exit 1; }
+          test -n "$EXCHANGE_URL" || { echo "EXCHANGE_URL repository variable is required"; exit 1; }
+          test -n "$CACHE_REDIS_URL" || { echo "CACHE_REDIS_URL repository secret is required"; exit 1; }
           aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER_NAME"
           kubectl create namespace platform --dry-run=client -o yaml | kubectl apply -f -
           kubectl -n platform create secret generic platform-secrets \
             --from-literal=JWT_SECRET="$JWT_SECRET" \
             --from-literal=INTERNAL_SERVICE_SECRET="$INTERNAL_SERVICE_SECRET" \
+            --from-literal=CACHE_REDIS_URL="$CACHE_REDIS_URL" \
             --from-literal=POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
             --from-literal=SPRING_DATASOURCE_URL="$SPRING_DATASOURCE_URL" \
             --from-literal=SPRING_DATASOURCE_USERNAME="$SPRING_DATASOURCE_USERNAME" \
             --dry-run=client -o yaml | kubectl apply -f -
-          kubectl apply -f k8s/platform.yaml
+          kubectl apply -f k8s/00-namespace-config.yaml
+          jq -n --arg product "$PRODUCT_URL" --arg exchange "$EXCHANGE_URL" \
+            '{data: {PRODUCT_URL: $product, EXCHANGE_URL: $exchange}}' > "$RUNNER_TEMP/platform-config-patch.json"
+          kubectl -n platform patch configmap platform-config --type merge \
+            --patch-file "$RUNNER_TEMP/platform-config-patch.json"
+          kubectl apply -f k8s/20-account.yaml
           kubectl -n platform set image deployment/account account="$REGISTRY/account:$TAG"
+          kubectl apply -f k8s/30-auth.yaml
           kubectl -n platform set image deployment/auth auth="$REGISTRY/auth:$TAG"
-          kubectl -n platform set image deployment/gateway gateway="$REGISTRY/gateway:$TAG"
+          kubectl apply -f k8s/40-order.yaml
           kubectl -n platform set image deployment/order order="$REGISTRY/order:$TAG"
+          kubectl apply -f k8s/50-gateway.yaml
+          kubectl -n platform set image deployment/gateway gateway="$REGISTRY/gateway:$TAG"
+          kubectl apply -f k8s/60-ingress.yaml
+          kubectl apply -f k8s/70-hpa.yaml
+          kubectl apply -f k8s/71-pdb.yaml
           kubectl -n platform rollout status deployment/account --timeout=180s
           kubectl -n platform rollout status deployment/auth --timeout=180s
           kubectl -n platform rollout status deployment/gateway --timeout=180s

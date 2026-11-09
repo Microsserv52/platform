@@ -35,26 +35,61 @@ Open the address printed by Zensical, normally
 
 ## Run the platform
 
-The root `compose.yml` describes the intended local topology. Build or publish
-the service images referenced there, then start the stack with:
+Choose one runtime mode:
+
+- Use **Docker Compose** for local development and integration testing.
+- Use **MicroK8s** to validate the Kubernetes deployment locally.
+- Use **AWS EKS** for the production backend.
+
+These modes do not share runtime resources or defaults.
+
+### Docker Compose (local)
+
+The root `compose.yml` is for local testing only. It starts PostgreSQL with
+local defaults and builds Account, Auth, Gateway and Order from their checked
+out submodules. Product and Exchange are external service repositories, so
+their images must be available locally or in a registry. Compose includes a
+local deterministic Exchange provider mock by default:
 
 ```bash
+test -f .env || cp .env.example .env
 docker compose up -d
 docker compose ps
 docker compose logs -f gateway
 ```
 
+No external Exchange provider configuration is required for local development.
+To use a real provider instead, set `EXCHANGE_PROVIDER_URL` and
+`EXCHANGE_PROVIDER_API_KEY` in `.env`.
+
+The mock responds to `/health`, `/latest`, `/v1/latest`, and `/latest.json`
+with deterministic USD, EUR, BRL, GBP and JPY rates. It is intended for local
+testing only and must not be used by production workloads.
+
+The Product and Exchange images are required artifacts, but do not require
+additional configuration when they are already available locally or through
+Docker's configured registry.
+PostgreSQL credentials, internal service URLs, JWT settings and the internal
+service secret have local defaults.
+
 The local edge is Nginx on `http://localhost:8080`. Service containers are
 replicated in the Compose topology and the gateway remains the only application
 entry point exposed through the proxy.
 
-For MicroK8s or EKS, see the [Kubernetes deployment guide](https://github.com/Microsserv52/platform/blob/main/k8s/README.md).
+For MicroK8s or EKS, see the [Kubernetes deployment guide](../infrastructure/eks.md).
 
 The gateway is exposed on port `8080` by the compose configuration. The
 repository snapshot currently contains the Order API and documentation
 submodules, while the Product, Exchange, Account, Auth and Gateway images must
 be supplied by their respective service repositories before the full stack can
 start.
+
+### Kubernetes
+
+For local MicroK8s or production EKS, follow the
+[Kubernetes deployment guide](../infrastructure/eks.md). MicroK8s and EKS require
+Kubernetes Secrets and reachable Product/Exchange services; they do not use
+the Compose `.env` file.
 
 ## Verify a service
 
