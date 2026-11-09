@@ -9,6 +9,18 @@ service ownership, container images, local execution, cloud deployment and
 external dependencies. It distinguishes the architecture required by the
 project from the parts currently present in this repository.
 
+## Technology inventory and badge status
+
+The platform and organization READMEs list the complete technology inventory,
+with each service README limited to its own dependencies and tools. Badges
+identify technologies, not proof of deployment.
+
+Redis has local infrastructure and endpoint wiring; service-level caching is pending. Faro and Umami are integrated but collection is disabled by default. The Store PWA is online-only: it has a manifest and icons, with no offline service worker.
+
+AWS/EKS/ECR deployment configuration and the VPC/RDS target architecture are documented; this does not mean cloud resources are provisioned. S3 + CloudFront and the AWS SDK are approved for the future Product backend; real image persistence is pending.
+
+Cloudflare/R2 remain evaluated alternatives, not a selected frontend CDN or replacement for S3. Kafka is requested for the roadmap and is not implemented or installed. Prometheus and Grafana dashboards are documented observability options; their backend deployment is pending. Frontend CDN selection and environment values still require a deployment decision.
+
 ## System context
 
 ```mermaid
@@ -91,16 +103,16 @@ flowchart TB
 
 ### Repository responsibilities
 
-| Repository or path | Responsibility | Current status |
-| --- | --- | --- |
-| `Microsserv52/platform` | Integration, Compose topology, docs and cross-service delivery | Present |
-| `Microsserv52/gateway` | Public routing and edge policies | Submodule present |
-| `Microsserv52/order` | Java Order API implementation | Submodule present |
-| `Microsserv52/order-service` | Order service-layer integration and image source | Submodule present |
-| Product repository | Product API and product image | Required by target architecture; not a root submodule |
-| Exchange repository | Python Exchange API and provider adapter | Required by target architecture; not a root submodule |
-| `Microsserv52/account` | Registration and account management | Submodule present |
-| `Microsserv52/auth` | Login, token issuance and validation | Submodule present |
+| Repository or path           | Responsibility                                                 | Current status                                        |
+| ---------------------------- | -------------------------------------------------------------- | ----------------------------------------------------- |
+| `Microsserv52/platform`      | Integration, Compose topology, docs and cross-service delivery | Present                                               |
+| `Microsserv52/gateway`       | Public routing and edge policies                               | Submodule present                                     |
+| `Microsserv52/order`         | Java Order API implementation                                  | Submodule present                                     |
+| `Microsserv52/order-service` | Order service-layer integration and image source               | Submodule present                                     |
+| Product repository           | Product API and product image                                  | Required by target architecture; not a root submodule |
+| Exchange repository          | Python Exchange API and provider adapter                       | Required by target architecture; not a root submodule |
+| `Microsserv52/account`       | Registration and account management                            | Submodule present                                     |
+| `Microsserv52/auth`          | Login, token issuance and validation                           | Submodule present                                     |
 
 The root repository records exact submodule commits. A service change is
 implemented and reviewed in its service repository first; the integration
@@ -128,16 +140,16 @@ frontend architecture for the web path and API-owned cookie session boundary.
 
 ## Runtime services
 
-| Service | Owns | Depends on | Container image name |
-| --- | --- | --- | --- |
-| Nginx / edge | Local public HTTP entry point and proxying | Gateway | `nginx:alpine` |
-| Gateway | Routing and edge policies | Auth, Account and business services | `Microsserv52-gateway` |
-| Auth | Tokens, authentication and authorization | Account, database | `Microsserv52-auth` |
-| Account | User registration and profile data | Database | `Microsserv52-account` |
-| Product | Product catalogue and prices | Database | `Microsserv52-product` |
-| Order | Orders, ownership and totals | Database, Product, Exchange | `Microsserv52-order` |
-| Exchange | Currency rates and provider adapter | External provider | `Microsserv52-exchange` |
-| Database | Persistent relational data | Persistent storage | `Microsserv52-postgres` |
+| Service      | Owns                                       | Depends on                          | Container image name    |
+| ------------ | ------------------------------------------ | ----------------------------------- | ----------------------- |
+| Nginx / edge | Local public HTTP entry point and proxying | Gateway                             | `nginx:alpine`          |
+| Gateway      | Routing and edge policies                  | Auth, Account and business services | `Microsserv52-gateway`  |
+| Auth         | Tokens, authentication and authorization   | Account, database                   | `Microsserv52-auth`     |
+| Account      | User registration and profile data         | Database                            | `Microsserv52-account`  |
+| Product      | Product catalogue and prices               | Database                            | `Microsserv52-product`  |
+| Order        | Orders, ownership and totals               | Database, Product, Exchange         | `Microsserv52-order`    |
+| Exchange     | Currency rates and provider adapter        | External provider                   | `Microsserv52-exchange` |
+| Database     | Persistent relational data                 | Persistent storage                  | `Microsserv52-postgres` |
 
 The image names above are the logical names currently referenced by
 [`compose.yml`](../../compose.yml). The compose file does not specify a
@@ -270,14 +282,14 @@ repository performs cross-service validation and deployment coordination.
 
 ## External systems
 
-| External system | Interaction | Required controls |
-| --- | --- | --- |
-| AWS | VPC, EKS, load balancing, storage and monitoring | IAM roles, MFA, least privilege, budgets and resource tags |
-| Container registry | Stores service and database images | Immutable tags, access control and vulnerability scanning |
-| Exchange provider | Supplies currency rates | Timeout, bounded retry, provider key secret, fallback/error behavior |
-| GitHub | Source repositories, submodules, pull requests and Actions | Branch protection, reviews and protected secrets |
-| GitHub Pages | Publishes generated documentation | Build verification and public-safe content |
-| Observability platform | Receives logs, metrics and traces | Redaction, retention, access control and alert ownership |
+| External system        | Interaction                                                | Required controls                                                    |
+| ---------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------- |
+| AWS                    | VPC, EKS, load balancing, storage and monitoring           | IAM roles, MFA, least privilege, budgets and resource tags           |
+| Container registry     | Stores service and database images                         | Immutable tags, access control and vulnerability scanning            |
+| Exchange provider      | Supplies currency rates                                    | Timeout, bounded retry, provider key secret, fallback/error behavior |
+| GitHub                 | Source repositories, submodules, pull requests and Actions | Branch protection, reviews and protected secrets                     |
+| GitHub Pages           | Publishes generated documentation                          | Build verification and public-safe content                           |
+| Observability platform | Receives logs, metrics and traces                          | Redaction, retention, access control and alert ownership             |
 
 ## Architecture decisions and boundaries
 
