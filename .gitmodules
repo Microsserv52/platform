@@ -13,3 +13,12 @@
 [submodule "api/account"]
 	path = api/account
 	url = https://github.com/Microsserv52/account.git
+[submodule "web/landing"]
+	path = web/landing
+	url = git@github.com:Microsserv52/landing.git
+[submodule "web/store"]
+	path = web/store
+	url = git@github.com:Microsserv52/store.git
+[submodule "web/admin"]
+	path = web/admin
+	url = git@github.com:Microsserv52/admin.git

@@ -23,7 +23,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          submodules: recursive
+          submodules: false
+      - name: Checkout backend submodules
+        run: >-
+          git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive -- api/account api/auth api/gateway api/order api/order-service
+      - uses: actions/setup-java@v5
+        if: matrix.language == 'java-kotlin'
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}

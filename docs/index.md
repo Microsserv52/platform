@@ -14,6 +14,7 @@ course](https://insper.github.io/platform/2026.2/exercises/project/).
 | --- | --- |
 | [Project](project/project.md) | Scope, architecture, requirements and delivery checklist |
 | [Architecture](project/architecture.md) | Complete repository, runtime and deployment architecture |
+| [Frontends](frontend/index.md) | Landing, mock store and admin; one-domain routing, packages, PWA, Faro, Umami and local Docker testing |
 | [Organization](project/organization.md) | Repository model, ownership and contribution workflow |
 | [Get started](development/get_started.md) | Prerequisites and how to run the repository |
 | [Developing](development/developing.md) | Repository layout, submodules and development workflow |
@@ -37,9 +38,18 @@ The platform is split into independently deployable services:
 - [Product API](services/product/index.md): product catalogue and prices.
 - [Order API](services/order/index.md): authenticated orders and totals.
 - [Exchange API](services/exchange/index.md): currency conversion backed by a third-party provider.
-- Gateway, Auth and Account are required platform services. Their contracts and
-  integration responsibilities are documented in [Project](project/project.md); their
-  implementation is not present in this repository snapshot.
+- [Gateway](services/gateway/index.md), [Auth](services/auth/index.md) and
+  [Account](services/account/index.md) are present as API submodules.
+
+## Web experience
+
+The [frontend documentation](frontend/index.md) describes three English-language
+applications on one domain: landing at `/`, store at `/store`, and restricted
+management at `/admin`. The store is an educational simulation: **no real
+payments or transactions, and no shipment**. Public browsing and authenticated
+demo order creation are implemented with Gateway/Account access changes.
+The separate Docker fixture mode supports local UI testing; real Product/Exchange
+integration and production CDN deployment still require acceptance.
 
 ```mermaid
 flowchart LR

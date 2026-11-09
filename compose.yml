@@ -69,14 +69,43 @@ services:
     environment:
       - LOG_LEVEL=info
       - JWT_SECRET=${JWT_SECRET:-change-me-in-development-use-a-long-random-secret}
+      - SESSION_COOKIE_SECURE=false
+      - SESSION_COOKIE_PATH=/api
     deploy:
       replicas: 3
     depends_on:
       - account
       - auth
 
+  landing:
+    image: microsserv52-landing:local
+    build:
+      context: ./web/landing
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /api
+        NEXT_PUBLIC_DISPLAY_TIME_ZONE: ${DISPLAY_TIME_ZONE:-UTC}
+    hostname: landing
+
+  store:
+    image: microsserv52-store:local
+    build:
+      context: ./web/store
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /api
+        NEXT_PUBLIC_DISPLAY_TIME_ZONE: ${DISPLAY_TIME_ZONE:-UTC}
+    hostname: store
+
+  admin:
+    image: microsserv52-admin:local
+    build:
+      context: ./web/admin
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /api
+        NEXT_PUBLIC_DISPLAY_TIME_ZONE: ${DISPLAY_TIME_ZONE:-UTC}
+    hostname: admin
+
   nginx:
-    image: nginx:alpine
+    image: nginx:1.28-alpine
     hostname: nginx
     ports:
       - 8080:80
@@ -84,3 +113,6 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - gateway
+      - landing
+      - store
+      - admin

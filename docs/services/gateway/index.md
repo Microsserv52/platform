@@ -20,5 +20,11 @@ ports.
 
 The implementation is tracked in the [`api/gateway`](../../../api/gateway/)
 submodule. Spring Cloud Gateway MVC routes Auth, Account, Order, Product and
-Exchange, validates the JWT at the public boundary, and exposes only the
-health endpoint without authentication.
+Exchange and validates JWTs at the API boundary. Catalog GETs, registration,
+login/CSRF preparation and health are public. Product writes and account
+administration require ROLE_ADMIN; orders and own profile require authentication.
+
+Static frontends call `/api/session/*` through the local edge. Gateway owns the
+HttpOnly session cookie and CSRF checks; no Next.js session server is required.
+See [browser sessions and authorization](../../frontend/architecture.md#api-owned-browser-sessions)
+for the endpoint table, cookie configuration and real-service acceptance limits.

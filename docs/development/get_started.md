@@ -48,7 +48,7 @@ The local edge is Nginx on `http://localhost:8080`. Service containers are
 replicated in the Compose topology and the gateway remains the only application
 entry point exposed through the proxy.
 
-For MicroK8s or EKS, see the [Kubernetes deployment guide](../../k8s/README.md).
+For MicroK8s or EKS, see the [Kubernetes deployment guide](https://github.com/Microsserv52/platform/blob/main/k8s/README.md).
 
 The gateway is exposed on port `8080` by the compose configuration. The
 repository snapshot currently contains the Order API and documentation

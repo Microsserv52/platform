@@ -70,3 +70,17 @@ runbook and identify an owner.
 Prometheus and Grafana are suitable options for metrics and dashboards. The
 specific tools are an implementation decision and must be recorded with
 retention, access and cost assumptions.
+
+## Browser observability integration
+
+The three web applications integrate **Grafana Faro** for browser errors,
+performance and tracing, and **Umami** for demo product-usage analytics. The
+[frontend PWA and observability plan](../frontend/pwa-observability.md) defines
+application identities, sanitized events, environment variables, deployment
+choices and verification. Collection is disabled by default. Backend URLs,
+hosting and retention remain to be confirmed at CDN deployment; admin usage
+analytics are excluded.
+
+The store is a simulation. Analytics must describe **demo orders**, never real
+payments or revenue, and must exclude credentials, personal identifiers and
+raw search/order/account URLs.

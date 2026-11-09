@@ -9,8 +9,11 @@ images, external systems and deployment workflows.
 
 ## Purpose
 
-The platform lets authenticated users browse products, create orders and
-request totals in another currency. The system is composed of a gateway,
+The platform lets visitors browse products and authenticated users create demo
+orders. This is a mock store with no real payments, transactions or shipment.
+Currency conversion remains a project requirement; the current frontend uses
+USD because the checked-in Order implementation rejects other currencies.
+The system is composed of a gateway,
 authentication and account services, plus the product, order and exchange
 services.
 
