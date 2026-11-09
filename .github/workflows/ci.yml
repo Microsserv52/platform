@@ -26,6 +26,7 @@ jobs:
           submodules: false
           fetch-depth: 0
       - name: Checkout backend submodules
+        working-directory: ${{ github.workspace }}
         run: >-
           git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive -- api/account api/auth api/gateway api/order api/order-service
       - uses: actions/setup-java@v5
