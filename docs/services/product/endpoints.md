@@ -6,7 +6,10 @@ icon: lucide/route
 
 !!! warning "Attention"
 
-    **To consume the API, the user must be authenticated.**
+    The selected frontend policy permits public catalog GETs and requires
+    ROLE_ADMIN for product writes at Gateway. Product's own authorization must
+    match this policy before real-service acceptance; its source/image is an
+    external prerequisite. See [integration limits](../../frontend/architecture.md#remaining-service-prerequisites).
 
 The Product API must expose the following endpoints:
 

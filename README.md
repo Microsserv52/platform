@@ -19,6 +19,31 @@ uv run zensical serve
 Start with the [project overview](docs/project/project.md) or the
 [getting started guide](docs/development/get_started.md).
 
+## Web applications and local preview
+
+The [frontend documentation](docs/frontend/index.md) covers three
+independent Next.js applications integrated as Git submodules: `web/landing` at
+`/`, `web/store` at `/store`, and `web/admin` at `/admin`, on one domain.
+The agreed UI is English, with a shared modern brand and a public catalog.
+
+This is an **educational mock store: no real payments or transactions take
+place, and no goods are shipped**. Authenticated users will create persisted
+demo orders. The store includes an online-only PWA manifest; Grafana Faro and
+Umami are integrated but disabled until their deployment values are agreed.
+Each app exports static files and has a Dockerfile. Production CDN hosting and
+per-app environment values will be discussed before deployment; frontend
+Kubernetes deployment is deferred.
+
+To test the frontend independently of the missing Product/Exchange images:
+
+```bash
+docker compose -f compose.frontend-demo.yml up --build -d
+```
+
+Open `http://localhost:8081/`, `/store/` or `/admin/`. This separate local-only
+mode visibly labels disposable API fixtures. See the [local testing guide](docs/frontend/delivery.md)
+for fixture inputs, real-service mode and verification limits.
+
 ## CI/CD and environment variables
 
 Each service repository owns lint, format, tests, JaCoCo quality gates, CodeQL,

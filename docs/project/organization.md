@@ -16,12 +16,17 @@ single place to run the complete platform.
 | [`api/gateway`](../../api/gateway/) | Gateway submodule |
 | [`api/order`](../../api/order/) | Java Order API submodule |
 | [`api/order-service`](../../api/order-service/) | Order service-layer submodule |
+| [`api/auth`](../../api/auth/) | Authentication submodule |
+| [`api/account`](../../api/account/) | Account submodule |
+| `web/landing`, `web/store`, `web/admin` | Independent static-export frontend submodules with local Dockerfiles and CI |
 | `docs/` | Project and service documentation |
 | `compose.yml` | Local service topology |
 | `.github/workflows/` | Repository automation |
 
-Product, Exchange, Auth and Account repositories are expected by the platform
-architecture but are not currently present as submodules in this snapshot.
+Product and Exchange repositories are expected by the platform architecture
+but are not currently present as submodules in this snapshot. The
+[frontend documentation](../frontend/index.md) defines ownership, dependencies and
+integration prerequisites for the three implemented web repositories.
 
 ## Ownership
 

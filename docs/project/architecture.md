@@ -106,6 +106,26 @@ The root repository records exact submodule commits. A service change is
 implemented and reviewed in its service repository first; the integration
 repository then updates the submodule pointer and verifies the complete stack.
 
+### Frontend repositories
+
+The [frontend architecture](../frontend/architecture.md) integrates
+`Microsserv52/landing`, `Microsserv52/store` and `Microsserv52/admin` as
+`web/landing`, `web/store` and `web/admin`. Independent Next.js applications
+share one domain through path routing at `/`, `/store` and `/admin`.
+The local edge routes web pages to the static exports while Gateway remains
+the business API boundary at `/api/*` and the preserved legacy API paths.
+
+The agreed experience is an English-language educational mock store with
+public catalog browsing and authenticated demo orders. **No real payments or
+transactions occur and no goods are shipped.** See the [site/content plan](../frontend/index.md)
+and [service prerequisites](../frontend/architecture.md#remaining-service-prerequisites).
+Each frontend has a Dockerfile for local testing. Production frontends will
+use CDN hosting with separate build environments; the owner must be consulted
+when deployment begins. Frontend Kubernetes deployment is deferred. Browser
+telemetry is integrated but disabled by default; the store PWA is online-only.
+The diagrams elsewhere on this page describe backend deployment; see the
+frontend architecture for the web path and API-owned cookie session boundary.
+
 ## Runtime services
 
 | Service | Owns | Depends on | Container image name |
