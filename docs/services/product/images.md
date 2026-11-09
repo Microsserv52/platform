@@ -54,8 +54,9 @@ The `uploadUrl` is a short-lived capability, never the saved display URL.
   object key, content type, byte count, measured dimensions, alternative text,
   uploader identity, state and explicit UTC creation/expiry timestamps.
 - Track pending upload tickets separately from the attached image. Generate keys
-  server-side under `media/products/{productId}/{assetId}/`; never use a supplied
-  filename as a storage path.
+  server-side under private `pending/products/{productId}/{assetId}/` for uploads
+  and `media/products/{productId}/{assetId}/` for validated display assets. Never
+  use a supplied filename as a storage path.
 - Persist the immutable object key and metadata, then derive the public URL
   from the configured media origin/path. Avoid storing provider-specific signed
   URLs or image bytes/base64 in product JSON or PostgreSQL for this selected design.
@@ -86,10 +87,16 @@ No AWS SDK belongs in the static frontend; none has been installed there.
    actual length and content. Reject oversized, malformed or mislabeled files.
    In Java, native ImageIO can validate the selected JPEG/PNG formats; inspect
    dimensions before full decode. Do not trust S3 Content-Type metadata alone.
-4. Atomically attach the validated asset and mark the ticket consumed. Until that
-   succeeds, the old image remains the product's image. Prevent concurrent overwrite
-   or post-validation replacement of the validated object using conditional S3
-   writes/object versions and the database's attachment/version policy.
+4. Write a validated display asset to a new immutable `media/` key using a
+   backend conditional write. A bounded JPEG/PNG display variant avoids delivering
+   full-size originals in every catalog card; native ImageIO can perform that
+   resizing for Java without adding an image library. CloudFront OAC must read
+   only validated `media/` assets, never the unvalidated `pending/` prefix.
+   Atomically attach the asset and mark the ticket consumed. Until that succeeds,
+   the old image remains the product's image. Prevent concurrent overwrite or
+   post-validation replacement using conditional S3 writes/object versions and
+   the database's attachment/version policy. Clean up unreferenced writes if the
+   database transaction fails.
 5. Return the updated product. Replacements use a new key/URL. Failed or abandoned
    uploads remain unattached and are removed by cleanup/lifecycle rules.
 
