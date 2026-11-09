@@ -15,7 +15,7 @@ claim S3 persistence, cloud provisioning or real-service acceptance.
 | ------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | Landing | [42603058404](https://github.com/Microsserv52/landing/actions/runs/42603058404) | Formatting, ESLint, types, six unit tests, static build and six desktop/mobile browser cases       |
 | Store   | [42603060813](https://github.com/Microsserv52/store/actions/runs/42603060813)   | Same checks, six unit tests and ten desktop/mobile browser cases                                   |
-| Admin   | [42603062344](https://github.com/Microsserv52/admin/actions/runs/42603062344)   | Same checks, six unit tests and six desktop/mobile browser cases, including light/dark screenshots |
+| Admin   | [42603940090](https://github.com/Microsserv52/admin/actions/runs/42603940090)   | Same checks, six unit tests and six desktop/mobile browser cases, including light/dark screenshots |
 
 All three local pre-commit configurations passed. The static exports and local
 Dockerfiles build successfully. No new frontend package or lockfile dependency
