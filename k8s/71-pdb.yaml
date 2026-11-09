@@ -1,0 +1,43 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gateway
+  namespace: platform
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: gateway
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: order
+  namespace: platform
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: order
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: account
+  namespace: platform
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: account
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: auth
+  namespace: platform
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: auth

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-config
+  namespace: platform
+data:
+  SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/platform
+  SPRING_DATASOURCE_USERNAME: admin
+  ACCOUNT_URL: http://account:8080
+  AUTH_URL: http://auth:8080
+  ORDER_URL: http://order:8080
+  # Replace these with the production Product and Exchange service URLs.
+  PRODUCT_URL: https://replace-with-product-service-url
+  EXCHANGE_URL: https://replace-with-exchange-service-url
+  CACHE_REDIS_URL: redis://redis:6379

@@ -2,61 +2,132 @@ name: platform
 
 services:
   database:
-    image: Microsserv52-postgres:latest
+    image: postgres:17-alpine
     hostname: database
     environment:
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=platform
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-admin}
+      - POSTGRES_DB=${POSTGRES_DB:-platform}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    hostname: redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   product:
-    image: Microsserv52-product:latest
+    image: ${PRODUCT_IMAGE:-microsserv52-product:local}
     hostname: product
     environment:
       - LOG_LEVEL=info
+      - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
     deploy:
       replicas: 3
     depends_on:
-      - database
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   order:
-    image: ${ORDER_IMAGE:-ghcr.io/microsserv52/order-service:latest}
+    image: ${ORDER_IMAGE:-microsserv52-order:local}
+    build:
+      context: .
+      dockerfile: api/order-service/Dockerfile
     hostname: order
     environment:
       - LOG_LEVEL=info
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/${POSTGRES_DB:-platform}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-admin}
+      - PRODUCT_URL=http://product:8080
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-development-use-a-long-random-secret}
+      - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
     deploy:
       replicas: 3
     depends_on:
-      - database
-      - product
+      database:
+        condition: service_healthy
+      product:
+        condition: service_started
+      redis:
+        condition: service_healthy
 
   exchange:
-    image: Microsserv52-exchange:latest
+    image: ${EXCHANGE_IMAGE:-microsserv52-exchange:local}
     hostname: exchange
     environment:
       - LOG_LEVEL=info
+      - EXCHANGE_PROVIDER_URL=${EXCHANGE_PROVIDER_URL:-http://exchange-provider-mock:8080}
+      - EXCHANGE_PROVIDER_API_KEY=${EXCHANGE_PROVIDER_API_KEY:-local-development}
+      - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
     deploy:
       replicas: 3
+    depends_on:
+      exchange-provider-mock:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  exchange-provider-mock:
+    build:
+      context: ./mocks/exchange-provider
+    hostname: exchange-provider-mock
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   account:
-    image: ${ACCOUNT_IMAGE:-ghcr.io/microsserv52/account:latest}
+    image: ${ACCOUNT_IMAGE:-microsserv52-account:local}
+    build:
+      context: ./api/account
     hostname: account
     environment:
       - LOG_LEVEL=info
       - JWT_SECRET=${JWT_SECRET:-change-me-in-development-use-a-long-random-secret}
       - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-change-me-in-development}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/${POSTGRES_DB:-platform}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-admin}
+      - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
     deploy:
       replicas: 3
     depends_on:
-      - database
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   auth:
-    image: ${AUTH_IMAGE:-ghcr.io/microsserv52/auth:latest}
+    image: ${AUTH_IMAGE:-microsserv52-auth:local}
+    build:
+      context: ./api/auth
     hostname: auth
     environment:
       - LOG_LEVEL=info
       - JWT_SECRET=${JWT_SECRET:-change-me-in-development-use-a-long-random-secret}
       - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-change-me-in-development}
+      - ACCESS_TOKEN_EXPIRATION_SECONDS=${ACCESS_TOKEN_EXPIRATION_SECONDS:-900}
+      - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
     deploy:
       replicas: 3
     depends_on:
@@ -64,18 +135,27 @@ services:
       - account
 
   gateway:
-    image: ${GATEWAY_IMAGE:-ghcr.io/microsserv52/gateway:latest}
+    image: ${GATEWAY_IMAGE:-microsserv52-gateway:local}
+    build:
+      context: ./api/gateway
     hostname: gateway
     environment:
       - LOG_LEVEL=info
       - JWT_SECRET=${JWT_SECRET:-change-me-in-development-use-a-long-random-secret}
+      - AUTH_URL=http://auth:8080
+      - ACCOUNT_URL=http://account:8080
+      - ORDER_URL=http://order:8080
+      - PRODUCT_URL=http://product:8080
+      - EXCHANGE_URL=http://exchange:8080
       - SESSION_COOKIE_SECURE=false
       - SESSION_COOKIE_PATH=/api
+      - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
     deploy:
       replicas: 3
     depends_on:
       - account
       - auth
+      - redis
 
   landing:
     image: microsserv52-landing:local
@@ -116,3 +196,6 @@ services:
       - landing
       - store
       - admin
+
+volumes:
+  redis-data:
