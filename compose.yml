@@ -5,9 +5,14 @@ services:
     image: postgres:latest
     hostname: database
     environment:
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=platform
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-admin}
+      - POSTGRES_DB=${POSTGRES_DB:-platform}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   product:
     image: ${PRODUCT_IMAGE:-microsserv52-product:latest}
@@ -17,7 +22,8 @@ services:
     deploy:
       replicas: 3
     depends_on:
-      - database
+      database:
+        condition: service_healthy
 
   order:
     image: ${ORDER_IMAGE:-ghcr.io/microsserv52/order-service:latest}
@@ -27,19 +33,40 @@ services:
     hostname: order
     environment:
       - LOG_LEVEL=info
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/${POSTGRES_DB:-platform}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-admin}
+      - PRODUCT_URL=http://product:8080
     deploy:
       replicas: 3
     depends_on:
-      - database
-      - product
+      database:
+        condition: service_healthy
+      product:
+        condition: service_started
 
   exchange:
     image: ${EXCHANGE_IMAGE:-microsserv52-exchange:latest}
     hostname: exchange
     environment:
       - LOG_LEVEL=info
+      - EXCHANGE_PROVIDER_URL=${EXCHANGE_PROVIDER_URL:-http://exchange-provider-mock:8080}
+      - EXCHANGE_PROVIDER_API_KEY=${EXCHANGE_PROVIDER_API_KEY:-local-development}
     deploy:
       replicas: 3
+    depends_on:
+      exchange-provider-mock:
+        condition: service_healthy
+
+  exchange-provider-mock:
+    build:
+      context: ./mocks/exchange-provider
+    hostname: exchange-provider-mock
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   account:
     image: ${ACCOUNT_IMAGE:-ghcr.io/microsserv52/account:latest}
@@ -50,10 +77,14 @@ services:
       - LOG_LEVEL=info
       - JWT_SECRET=${JWT_SECRET:-change-me-in-development-use-a-long-random-secret}
       - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-change-me-in-development}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/${POSTGRES_DB:-platform}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-admin}
     deploy:
       replicas: 3
     depends_on:
-      - database
+      database:
+        condition: service_healthy
 
   auth:
     image: ${AUTH_IMAGE:-ghcr.io/microsserv52/auth:latest}
@@ -64,6 +95,7 @@ services:
       - LOG_LEVEL=info
       - JWT_SECRET=${JWT_SECRET:-change-me-in-development-use-a-long-random-secret}
       - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-change-me-in-development}
+      - ACCESS_TOKEN_EXPIRATION_SECONDS=${ACCESS_TOKEN_EXPIRATION_SECONDS:-900}
     deploy:
       replicas: 3
     depends_on:
@@ -78,6 +110,11 @@ services:
     environment:
       - LOG_LEVEL=info
       - JWT_SECRET=${JWT_SECRET:-change-me-in-development-use-a-long-random-secret}
+      - AUTH_URL=http://auth:8080
+      - ACCOUNT_URL=http://account:8080
+      - ORDER_URL=http://order:8080
+      - PRODUCT_URL=http://product:8080
+      - EXCHANGE_URL=http://exchange:8080
     deploy:
       replicas: 3
     depends_on:

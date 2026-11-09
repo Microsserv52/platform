@@ -19,9 +19,25 @@ uv run zensical build --clean
 
 ## Application deployment
 
-The application topology is declared in [`compose.yml`](../../compose.yml). The
-stack contains PostgreSQL, Product, Order, Exchange, Account, Auth, Gateway
-and Nginx. Nginx listens on port `8080` and forwards traffic to the gateway.
+The repository supports three distinct runtime modes:
+
+1. **Docker Compose** — local development and integration testing. It
+   provisions PostgreSQL and uses the local Exchange provider mock.
+2. **MicroK8s** — local Kubernetes validation. It uses the Kubernetes
+   manifests and can deploy the local PostgreSQL manifest.
+3. **AWS EKS** — production. It uses external PostgreSQL/RDS, production
+   secrets, external Product/Exchange URLs, and the manual deployment workflow.
+
+The local application topology is declared in [`compose.yml`](../../compose.yml).
+Nginx listens on port `8080` and forwards traffic to the gateway. Run it with:
+
+```bash
+cp .env.example .env
+docker compose up --build -d
+docker compose ps
+```
+
+Stop it with `docker compose down`.
 
 For a deployment environment:
 
@@ -32,10 +48,9 @@ For a deployment environment:
 4. Apply migrations before starting dependent services.
 5. Verify health endpoints and an authenticated product/order flow.
 
-The compose file is a local topology description, not a production
-orchestration manifest. Production deployment must additionally define
-resource limits, replicas, persistent storage, TLS, backups, observability,
-network policies and a rollback strategy.
+The compose file is not a production orchestration manifest. Production uses
+the Kubernetes manifests and must additionally define persistent storage, TLS,
+backups, observability, network policies and a rollback strategy.
 
 The repository includes a manual `Deploy to AWS EKS` workflow. Configure
 `AWS_REGION`, `AWS_DEPLOY_ROLE_ARN`, `EKS_CLUSTER_NAME`, `JWT_SECRET`,

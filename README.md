@@ -19,6 +19,43 @@ uv run zensical serve
 Start with the [project overview](docs/project/project.md) or the
 [getting started guide](docs/development/get_started.md).
 
+## Which environment should I run?
+
+| Environment | Purpose | Database | Exchange provider | Entry point |
+| --- | --- | --- | --- | --- |
+| Docker Compose | Local development and integration testing | PostgreSQL container | Local deterministic mock by default | `http://localhost:8080` |
+| MicroK8s | Local Kubernetes validation | `k8s/10-database.yaml` | External Exchange service URL | Ingress address |
+| AWS EKS | Production backend | External PostgreSQL/RDS | External Exchange service URL | Production Ingress/load balancer |
+
+Compose and Kubernetes are separate runtime environments. Do not use the
+Compose mock or its local defaults in EKS.
+
+### Run local Compose
+
+```bash
+cp .env.example .env
+docker compose up --build -d
+docker compose ps
+docker compose down
+```
+
+Product and Exchange images must be available locally or in a registry because
+their source repositories are not included here. Compose supplies PostgreSQL,
+the checked-out Java services, and the local Exchange provider mock.
+
+### Run local MicroK8s
+
+Follow the [Kubernetes runbook](k8s/README.md). It requires MicroK8s with the
+Nginx ingress addon, a `platform-secrets` Secret, reachable Product/Exchange
+services, and local images loaded into MicroK8s.
+
+### Run production EKS
+
+Configure the required GitHub Actions secrets and `PRODUCT_URL`/
+`EXCHANGE_URL` repository variables, then run the manual **Deploy to AWS EKS**
+workflow. EKS uses the production database URL and does not deploy the local
+PostgreSQL manifest.
+
 ## CI/CD and environment variables
 
 Each service repository owns lint, format, tests, JaCoCo quality gates, CodeQL,
@@ -42,10 +79,13 @@ for each repository:
 | `Microsserv52/order-service` | `JWT_SECRET`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `PRODUCT_URL` |
 | `Microsserv52/order` | No runtime secrets; this repository contains the reusable API contract. |
 
-For local Compose, put the values in the root `.env`. For MicroK8s, create
-the `platform-secrets` Kubernetes secret as described in
-[`k8s/README.md`](k8s/README.md). For EKS, use an RDS PostgreSQL URL and add
-the values to the **platform** repository's Actions secrets.
+For local Compose, copy `.env.example` to `.env`; Compose provisions the local
+PostgreSQL database and defaults internal service settings. Product and
+Exchange images plus Exchange provider settings are the only external local
+inputs. For MicroK8s, create the `platform-secrets` Kubernetes secret as
+described in [`k8s/README.md`](k8s/README.md). For EKS, use an RDS PostgreSQL
+URL, add secret values to the **platform** repository's Actions secrets, and
+configure `PRODUCT_URL` and `EXCHANGE_URL` as Actions variables.
 
 ### Environment variable locations
 
