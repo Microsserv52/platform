@@ -25,8 +25,26 @@ For local MicroK8s, set `PRODUCT_URL` and `EXCHANGE_URL` in
 `00-namespace-config.yaml` to reachable service URLs, then apply:
 
 ```bash
+microk8s start
+microk8s status --wait-ready
+microk8s enable dns metrics-server ingress
 microk8s kubectl apply -f k8s/
 ```
+
+The HPA resources in `70-hpa.yaml` require the `metrics-server` addon. Verify
+it before testing autoscaling:
+
+```bash
+microk8s kubectl top nodes
+microk8s kubectl top pods -n platform
+microk8s kubectl get hpa -n platform
+```
+
+For a local HPA test, load the application images into MicroK8s or change the
+manifest image references to registry images, deploy `70-hpa.yaml` and
+`71-pdb.yaml`, then generate traffic with the k6 procedure in
+[`load-testing.md`](../docs/operations/load-testing.md). HPA cannot scale a
+Deployment whose pods are not running and ready.
 
 The Kubernetes resources are split by responsibility:
 

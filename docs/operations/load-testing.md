@@ -63,30 +63,59 @@ The default script is intentionally read-only and does not create test data.
 The manifests in `k8s/70-hpa.yaml` configure HPA for Gateway, Order, Account and
 Auth with three minimum replicas, ten maximum replicas and a 60% CPU target.
 The manifests in `k8s/71-pdb.yaml` preserve two available replicas during
-voluntary disruption. HPA requires Metrics Server:
+voluntary disruption. MicroK8s supports these manifests, but HPA requires the
+cluster to be running and Metrics Server to be enabled:
 
 ```bash
-kubectl apply -f k8s/
-kubectl top pods -n platform
-kubectl get hpa -n platform --watch
+microk8s start
+microk8s status --wait-ready
+microk8s enable dns metrics-server ingress
+microk8s kubectl get nodes
+microk8s kubectl top pods -n platform
 ```
 
-In a controlled non-production namespace, generate load and observe scaling:
+Load the application images into MicroK8s or configure registry references
+first. Then deploy the local test environment and HPA:
+
+```bash
+microk8s kubectl apply -f k8s/00-namespace-config.yaml
+microk8s kubectl apply -f k8s/05-redis.yaml
+microk8s kubectl apply -f k8s/10-database.yaml
+microk8s kubectl apply -f k8s/20-account.yaml
+microk8s kubectl apply -f k8s/30-auth.yaml
+microk8s kubectl apply -f k8s/40-order.yaml
+microk8s kubectl apply -f k8s/50-gateway.yaml
+microk8s kubectl apply -f k8s/60-ingress.yaml
+microk8s kubectl apply -f k8s/70-hpa.yaml
+microk8s kubectl apply -f k8s/71-pdb.yaml
+microk8s kubectl get hpa -n platform --watch
+```
+
+In a controlled non-production namespace, generate load from the host and
+observe scaling:
 
 ```bash
 k6 run \
-  --env BASE_URL=http://<ingress-address> \
+  --env BASE_URL=http://<microk8s-ingress-address> \
   --env RATE=50 \
   --env DURATION=10m \
   tests/k6/platform.js
-kubectl get deployment gateway -n platform -w
-kubectl get hpa gateway -n platform
+microk8s kubectl get deployment gateway -n platform -w
+microk8s kubectl get hpa gateway -n platform
 ```
 
 Record initial and peak replica counts, HPA current/desired CPU, scale-up
 latency, p95/p99 latency, error rate, pod evictions and node capacity. The
 test passes only when the defined peak request rate and latency/error SLOs are
 met with headroom; scaling alone is not evidence of sufficient capacity.
+
+If the ingress addon is not exposing a host address, use port forwarding for a
+controlled test:
+
+```bash
+microk8s kubectl -n platform port-forward service/gateway 18080:8080
+k6 run --env BASE_URL=http://127.0.0.1:18080 tests/k6/platform.js
+```
 
 ## Kubernetes exercise
 
