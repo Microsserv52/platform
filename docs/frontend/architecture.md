@@ -89,7 +89,7 @@ is no fabricated refresh/revocation endpoint.
 TanStack Query owns API reads/mutations and schema-checked responses. Query
 keys isolate private order data by identity; session changes reset cached data.
 Reads have bounded retries/cancellation, mutations never retry automatically.
-The cart stores only validated IDs/positive integer quantities under
+The current implemented cart stores only validated IDs/positive integer quantities under
 `ms52-cart-v1`, synchronizes with browser storage and revalidates catalog data
 before submission. Order receives IDs/quantities and calculates authoritative
 prices. An uncertain submission directs users to order history before retry.
@@ -98,8 +98,21 @@ Search/sort operate locally on the unpaginated Product array. React deferred
 rendering keeps input responsive; it is not called network debounce. TanStack
 Table v9 uses explicit sorting/pagination features and 10-row pages. No virtual
 list is added without evidence of a large-list rendering problem, and no
-background queue is needed for the current flows. New server search/pagination,
-debounce or queue packages require a separate contract/approval.
+browser background queue is implemented. Backend [Kafka opportunities](../project/asynchronous-events.md)
+are proposed separately from UI state. New server search/pagination, debounce
+or queue packages require a separate contract/approval.
+
+## Selected server cart and infrastructure direction
+
+The future [dedicated Cart service](../services/cart/index.md) will own Redis
+carts with seven-day expiry after the last successful mutation; reads do not
+renew TTL. Preserve guest and account carts, ownership, CSRF, revision checks
+and explicit migration from browser storage. No Cart API or Redis-backed store
+behavior is implemented yet.
+
+[Grafana Cloud](../operations/observability.md) is selected for telemetry and
+[Cloudflare](../infrastructure/cloudflare.md) for DDoS/WAF/Tunnel security.
+The static CDN provider and domain name remain undecided.
 
 ## Remaining service prerequisites
 

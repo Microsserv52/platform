@@ -21,6 +21,9 @@ occur, and no goods are shipped.** Demo orders are API records, not purchases.
 - Next.js, TypeScript, MUI/Emotion, Tailwind and the approved TanStack/form/test tools.
 - antislop applied during implementation; reference research and defaults authorized.
 - Each app has a Dockerfile for local testing; no frontend Kubernetes manifests.
+- Grafana Cloud is selected for observability; Cloudflare for DDoS/WAF/Tunnel security.
+- A dedicated Redis Cart service is selected with seven-day expiry after writes; implementation is pending.
+- Domain name and static CDN provider remain open.
 - Production will use CDN hosting with separate per-app environment values.
   Ask the owner about provider, origin routing and variables before deployment.
 - Additional libraries always require owner approval. No date library, queue
@@ -41,8 +44,8 @@ view, stock, shipping, payment fields or revenue reports are invented.
 
 Every screen has appropriate loading, failure and empty/access states. Shopping
 copy uses “Add to demo cart” and “Create demo order”; confirmation says that no
-payment was taken and no goods will be shipped. Product images are clearly
-unavailable placeholders because the API has no imagery contract.
+payment was taken and no goods will be shipped. Product images support optional URL metadata, with explicit fallbacks. Admin
+upload controls remain fixture-only until the future Product backend is accepted.
 
 ## Documentation
 
@@ -55,6 +58,5 @@ unavailable placeholders because the API has no imagery contract.
 | [Local development and delivery](delivery.md) | Real-service versus fixture Docker modes, commands, CI and remaining integration work |
 | [Verification](verification.md)               | Actual checks, browser evidence and limits                                            |
 
-The implementation is pushed on task branches for review. Source
-repositories are private. No CDN deployment or production telemetry endpoint
-has been configured.
+The initial implementation is merged and all ten source repositories are public.
+No CDN deployment or production telemetry endpoint has been configured.

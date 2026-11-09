@@ -15,11 +15,15 @@ The platform and organization READMEs list the complete technology inventory,
 with each service README limited to its own dependencies and tools. Badges
 identify technologies, not proof of deployment.
 
-Redis has local infrastructure and endpoint wiring; service-level caching is pending. Faro and Umami are integrated but collection is disabled by default. The Store PWA is online-only: it has a manifest and icons, with no offline service worker.
+Redis is selected for a dedicated Cart service: carts expire seven days after the last change; reads do not renew TTL. The service is not implemented yet; the current Store still uses browser storage. Existing Redis endpoint wiring does not provide carts or service-level caching. The Store PWA remains online-only.
 
-AWS/EKS/ECR deployment configuration and the VPC/RDS target architecture are documented; this does not mean cloud resources are provisioned. S3 + CloudFront and the AWS SDK are approved for the future Product backend; real image persistence is pending.
+AWS/EKS/ECR deployment configuration and the VPC/RDS target architecture are documented; this does not mean cloud resources are provisioned. S3 storage and the AWS SDK are approved for the future Product backend; real image persistence is pending. CloudFront is the current image-delivery design baseline; a possible CDN move to Cloudflare remains open.
 
-Cloudflare/R2 remain evaluated alternatives, not a selected frontend CDN or replacement for S3. Kafka is requested for the roadmap and is not implemented or installed. Prometheus and Grafana dashboards are documented observability options; their backend deployment is pending. Frontend CDN selection and environment values still require a deployment decision.
+Grafana Cloud is selected for observability: Prometheus-compatible/Mimir metrics, Loki logs, Tempo traces, Pyroscope profiles, Faro, OpenTelemetry/Alloy and Graphite support. New metrics should use Prometheus/OTel; Graphite is available for Graphite-format producers. Collection and cloud provisioning remain pending. Umami stays a separate analytics integration. Cloudflare is selected for DDoS protection, WAF and Tunnel; its security role does not choose the frontend CDN, a CloudFront-to-Cloudflare delivery migration or the domain; those decisions remain open. Cloudflare R2 is still only an alternative, not a replacement for approved S3 storage. Kafka placement is proposed for post-order events and later Product background work; no broker or client is implemented.
+
+See the [Cart service](../services/cart/index.md), [Kafka proposals](asynchronous-events.md),
+[Grafana Cloud plan](../operations/observability.md) and
+[Cloudflare edge](../infrastructure/cloudflare.md) for boundaries and rollout.
 
 ## System context
 
@@ -27,7 +31,7 @@ Cloudflare/R2 remain evaluated alternatives, not a selected frontend CDN or repl
 flowchart LR
     user[Web or API client]
     internet[Internet]
-    edge[Public load balancer / Nginx]
+    edge[Cloudflare security / origin entry]
     gateway[Gateway]
     auth[Auth]
     account[Account]
@@ -36,13 +40,15 @@ flowchart LR
     exchange[Exchange]
     database[(PostgreSQL)]
     provider[External exchange provider]
-    observability[Logs, metrics and traces]
+    observability[Grafana Cloud: metrics / logs / traces / profiles]
 
     user --> internet --> edge --> gateway
     gateway --> auth
     gateway --> account
     gateway --> product
     gateway --> order
+    gateway -. planned .-> cart[Future Cart service]
+    cart -. planned .-> redis[(Cart Redis)]
     gateway --> exchange
     auth --> account
     product --> database

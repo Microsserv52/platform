@@ -55,6 +55,17 @@ measured peak traffic remains below their tested capacity with the required
 latency and error-rate headroom. The project must not claim that three
 replicas support a user count until the load-test evidence demonstrates it.
 
+## Selected next architecture work
+
+[Redis carts](../services/cart/index.md) are temporary authoritative state, not
+a cache of PostgreSQL orders. The dedicated Cart service and seven-day TTL are
+selected but not implemented. [Kafka post-order work](../project/asynchronous-events.md)
+is proposed to decouple side effects after the order commit; it does not remove
+Product lookup or database limits from checkout. [Grafana Cloud](observability.md)
+is selected to measure these paths. [Cloudflare security](../infrastructure/cloudflare.md)
+is selected for edge protection; capacity and DDoS behavior still require
+configuration and verification. Domain and static CDN remain open.
+
 ## Required mitigation backlog
 
 The following work is required before a production capacity claim:
