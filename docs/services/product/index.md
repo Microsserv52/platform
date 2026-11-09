@@ -4,6 +4,10 @@ icon: lucide/package
 
 # Product
 
+The Product source repository will be created later. The
+[image implementation handoff](images.md) records the approved S3/CloudFront
+design, migrations, upload contract and acceptance work for that service.
+
 RESTful API for an online store
 
 This service owns the product catalogue: product identity, display name,
