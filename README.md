@@ -27,7 +27,7 @@ independent Next.js applications integrated as Git submodules: `web/landing` at
 The agreed UI is English, with a shared modern brand and a public catalog.
 
 This is an **educational mock store: no real payments or transactions take
-place, and no goods are shipped**. Authenticated users will create persisted
+place, and no goods are shipped**. Authenticated users create persisted
 demo orders. The store includes an online-only PWA manifest; Grafana Faro and
 Umami are integrated but disabled until their deployment values are agreed.
 Each app exports static files and has a Dockerfile. Production CDN hosting and

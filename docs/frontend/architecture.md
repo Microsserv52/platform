@@ -78,6 +78,9 @@ never a registration input.
 The route guard is presentation only. Tests verify backend role enforcement,
 CSRF and an actual CSRF-cookie/login/profile exchange with local upstream
 fixtures. Logout clears the cookie/client caches and notifies other tabs.
+Receiving tabs use TanStack's [query reset](https://tanstack.com/query/latest/docs/framework/react/reference/classes/QueryClient)
+to notify active subscribers and refetch session state, so an open private view
+does not retain the previous profile after another tab signs out.
 An already-issued token remains valid until expiry if copied elsewhere; there
 is no fabricated refresh/revocation endpoint.
 

@@ -33,14 +33,15 @@ that a locally unavailable Playwright browser installation ran.
 
 | Repository | Review commit | Passing frontend CI                                                                                           |
 | ---------- | ------------- | ------------------------------------------------------------------------------------------------------------- |
-| Landing    | `dbadb34`     | [4 browser cases and 5 unit tests](https://github.com/Microsserv52/landing/actions/runs/42580170506)          |
-| Store      | `99a1bff`     | [6 browser cases and 5 unit tests](https://github.com/Microsserv52/store/actions/runs/42580171670)            |
-| Admin      | `e346569`     | [4 browser cases and 5 unit tests](https://github.com/Microsserv52/admin/actions/runs/42579846273)            |
+| Landing    | `18eb438`     | [4 browser cases and 5 unit tests](https://github.com/Microsserv52/landing/actions/runs/42581984618)          |
+| Store      | `ecbf084`     | [8 browser cases and 5 unit tests](https://github.com/Microsserv52/store/actions/runs/42581976576)            |
+| Admin      | `3aeeb18`     | [4 browser cases and 5 unit tests](https://github.com/Microsserv52/admin/actions/runs/42581985563)            |
 | Gateway    | `70c7325`     | [Java 25 tests, coverage and CodeQL passed](https://github.com/Microsserv52/gateway/actions/runs/42580966815) |
 | Account    | `edb0d71`     | [Java 25 tests, coverage and CodeQL passed](https://github.com/Microsserv52/account/actions/runs/42580973577) |
 
-The linked app commits identify the UI source exercised by those workflow runs.
-Subsequent frontend commits change only CodeQL workflow permissions/opt-in.
+The linked runs exercise the final pinned application commits. The store suite
+includes desktop/mobile two-tab sign-out regression coverage: active queries
+reset and the other tab stops displaying the old private profile.
 
 The first landing/store CI run exposed an ambiguous alert locator caused by
 Next.js route announcements. The tests were scoped to application feedback
@@ -51,8 +52,8 @@ The documentation build completed with no issues and both Compose files passed
 configuration validation. Backend automation initializes only backend submodules
 so private frontend checkout does not break the public platform checks.
 
-Platform [Java/Compose integration](https://github.com/Microsserv52/platform/actions/runs/42581301521)
-and [Java/Actions CodeQL](https://github.com/Microsserv52/platform/actions/runs/42581301444)
+Platform [Java/Compose integration](https://github.com/Microsserv52/platform/actions/runs/42581744578)
+and [Java/Actions CodeQL](https://github.com/Microsserv52/platform/actions/runs/42581744441)
 passed after correcting workflow YAML, the checkout working directory and the
 Java analysis toolchain. The isolated platform review excludes pre-existing
 local infrastructure commits; those remain on `feature/frontend-applications-workspace`.
