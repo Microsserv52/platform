@@ -31,13 +31,16 @@ explicit API fixtures. See the review-branch workflow runs for exact results.
 Local interactive checks below used the in-app browser rather than claiming
 that a locally unavailable Playwright browser installation ran.
 
-| Repository | Review commit | Passing frontend CI                                                                                  |
-| ---------- | ------------- | ---------------------------------------------------------------------------------------------------- |
-| Landing    | `dbadb34`     | [4 browser cases and 5 unit tests](https://github.com/Microsserv52/landing/actions/runs/42580170506) |
-| Store      | `99a1bff`     | [6 browser cases and 5 unit tests](https://github.com/Microsserv52/store/actions/runs/42580171670)   |
-| Admin      | `e346569`     | [4 browser cases and 5 unit tests](https://github.com/Microsserv52/admin/actions/runs/42579846273)   |
-| Gateway    | `70c7325`     | Local Maven verification recorded above; feature push is outside the existing CI branch filter       |
-| Account    | `edb0d71`     | Local Maven verification recorded above; feature push is outside the existing CI branch filter       |
+| Repository | Review commit | Passing frontend CI                                                                                           |
+| ---------- | ------------- | ------------------------------------------------------------------------------------------------------------- |
+| Landing    | `dbadb34`     | [4 browser cases and 5 unit tests](https://github.com/Microsserv52/landing/actions/runs/42580170506)          |
+| Store      | `99a1bff`     | [6 browser cases and 5 unit tests](https://github.com/Microsserv52/store/actions/runs/42580171670)            |
+| Admin      | `e346569`     | [4 browser cases and 5 unit tests](https://github.com/Microsserv52/admin/actions/runs/42579846273)            |
+| Gateway    | `70c7325`     | [Java 25 tests, coverage and CodeQL passed](https://github.com/Microsserv52/gateway/actions/runs/42580966815) |
+| Account    | `edb0d71`     | [Java 25 tests, coverage and CodeQL passed](https://github.com/Microsserv52/account/actions/runs/42580973577) |
+
+The linked app commits identify the UI source exercised by those workflow runs.
+Subsequent frontend commits change only CodeQL workflow permissions/opt-in.
 
 The first landing/store CI run exposed an ambiguous alert locator caused by
 Next.js route announcements. The tests were scoped to application feedback
@@ -47,6 +50,27 @@ Store manifest scope/start URL and all page titles were also checked there.
 The documentation build completed with no issues and both Compose files passed
 configuration validation. Backend automation initializes only backend submodules
 so private frontend checkout does not break the public platform checks.
+
+Platform [Java/Compose integration](https://github.com/Microsserv52/platform/actions/runs/42581301521)
+and [Java/Actions CodeQL](https://github.com/Microsserv52/platform/actions/runs/42581301444)
+passed after correcting workflow YAML, the checkout working directory and the
+Java analysis toolchain. The isolated platform review excludes pre-existing
+local infrastructure commits; those remain on `feature/frontend-applications-workspace`.
+
+The private frontend CodeQL queries ran, but GitHub rejected result uploads
+because Advanced Security is not enabled. The owner explicitly chose to keep
+the repositories private and configure this later. Private CodeQL is therefore
+opt-in via the repository variable `ENABLE_CODEQL=true` after the entitlement
+and scanning setup are enabled. A skipped job does not establish a clean scan.
+Automatic build/type/unit/browser checks remain enabled.
+
+Coordinated draft reviews: [platform #6](https://github.com/Microsserv52/platform/pull/6),
+[landing #1](https://github.com/Microsserv52/landing/pull/1),
+[store #1](https://github.com/Microsserv52/store/pull/1),
+[admin #1](https://github.com/Microsserv52/admin/pull/1),
+[gateway #3](https://github.com/Microsserv52/gateway/pull/3),
+[account #3](https://github.com/Microsserv52/account/pull/3) and
+[organization profile #2](https://github.com/Microsserv52/.github/pull/2).
 
 ## Interactive browser record
 

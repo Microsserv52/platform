@@ -76,7 +76,10 @@ CI runs formatting, lint, types, Vitest, static builds and Chromium desktop/mobi
 Playwright flows. Browser tests use explicit API fixtures; backend tests verify
 real access-control/session code separately. CodeQL configuration is included;
 private-repository execution depends on the organization's GitHub security
-entitlement. The image workflow publishes only immutable `sha-<commit>` tags for
+entitlement. The owner deferred private CodeQL setup: after enabling the required
+GitHub feature, set repository variable `ENABLE_CODEQL=true` to opt in, then run
+the workflow. A skipped CodeQL job is not a completed scan.
+The image workflow publishes only immutable `sha-<commit>` tags for
 local/integration container use. It does not deploy to a CDN or Kubernetes.
 
 Platform Java/CodeQL/EKS workflows initialize only the public backend submodules.
