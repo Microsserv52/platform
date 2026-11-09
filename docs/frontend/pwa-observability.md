@@ -16,11 +16,16 @@ and writes are never replayed in the background.
 Installation is browser-dependent and requires HTTPS in deployment (localhost
 is suitable for development). The browser's install/add-to-home-screen action
 is used; there is no misleading cross-platform install button. Device-specific
-installation still needs acceptance on the chosen deployment. Offline cart
-storage does not mean offline checkout: orders require an online authenticated
-API. See [Next.js PWA guidance](https://nextjs.org/docs/app/guides/progressive-web-apps).
+installation still needs acceptance on the chosen deployment. The current browser cart is not offline checkout: orders require an online
+authenticated API. The selected [Redis Cart service](../services/cart/index.md)
+will make the server cart authoritative; offline mutation/replay remains out of scope. See [Next.js PWA guidance](https://nextjs.org/docs/app/guides/progressive-web-apps).
 
-## Grafana Faro
+## Grafana Cloud and Faro
+
+Grafana Cloud is the selected destination for Faro. See the
+[complete managed stack plan](../operations/observability.md#selected-grafana-cloud-stack)
+for Prometheus/Mimir, Loki, Tempo, Pyroscope, OTel/Alloy and Graphite support.
+The stack is selected; collector credentials, region and policy remain pending.
 
 The approved SDK and tracing packages initialize once in the browser when
 `NEXT_PUBLIC_ENABLE_TELEMETRY=true`, a Faro URL is configured and the visitor has
@@ -83,6 +88,11 @@ Gateway uses backend-only `AUTH_URL`, `ACCOUNT_URL`, `JWT_SECRET`,
 only the explicit local HTTP setup disables that cookie flag.
 
 Before deployment, ask the owner to choose CDN provider, public/API origins,
-per-app variables, Faro/Umami hosting, allowed script/connect origins, retention
+per-app variables, Grafana Cloud stack/collector values, Umami hosting, allowed
+script/connect origins, retention
 and any collection policy. Do not create production resources or Kubernetes
 frontends as part of local delivery.
+
+Cloudflare is selected for DDoS/WAF/Tunnel security. This does not select the
+static CDN provider or domain name; both remain open. See the
+[security edge plan](../infrastructure/cloudflare.md).

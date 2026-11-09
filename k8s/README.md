@@ -97,3 +97,9 @@ performance mitigation.
 The Exchange provider URL and credentials are configuration for the external
 Exchange service itself. Configure them in that service's deployment or secret
 manager; they are not stored in this platform repository.
+
+The selected [Cart service design](../docs/services/cart/index.md) uses Redis
+as temporary authoritative cart state with a seven-day mutation-based TTL.
+It is not implemented by this endpoint wiring. Production carts need dedicated
+resource/eviction/recovery controls; do not treat this disposable Redis manifest
+as durable or isolated cart storage.
