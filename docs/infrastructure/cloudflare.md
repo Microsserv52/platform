@@ -76,3 +76,11 @@ permissions, origin hostnames/TLS, connectors, WAF/rate-limit rules, access
 policies, log export, caching exceptions and incident ownership. No domain is
 registered, DNS changed, tunnel created, or CDN migration authorized by this
 architecture update.
+
+## Staging Access requirement — TODO
+
+The [staging plan](staging.md) requires Cloudflare Zero Trust Access over the
+whole staging application, not just an optional admin gate. Restrict access to
+approved developers with MFA and an explicitly approved CI service identity.
+Test all frontend/API/media origin bypasses. Identity groups, Tunnel, policies,
+credentials and hostnames are not configured; implementation remains TODO.

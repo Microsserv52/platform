@@ -160,6 +160,15 @@ Open `http://localhost:8081/`, `/store/` or `/admin/`. This separate local-only
 mode visibly labels disposable API fixtures. See the [local testing guide](docs/frontend/delivery.md)
 for fixture inputs, real-service mode and verification limits.
 
+## Planned staging environment — TODO
+
+The [staging plan](docs/infrastructure/staging.md) specifies a smaller, fixed-capacity
+copy of every production application service, scheduled developer availability,
+synthetic data and Cloudflare Zero Trust Access. Observability is isolated in a
+separate Grafana Cloud stack; Faro errors remain enabled and Umami/usage analytics
+are disabled. It is not implemented. Budget, operating hours/timezone, hosting,
+domain and CDN decisions remain open.
+
 ## Which environment should I run?
 
 | Environment    | Purpose                                   | Database                | Exchange provider                   | Entry point                      |
