@@ -242,6 +242,14 @@ registry and managed database choice are deployment decisions that must be
 recorded in [AWS](../infrastructure/aws.md), [EKS](../infrastructure/eks.md)
 and [Costs](../infrastructure/costs.md).
 
+## Planned staging — TODO
+
+The [staging design](../infrastructure/staging.md) preserves production service
+coverage at smaller fixed capacity, with scheduled developer-only Access,
+synthetic data and isolated observability. Faro remains on for errors; Umami and
+usage analytics remain off. Hosting/budget and domain/CDN decisions are open.
+The implementation checklist is unchecked; no staging runtime exists yet.
+
 ## Build, image and deployment workflow
 
 ```mermaid

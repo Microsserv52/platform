@@ -14,15 +14,30 @@ Use the [AWS Pricing Calculator](https://calculator.aws/) before provisioning
 and validate the estimate with [Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/)
 and [AWS Budgets](https://aws.amazon.com/aws-cost-management/aws-budgets/).
 
-| Resource | Quantity | Assumption | Monthly estimate | Owner |
-| --- | ---: | --- | ---: | --- |
-| EKS control plane | 1 | Environment and region | TBD | Platform |
-| Worker nodes | TBD | Instance type and hours | TBD | Platform |
-| Database | TBD | Engine, size and backups | TBD | Data |
-| Load balancer | TBD | Requests and hours | TBD | Platform |
-| Logs and metrics | TBD | Retention and ingestion | TBD | Operations |
+| Resource          | Quantity | Assumption               | Monthly estimate | Owner      |
+| ----------------- | -------: | ------------------------ | ---------------: | ---------- |
+| EKS control plane |        1 | Environment and region   |              TBD | Platform   |
+| Worker nodes      |      TBD | Instance type and hours  |              TBD | Platform   |
+| Database          |      TBD | Engine, size and backups |              TBD | Data       |
+| Load balancer     |      TBD | Requests and hours       |              TBD | Platform   |
+| Logs and metrics  |      TBD | Retention and ingestion  |              TBD | Operations |
 
 Update the table with evidence and date whenever the architecture changes.
+
+## Staging estimate — TODO
+
+The [planned staging environment](staging.md) uses scheduled availability and
+fixed small resources with synthetic data. Exact hours, region, classes and
+monthly cap remain undecided; no price or free-tier eligibility is assumed.
+Compare the proposed single-node MicroK8s cost-first option with dedicated EKS,
+including the managed cluster fee, private egress and operational work.
+
+Estimate compute/database running hours separately from full-month storage,
+backups, networking, security plans, static hosting and isolated Grafana Cloud
+charges. An external scheduler must reconcile RDS stop/start behavior; shutdown
+is not zero-cost. Set budget alerts and manual resizing approval rather than
+autoscaling the database or application resources. All implementation remains
+on the staging TODO checklist.
 
 ## PaaS decisions
 

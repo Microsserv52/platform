@@ -96,3 +96,15 @@ frontends as part of local delivery.
 Cloudflare is selected for DDoS/WAF/Tunnel security. This does not select the
 static CDN provider or domain name; both remain open. See the
 [security edge plan](../infrastructure/cloudflare.md).
+
+## Planned staging telemetry — TODO
+
+[Staging](../infrastructure/staging.md#separate-observability-faro-on-analytics-off)
+will use a separate Grafana Cloud/Faro destination with error reporting enabled
+and Umami/usage analytics disabled. The existing shared
+`NEXT_PUBLIC_ENABLE_TELEMETRY` flag does not express that policy independently.
+Future work must add separate Faro and analytics gates in all three apps, guard
+manual tracking calls, omit the Umami script and test accidental configuration.
+No flags or runtime behavior are changed by this plan. Preserve redaction and
+the current opt-out/Do Not Track policy while distinguishing technical errors
+from product analytics.

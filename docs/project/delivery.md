@@ -24,6 +24,17 @@ submission.
 - [ ] Test strategy and final verification.
 - [ ] Known limitations and future work.
 
+## Staging backlog — not implemented
+
+- [ ] Implement and accept the [developer-only staging plan](../infrastructure/staging.md):
+      fixed small copies of all production business services, scheduled availability,
+      synthetic seed data, Cloudflare Access, separate Grafana Cloud observability,
+      Faro errors enabled and Umami/usage analytics disabled.
+- [ ] Record the approved budget/schedule, hosting/parity tradeoffs, isolation
+      tests, independent telemetry gates, recovery/rollback and operating evidence.
+
+These items are TODO; documenting the plan does not complete them.
+
 ## AI disclosure
 
 The course permits limited AI assistance for tasks such as boilerplate,

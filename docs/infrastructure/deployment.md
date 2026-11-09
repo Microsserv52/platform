@@ -17,6 +17,15 @@ uv sync
 uv run zensical build --clean
 ```
 
+## Planned staging — not implemented
+
+See the [staging environment plan](staging.md) and its unchecked implementation
+backlog. The owner selected scheduled developer-only access and synthetic seed
+data. The plan keeps all production business services at smaller fixed capacity,
+separates Grafana Cloud observability, enables Faro errors and disables Umami/
+usage analytics. Current deployment workflows and Kubernetes files do not
+implement that environment and must not be applied as an assumed staging setup.
+
 ## Application deployment
 
 The repository supports three distinct runtime modes:

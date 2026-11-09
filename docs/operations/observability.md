@@ -149,6 +149,17 @@ Cloudflare log export depends on plan and log availability.
 5. Add Redis/Cart and Kafka/outbox dashboards when those services exist.
    Do not run load tests against production without explicit authorization.
 
+## Staging isolation — TODO
+
+The [staging plan](../infrastructure/staging.md) requires a separate Grafana
+Cloud stack, ingestion/Faro values, dashboards, credentials and developer alert
+routes. Environment labels alone are insufficient isolation. Keep Faro enabled
+for sanitized errors and approved technical diagnostics; disable Umami and every
+product-usage tracking path. Separate frontend feature controls must be
+implemented before this is possible reliably with the current shared telemetry
+flag. Suppress expected scheduled-downtime availability alerts, while external
+start/stop and budget monitors stay active. This environment is not implemented.
+
 ## Browser observability integration
 
 The three web applications integrate **Grafana Faro** for browser errors,
