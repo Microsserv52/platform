@@ -20,6 +20,13 @@ and serve their static export with Nginx. This mode uses Gateway/Auth/Account/
 Order and the configured real Product/Exchange images. Those last two images
 are external prerequisites and are not fabricated by frontend initialization.
 
+Use backend images built from the reviewed Gateway/Account commits when testing
+the new browser endpoints. A submodule pointer does not replace an already
+published service image. The mainline Compose topology also requires its
+database/Auth/Order images and their normal environment configuration. The
+workspace may carry additional local infrastructure work; the frontend review
+branch deliberately keeps those unrelated commits separate.
+
 The Compose edge uses Docker's DNS resolver and dynamically resolves upstream
 addresses, so recreated frontend containers do not retain stale routing.
 This requires the pinned Nginx 1.28 image; see the
