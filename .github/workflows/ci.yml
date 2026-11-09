@@ -10,6 +10,16 @@ permissions:
   packages: read
 
 jobs:
+  frontend-fixtures:
+    name: Frontend image fixture contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - run: python -m unittest discover -s tests/frontend -p 'test_*.py'
+
   java:
     name: ${{ matrix.service }} tests and coverage
     runs-on: ubuntu-latest

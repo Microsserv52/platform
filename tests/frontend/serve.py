@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 from uuid import uuid4
+from time import monotonic
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 PRODUCTS = [
@@ -19,6 +20,8 @@ PRODUCTS = [
     ], 1)
 ]
 ORDERS = []
+UPLOADS = {}
+MEDIA = {}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -43,7 +46,7 @@ class Handler(BaseHTTPRequestHandler):
         if role == "admin":
             profile.update(name="Fixture Administrator", email="admin@example.test", roles="ROLE_ADMIN")
         body = {}
-        if self.command == "POST":
+        if self.command in ("POST", "PUT", "PATCH"):
             length = int(self.headers.get("Content-Length", "0"))
             if length > 10000:
                 return self.respond(413)
@@ -53,7 +56,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(400)
         if self.command == "GET" and path == "/session/csrf":
             return self.respond(200, {"token": "fixture-csrf", "headerName": "X-XSRF-TOKEN"})
-        if self.command in ("POST", "DELETE") and self.headers.get("X-XSRF-TOKEN") != "fixture-csrf":
+        if self.command in ("POST", "PUT", "PATCH", "DELETE") and self.headers.get("X-XSRF-TOKEN") != "fixture-csrf":
             return self.respond(403)
         if self.command == "POST" and path == "/session/login":
             if body.get("password") != "fixture-only":
@@ -66,6 +69,19 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(201, {**profile, "name": body.get("name", "Fixture Visitor"), "email": body.get("email", "visitor@example.test")})
         if self.command == "GET" and path == "/products":
             return self.respond(200, PRODUCTS)
+        if self.command == "GET" and path.endswith("/image/content"):
+            from urllib.parse import parse_qs
+            version = parse_qs(urlsplit(self.path).query).get("version", [""])[0]
+            media = MEDIA.get(version)
+            if not media or media["productId"] != path.split("/")[2]:
+                return self.respond(404)
+            self.send_response(200)
+            self.send_header("Content-Type", media["contentType"])
+            self.send_header("Content-Length", str(len(media["bytes"])))
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            return self.wfile.write(media["bytes"])
         if self.command == "GET" and path.startswith("/products/"):
             product = next((p for p in PRODUCTS if p["id"] == path.split("/")[-1]), None)
             return self.respond(200 if product else 404, product)
@@ -92,6 +108,37 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(201, order)
         if role != "admin":
             return self.respond(403)
+        if path.startswith("/products/") and "/image" in path:
+            product = next((p for p in PRODUCTS if p["id"] == path.split("/")[2]), None)
+            if not product:
+                return self.respond(404)
+            if self.command == "POST" and path.endswith("/image/uploads"):
+                if body.get("contentType") not in ("image/png", "image/jpeg") or not 0 < body.get("size", 0) <= 5 * 1024 * 1024:
+                    return self.respond(400)
+                if not all(isinstance(body.get(key), int) and 0 < body[key] <= 4096 for key in ("width", "height")):
+                    return self.respond(400)
+                if len(UPLOADS) >= 20:
+                    return self.respond(429)
+                upload_id = str(uuid4())
+                UPLOADS[upload_id] = {**body, "productId": product["id"], "created": monotonic()}
+                return self.respond(201, {"uploadId": upload_id, "uploadUrl": "http://" + self.headers["Host"] + "/api/fixture-media-upload/" + upload_id, "uploadHeaders": {"If-None-Match": "*"}})
+            if self.command == "DELETE":
+                product["image"] = None
+                return self.respond(200, product)
+            alternative = body.get("alt", "").strip()
+            if not alternative or len(alternative) > 200:
+                return self.respond(400)
+            if self.command == "PATCH" and product.get("image"):
+                product["image"]["alt"] = alternative
+                return self.respond(200, product)
+            ticket = UPLOADS.get(body.get("uploadId"))
+            if self.command == "PUT" and ticket and ticket["productId"] == product["id"] and "bytes" in ticket and monotonic() - ticket["created"] < 600:
+                version = body["uploadId"]
+                MEDIA[version] = ticket
+                product["image"] = {"url": "/api/products/" + product["id"] + "/image/content?version=" + version, "alt": alternative, "width": ticket["width"], "height": ticket["height"]}
+                del UPLOADS[version]
+                return self.respond(200, product)
+            return self.respond(400)
         if self.command == "GET" and path == "/accounts":
             return self.respond(200, [profile])
         if self.command == "POST" and path == "/products":
@@ -141,6 +188,28 @@ class Handler(BaseHTTPRequestHandler):
         self.respond(503)
 
     def do_DELETE(self):
+        if self.server.fixtures:
+            return self.fixture()
+        self.respond(503)
+
+    def do_PATCH(self):
+        if self.server.fixtures:
+            return self.fixture()
+        self.respond(503)
+
+    def do_PUT(self):
+        path = urlsplit(self.path).path.removeprefix("/api")
+        if self.server.fixtures and path.startswith("/fixture-media-upload/"):
+            ticket = UPLOADS.get(path.split("/")[-1])
+            length = int(self.headers.get("Content-Length", "0"))
+            if not ticket or monotonic() - ticket["created"] >= 600:
+                return self.respond(403)
+            if self.headers.get("If-None-Match") != "*" or "bytes" in ticket:
+                return self.respond(412)
+            if length != ticket["size"] or not 0 < length <= 5 * 1024 * 1024:
+                return self.respond(400)
+            ticket["bytes"] = self.rfile.read(length)
+            return self.respond(204)
         if self.server.fixtures:
             return self.fixture()
         self.respond(503)

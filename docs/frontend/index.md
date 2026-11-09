@@ -4,6 +4,11 @@ icon: lucide/panels-top-left
 
 # Frontend applications
 
+The initial implementation is merged. The selected
+[product image architecture](product-images.md) adds URL-based rendering and
+admin image management, with S3 integration deferred to the future Product
+service. Upload controls are enabled only in explicit fixture mode until then.
+
 Three independent Next.js repositories are integrated as Git submodules and
 implemented for static CDN export. The local Docker setup serves them on one
 origin. **This is an educational mock store: no real payments or transactions

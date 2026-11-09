@@ -16,6 +16,7 @@ services:
       context: ./web/admin
       args:
         NEXT_PUBLIC_APP_ENV: fixture
+        NEXT_PUBLIC_ENABLE_PRODUCT_IMAGE_UPLOADS: "true"
   gateway:
     image: python:3.13-slim
     command:
