@@ -74,19 +74,29 @@ calls the same installed npm tools without downloading hook packages.
 
 CI runs formatting, lint, types, Vitest, static builds and Chromium desktop/mobile
 Playwright flows. Browser tests use explicit API fixtures; backend tests verify
-real access-control/session code separately. CodeQL configuration is included;
-private-repository execution depends on the organization's GitHub security
-entitlement. The owner deferred private CodeQL setup: after enabling the required
-GitHub feature, set repository variable `ENABLE_CODEQL=true` to opt in, then run
-the workflow. A skipped CodeQL job is not a completed scan.
+real access-control/session code separately. Landing, Store and Admin became
+public on 2026-11-09 with the owner's approval. CodeQL runs automatically for
+public repositories, and the existing workflow was manually dispatched after
+the visibility change. Earlier private-repository scans were skipped because
+the organization lacked the required security entitlement; those skipped jobs
+are not completed scans. `ENABLE_CODEQL=true` remains an optional opt-in for
+licensed private repositories if visibility changes again.
 The image workflow publishes only immutable `sha-<commit>` tags for
 local/integration container use. It does not deploy to a CDN or Kubernetes.
 
-Platform Java/CodeQL/EKS workflows initialize only the public backend submodules.
-They do not try to clone the private frontend repositories with the platform's
-repository-scoped token. Each private frontend runs its own checks. A future
-cross-repository frontend integration job needs an owner-configured GitHub App
-or read credential; no broader credential or permission has been added here.
+Platform Java/CodeQL/EKS workflows still initialize only the backend submodules.
+Each frontend runs its own checks. All ten Microsserv52 source repositories are
+public and can be cloned without organization membership; no broader token or
+permission is needed to read the frontend submodules. Container package access
+is a separate setting and was not changed.
+
+Before publication, the fetched Git histories and all 76 available Actions logs
+were checked for credential patterns, with no findings. The three frontends had
+no repository or inherited Actions secrets, variables, or environments. Their
+existing workflows perform checks and publish local-test images; they do not
+deploy to a CDN or cluster. This records the checks performed, not a guarantee
+that an automated scan can detect every possible secret. GitHub Actions remains
+enabled; no local services were started for the visibility change.
 
 ## Real administrator setup
 
