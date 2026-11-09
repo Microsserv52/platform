@@ -16,7 +16,8 @@ jobs:
         with:
           submodules: false
       - name: Checkout backend submodules
-        run: git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive -- api/account api/auth api/gateway api/order api/order-service
+        run: >-
+          git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive -- api/account api/auth api/gateway api/order api/order-service
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
