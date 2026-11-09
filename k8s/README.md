@@ -13,8 +13,16 @@ microk8s kubectl -n platform create secret generic platform-secrets \
   --from-literal=POSTGRES_PASSWORD="$(openssl rand -base64 24)" \
   --from-literal=SPRING_DATASOURCE_URL="jdbc:postgresql://database:5432/platform" \
   --from-literal=SPRING_DATASOURCE_USERNAME="admin"
-microk8s kubectl apply -f k8s/platform.yaml
+microk8s kubectl apply -f k8s/
 ```
+
+The Kubernetes resources are split by responsibility:
+
+- `00-namespace-config.yaml`: namespace and shared service configuration.
+- `10-database.yaml`: PostgreSQL Service and Deployment.
+- `20-account.yaml`, `30-auth.yaml`, `40-order.yaml`, and `50-gateway.yaml`: each
+  microservice's Service and Deployment.
+- `60-ingress.yaml`: Nginx Ingress for the gateway.
 
 For EKS, configure the GitHub Actions secrets listed in `.env.example` and
 run the manual `Deploy to AWS EKS` workflow. Set

@@ -35,8 +35,11 @@ Open the address printed by Zensical, normally
 
 ## Run the platform
 
-The root `compose.yml` describes the intended local topology. Build or publish
-the service images referenced there, then start the stack with:
+The root `compose.yml` describes the intended local topology. Account, Auth,
+Gateway and Order are built from their checked-out submodules when Compose is
+started with `--build`. Product and Exchange are external service
+repositories, so set `PRODUCT_IMAGE` and `EXCHANGE_IMAGE` in `.env` to images
+built or published from those repositories before starting the stack:
 
 ```bash
 docker compose up -d

@@ -2,7 +2,7 @@ name: platform
 
 services:
   database:
-    image: Microsserv52-postgres:latest
+    image: postgres:latest
     hostname: database
     environment:
       - POSTGRES_USER=admin
@@ -10,7 +10,7 @@ services:
       - POSTGRES_DB=platform
 
   product:
-    image: Microsserv52-product:latest
+    image: ${PRODUCT_IMAGE:-microsserv52-product:latest}
     hostname: product
     environment:
       - LOG_LEVEL=info
@@ -21,6 +21,9 @@ services:
 
   order:
     image: ${ORDER_IMAGE:-ghcr.io/microsserv52/order-service:latest}
+    build:
+      context: .
+      dockerfile: api/order-service/Dockerfile
     hostname: order
     environment:
       - LOG_LEVEL=info
@@ -31,7 +34,7 @@ services:
       - product
 
   exchange:
-    image: Microsserv52-exchange:latest
+    image: ${EXCHANGE_IMAGE:-microsserv52-exchange:latest}
     hostname: exchange
     environment:
       - LOG_LEVEL=info
@@ -40,6 +43,8 @@ services:
 
   account:
     image: ${ACCOUNT_IMAGE:-ghcr.io/microsserv52/account:latest}
+    build:
+      context: ./api/account
     hostname: account
     environment:
       - LOG_LEVEL=info
@@ -52,6 +57,8 @@ services:
 
   auth:
     image: ${AUTH_IMAGE:-ghcr.io/microsserv52/auth:latest}
+    build:
+      context: ./api/auth
     hostname: auth
     environment:
       - LOG_LEVEL=info
@@ -65,6 +72,8 @@ services:
 
   gateway:
     image: ${GATEWAY_IMAGE:-ghcr.io/microsserv52/gateway:latest}
+    build:
+      context: ./api/gateway
     hostname: gateway
     environment:
       - LOG_LEVEL=info
