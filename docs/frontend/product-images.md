@@ -4,7 +4,10 @@ icon: lucide/image
 
 # Product image storage options
 
-Selected: **S3 + CloudFront**, with the AWS SDK approved by the owner. The Product
+Selected storage: **Amazon S3**, with the AWS SDK approved by the owner.
+CloudFront is the current image-delivery baseline. A potential move to Cloudflare
+CDN remains open, independently of the selected Cloudflare security layer; R2
+storage has not been selected. The Product
 service will be created later. Frontend rendering and admin image management are
 implemented against the [future Product contract](../services/product/images.md),
 with a disposable local fixture for testing. Real S3 persistence is deferred to
