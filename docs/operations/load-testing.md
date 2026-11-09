@@ -21,11 +21,19 @@ Start with representative flows:
 Define arrival rate or concurrent users, duration, warm-up, dataset and
 acceptable thresholds before running the test.
 
+For this platform, record the expected peak and a headroom target before the
+test. A component may remain the measured bottleneck and still pass if it
+supports the required peak with the agreed latency and error-rate margin. The
+goal is not to remove every bottleneck; it is to keep every known bottleneck
+below the system requirement or make its failure mode safe and observable.
+
 ## Measurements
 
 Record throughput, p50/p95/p99 latency, HTTP status distribution, timeouts,
 dependency latency, CPU, memory, replicas, database connections and provider
-errors. Include the exact commit, image tags, cluster size and region.
+errors. Also record ingress/controller saturation, CPU throttling, HPA
+activity, pod evictions, and the remaining headroom at the narrowest
+component. Include the exact commit, image tags, cluster size and region.
 
 ## Kubernetes exercise
 

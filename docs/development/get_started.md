@@ -76,7 +76,7 @@ The local edge is Nginx on `http://localhost:8080`. Service containers are
 replicated in the Compose topology and the gateway remains the only application
 entry point exposed through the proxy.
 
-For MicroK8s or EKS, see the [Kubernetes deployment guide](../../k8s/README.md).
+For MicroK8s or EKS, see the [Kubernetes deployment guide](../infrastructure/eks.md).
 
 The gateway is exposed on port `8080` by the compose configuration. The
 repository snapshot currently contains the Order API and documentation
@@ -87,7 +87,7 @@ start.
 ### Kubernetes
 
 For local MicroK8s or production EKS, follow the
-[Kubernetes deployment guide](../../k8s/README.md). MicroK8s and EKS require
+[Kubernetes deployment guide](../infrastructure/eks.md). MicroK8s and EKS require
 Kubernetes Secrets and reachable Product/Exchange services; they do not use
 the Compose `.env` file.
 

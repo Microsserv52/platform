@@ -4,19 +4,70 @@ icon: lucide/gauge
 
 # Bottlenecks and performance
 
-The course project allocates substantial effort to identifying and addressing
-bottlenecks. Performance work must be evidence-based: measure a baseline,
-change one relevant variable, then compare the result.
+This study describes where the current platform can become constrained and
+what has been done about each constraint. It is an architecture assessment,
+not a measured capacity claim: no representative production load-test result
+is recorded yet. A bottleneck is acceptable when its capacity is demonstrably
+above the system's required peak, even if it remains the narrowest part of the
+request path.
 
-## Candidate bottlenecks
+## Status definitions
 
-- Gateway connection limits and request routing;
-- synchronous Order-to-Product calls;
-- database indexes, connection pools and lock contention;
-- Exchange provider latency, quotas and availability;
-- cold starts and insufficient pod resources;
-- network traffic between availability zones;
-- serialization, logging and excessive payload size.
+| Status | Meaning |
+| --- | --- |
+| **Mitigated** | A control is present and the risk is bounded, but it still needs load-test evidence. |
+| **Residual** | The risk is reduced, but the component remains a likely limiting resource. |
+| **Unmitigated** | The architecture or deployment currently has no control for the risk. |
+| **External** | The limit is owned by a dependency and cannot be removed by this repository. |
+
+## Current bottleneck study
+
+| Bottleneck | Why it can limit the platform | Current mitigation | Status | What must be verified |
+| --- | --- | --- | --- | --- |
+| Public Ingress/Gateway path | Every request enters through the edge and Gateway; connection queues, TLS and routing work are concentrated there. | Gateway has three replicas in Kubernetes; only Gateway is public; resource requests/limits are defined. | **Residual** | p95/p99 latency, active connections, 5xx rate and ingress/controller throughput during peak traffic. |
+| Synchronous request chain | Order creation depends on Product, and currency conversion depends on Exchange. One slow dependency increases end-to-end latency. | Services are separated and independently replicated; dependency latency is observable by design. | **Unmitigated** | Trace `POST /orders` and converted-order reads; set and test timeouts, bounded retries and failure behavior. |
+| External Exchange provider | Provider quotas, latency, outages and rate freshness directly affect conversion requests. | Local Compose uses a deterministic mock; production keeps the provider behind Exchange rather than exposing it directly. | **External** | Provider quota, timeout, error rate and fallback/cache policy. A provider outage cannot be eliminated here; the user-facing degraded behavior must be explicit. |
+| PostgreSQL persistence | Connection pools, locks, indexes, I/O and a single writer can serialize account, product and order work. | Kubernetes applications use three replicas and resource bounds; EKS is expected to use managed PostgreSQL/RDS. | **Residual** | Pool saturation, query latency, lock waits, CPU, I/O, storage growth, backup and failover behavior. |
+| Database availability | The local `10-database.yaml` has one PostgreSQL replica and no persistent volume, so a pod loss loses availability and can lose local data. | The manifest is documented as MicroK8s-only; EKS skips it and uses external PostgreSQL/RDS. | **Unmitigated locally / mitigated by production boundary** | Use persistent storage and backups for MicroK8s, or verify RDS Multi-AZ, backups and recovery objectives for EKS. |
+| Application CPU and memory | A container can be throttled or evicted if its limit is too low, or starve neighbors if it has no bound. | All five Kubernetes Deployments define requests of `250m` CPU/`256Mi` memory and limits of `500m` CPU/`512Mi` memory. | **Mitigated** | Compare utilization and throttling against limits; tune values from a representative workload. |
+| Replica scaling | Fixed three-replica application Deployments can saturate during a burst and do not automatically add capacity. | Three replicas provide basic parallelism and rollout availability. | **Residual** | Add and verify HPA limits, scale-up latency and node capacity before claiming burst capacity. |
+| Rolling disruption | A rollout or node drain can remove too much capacity if replicas are unavailable simultaneously. | Multiple replicas are configured. | **Unmitigated** | Add PodDisruptionBudgets, topology spread and a documented rolling-update policy. |
+| Product and Exchange image availability | These services are external repositories and are not built from this checkout; missing images prevent the local or production topology from starting. | Compose and EKS accept explicit image/URL configuration; the local Exchange provider mock removes the provider dependency, not the Exchange service dependency. | **Residual** | Pin and scan immutable images, verify registry access, and run a pre-deployment dependency check. |
+| Cross-zone network traffic | Calls between services or a database in different availability zones add latency and transfer cost. | Internal services remain cluster-internal; EKS is designed for private subnets and multi-AZ placement. | **Residual** | Measure dependency latency by zone and evaluate placement, connection reuse and data-transfer cost. |
+| Logging, serialization and payload size | Excessive logs or large payloads consume CPU, network and storage and increase tail latency. | Structured, low-cardinality observability requirements are documented. | **Unmitigated** | Enforce sampling/redaction, payload limits and log-volume alerts; compare overhead under load. |
+
+### Capacity interpretation
+
+The current Kubernetes requests reserve at least:
+
+- `3 × 250m = 750m` CPU and `3 × 256Mi = 768Mi` memory per application
+  Deployment (Account, Auth, Order and Gateway);
+- `3.0` CPU cores and `3Gi` memory across those four application
+  Deployments, before the database, ingress controller, system pods and
+  external Product/Exchange workloads are included;
+- a database request of `250m` CPU and `256Mi` memory in the local-only
+  PostgreSQL manifest.
+
+These are scheduling reservations, not measured throughput. The Gateway and
+Ingress remain architectural choke points, but that is acceptable only if
+measured peak traffic remains below their tested capacity with the required
+latency and error-rate headroom. The project must not claim that three
+replicas support a user count until the load-test evidence demonstrates it.
+
+## Required mitigation backlog
+
+The following work is required before a production capacity claim:
+
+1. Define peak requests per second, concurrent users, dataset size and SLOs.
+2. Run the flows in [Load testing](load-testing.md), including login, product
+   browsing, order creation and converted-order reads.
+3. Add HPA, PodDisruptionBudget and topology-spread settings for critical
+   application workloads.
+4. Configure explicit timeout, bounded retry and degraded-response behavior
+   for Product, Exchange and the database.
+5. Verify PostgreSQL indexes, pool sizes, backups, failover and recovery.
+6. Repeat the tests after each change and retain the results with image tags,
+   cluster size and region.
 
 ## Investigation procedure
 
