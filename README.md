@@ -21,7 +21,7 @@ Start with the [project overview](docs/project/project.md) or the
 
 ## Web applications and local preview
 
-The [frontend documentation](docs/frontend/index.md) covers three
+The [frontend documentation](docs/frontend/overview.md) covers three
 independent Next.js applications integrated as Git submodules: `web/landing` at
 `/`, `web/store` at `/store`, and `web/admin` at `/admin`, on one domain.
 The agreed UI is English, with a shared modern brand and a public catalog.

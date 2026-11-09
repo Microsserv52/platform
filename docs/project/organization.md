@@ -25,7 +25,7 @@ single place to run the complete platform.
 
 Product and Exchange repositories are expected by the platform architecture
 but are not currently present as submodules in this snapshot. The
-[frontend documentation](../frontend/index.md) defines ownership, dependencies and
+[frontend documentation](../frontend/overview.md) defines ownership, dependencies and
 integration prerequisites for the three implemented web repositories.
 
 ## Ownership

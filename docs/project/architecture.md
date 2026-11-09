@@ -117,7 +117,7 @@ the business API boundary at `/api/*` and the preserved legacy API paths.
 
 The agreed experience is an English-language educational mock store with
 public catalog browsing and authenticated demo orders. **No real payments or
-transactions occur and no goods are shipped.** See the [site/content plan](../frontend/index.md)
+transactions occur and no goods are shipped.** See the [site/content plan](../frontend/overview.md)
 and [service prerequisites](../frontend/architecture.md#remaining-service-prerequisites).
 Each frontend has a Dockerfile for local testing. Production frontends will
 use CDN hosting with separate build environments; the owner must be consulted

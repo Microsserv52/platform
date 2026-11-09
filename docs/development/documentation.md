@@ -22,7 +22,7 @@ has already been implemented.
 | [`infrastructure/`](../infrastructure/) | AWS, EKS, deployment and costs |
 | [`operations/`](../operations/) | Observability, performance and load testing |
 | [`services/`](../services/) | API contracts and service reference |
-| [`frontend/`](../frontend/index.md) | Landing/store/admin content, architecture, packages, PWA, telemetry, local testing and verification |
+| [`frontend/`](../frontend/overview.md) | Landing/store/admin content, architecture, packages, PWA, telemetry, local testing and verification |
 
 ## Commands
 
