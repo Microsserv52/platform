@@ -17,3 +17,4 @@ data:
   # Replace these with the production Product and Exchange service URLs.
   PRODUCT_URL: https://replace-with-product-service-url
   EXCHANGE_URL: https://replace-with-exchange-service-url
+  CACHE_REDIS_URL: redis://redis:6379

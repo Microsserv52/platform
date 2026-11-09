@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: order
-          image: Microsserv52-order:latest
+          image: microsserv52-order:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

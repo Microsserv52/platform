@@ -58,9 +58,11 @@ jobs:
           SPRING_DATASOURCE_USERNAME: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
           PRODUCT_URL: ${{ vars.PRODUCT_URL }}
           EXCHANGE_URL: ${{ vars.EXCHANGE_URL }}
+          REDIS_URL: ${{ vars.REDIS_URL }}
         run: |
           test -n "$PRODUCT_URL" || { echo "PRODUCT_URL repository variable is required"; exit 1; }
           test -n "$EXCHANGE_URL" || { echo "EXCHANGE_URL repository variable is required"; exit 1; }
+          test -n "$REDIS_URL" || { echo "REDIS_URL repository variable is required"; exit 1; }
           aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER_NAME"
           kubectl create namespace platform --dry-run=client -o yaml | kubectl apply -f -
           kubectl -n platform create secret generic platform-secrets \
@@ -72,12 +74,14 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
           kubectl apply -f k8s/00-namespace-config.yaml
           kubectl -n platform patch configmap platform-config --type merge \
-            -p "{\"data\":{\"PRODUCT_URL\":\"$PRODUCT_URL\",\"EXCHANGE_URL\":\"$EXCHANGE_URL\"}}"
+            -p "{\"data\":{\"PRODUCT_URL\":\"$PRODUCT_URL\",\"EXCHANGE_URL\":\"$EXCHANGE_URL\",\"CACHE_REDIS_URL\":\"$REDIS_URL\"}}"
           kubectl apply -f k8s/20-account.yaml
           kubectl apply -f k8s/30-auth.yaml
           kubectl apply -f k8s/40-order.yaml
           kubectl apply -f k8s/50-gateway.yaml
           kubectl apply -f k8s/60-ingress.yaml
+          kubectl apply -f k8s/70-hpa.yaml
+          kubectl apply -f k8s/71-pdb.yaml
           kubectl -n platform set image deployment/account account="$REGISTRY/account:$TAG"
           kubectl -n platform set image deployment/auth auth="$REGISTRY/auth:$TAG"
           kubectl -n platform set image deployment/gateway gateway="$REGISTRY/gateway:$TAG"

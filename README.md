@@ -85,7 +85,7 @@ Exchange images plus Exchange provider settings are the only external local
 inputs. For MicroK8s, create the `platform-secrets` Kubernetes secret as
 described in [`k8s/README.md`](k8s/README.md). For EKS, use an RDS PostgreSQL
 URL, add secret values to the **platform** repository's Actions secrets, and
-configure `PRODUCT_URL` and `EXCHANGE_URL` as Actions variables.
+configure `PRODUCT_URL`, `EXCHANGE_URL` and `REDIS_URL` as Actions variables.
 
 ### Environment variable locations
 

@@ -14,15 +14,30 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    hostname: redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   product:
     image: ${PRODUCT_IMAGE:-microsserv52-product:latest}
     hostname: product
     environment:
       - LOG_LEVEL=info
+      - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
     deploy:
       replicas: 3
     depends_on:
       database:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   order:
@@ -37,6 +52,7 @@ services:
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-admin}
       - PRODUCT_URL=http://product:8080
+      - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
     deploy:
       replicas: 3
     depends_on:
@@ -44,6 +60,8 @@ services:
         condition: service_healthy
       product:
         condition: service_started
+      redis:
+        condition: service_healthy
 
   exchange:
     image: ${EXCHANGE_IMAGE:-microsserv52-exchange:latest}
@@ -52,10 +70,13 @@ services:
       - LOG_LEVEL=info
       - EXCHANGE_PROVIDER_URL=${EXCHANGE_PROVIDER_URL:-http://exchange-provider-mock:8080}
       - EXCHANGE_PROVIDER_API_KEY=${EXCHANGE_PROVIDER_API_KEY:-local-development}
+      - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
     deploy:
       replicas: 3
     depends_on:
       exchange-provider-mock:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   exchange-provider-mock:
@@ -80,10 +101,13 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/${POSTGRES_DB:-platform}
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-admin}
+      - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
     deploy:
       replicas: 3
     depends_on:
       database:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   auth:
@@ -96,6 +120,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:-change-me-in-development-use-a-long-random-secret}
       - INTERNAL_SERVICE_SECRET=${INTERNAL_SERVICE_SECRET:-change-me-in-development}
       - ACCESS_TOKEN_EXPIRATION_SECONDS=${ACCESS_TOKEN_EXPIRATION_SECONDS:-900}
+      - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
     deploy:
       replicas: 3
     depends_on:
@@ -115,11 +140,13 @@ services:
       - ORDER_URL=http://order:8080
       - PRODUCT_URL=http://product:8080
       - EXCHANGE_URL=http://exchange:8080
+      - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
     deploy:
       replicas: 3
     depends_on:
       - account
       - auth
+      - redis
 
   nginx:
     image: nginx:alpine
@@ -130,3 +157,6 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - gateway
+
+volumes:
+  redis-data:

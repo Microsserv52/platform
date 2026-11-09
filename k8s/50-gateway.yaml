@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: Microsserv52-gateway:latest
+          image: microsserv52-gateway:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

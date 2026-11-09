@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: auth
-          image: Microsserv52-auth:latest
+          image: microsserv52-auth:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

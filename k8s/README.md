@@ -57,6 +57,22 @@ skips the local PostgreSQL deployment, and patches the ConfigMap with the
 external service URLs. Use an AWS Load Balancer Controller or Nginx Ingress
 Controller for the `Ingress` resource.
 
+### Redis options
+
+Local MicroK8s includes the single-replica `05-redis.yaml` deployment and
+advertises `redis://redis:6379` through `CACHE_REDIS_URL`. This is suitable for
+development and cache experiments only; it has no high-availability guarantee.
+
+For EKS, set the `REDIS_URL` repository variable to a reachable managed or
+external Redis endpoint, such as Redis Cloud or Amazon ElastiCache. The EKS
+workflow patches `CACHE_REDIS_URL` with that value and does not deploy the
+single-replica local Redis manifest.
+
+The current platform repository only wires the endpoint into service
+configuration. Each service must implement and test cache-aside behavior,
+TTL, invalidation and stampede protection before Redis provides a functional
+performance mitigation.
+
 The Exchange provider URL and credentials are configuration for the external
 Exchange service itself. Configure them in that service's deployment or secret
 manager; they are not stored in this platform repository.
