@@ -2,16 +2,33 @@
 icon: lucide/image-plus
 ---
 
-# Image implementation handoff for the future Product service
+# Image implementation handoff for the Product service
 
 The owner selected **Amazon S3 storage** and approved the AWS SDK. CloudFront
 is the delivery baseline for this handoff; a possible move to Cloudflare CDN
 remains open. If delivery changes, revise origin authentication, routing, cache
 headers and purge behavior before provisioning. Cloudflare security does not
-select R2 or authorize a storage migration. Product does
-not exist yet, so this is the required backend contract, not a working S3
-integration. Do not move product ownership into Gateway or a frontend repository.
-The initial UI supports file uploads only; importing external URLs is deferred.
+select R2 or authorize a storage migration. This document is the required
+backend contract; the Product service now implements it (see
+[Implementation status](#implementation-status)). Do not move product ownership
+into Gateway or a frontend repository. The initial UI supports file uploads
+only; importing external URLs is deferred.
+
+## Implementation status
+
+| Concern | Status |
+| --- | --- |
+| Product service | Implemented in [`api/product`](../../../api/product/) (Java 25, Spring Boot 4). |
+| Contract | Published in [`api/product-interface`](../../../api/product-interface/): `openapi/product.yaml`, `product.schema.json` with the optional `image`. |
+| Migration | `V3__add_product_images.sql` adds `product_images` and `product_image_uploads`. |
+| Storage backends | `S3ImageStorage` (AWS SDK for Java v2, BOM `2.59.1`) for production; `HttpImageStorage` against the Compose-only mock in [`mocks/image-storage`](../../../mocks/image-storage/). |
+| Validation | JPEG/PNG only, ≤5 MiB, ≤4096 px per side, ≤16 million pixels, bytes and dimensions re-measured with ImageIO at attach time. |
+| Endpoints | `POST /products/{id}/image/uploads`, `POST /products/{id}/image`, `PATCH /products/{id}/image`, `DELETE /products/{id}/image`; `ROLE_ADMIN` enforced by Product itself. |
+| Tests | `ProductImageApiTest` covers admin-only access, the full upload→attach flow, ticket consumption/expiry checks, content mismatch, replacement, alt edit and removal. |
+
+Still pending at deployment: the real S3 bucket/CloudFront distribution, IAM
+workload identity, bucket conditional-write policy, CORS and invalidation
+values. The service configuration names them (`PRODUCT_IMAGE_S3_*`).
 
 ## Frontend contract
 
@@ -52,11 +69,12 @@ The `uploadUrl` is a short-lived capability, never the saved display URL.
 
 ## Required database changes
 
-- Add image metadata in the Product-owned migration system. No migration has
-  been executed or invented against an unknown Product schema.
+- Add image metadata in the Product-owned migration system. Implemented as
+  `V3__add_product_images.sql`; Flyway owns the schema.
 - A product has at most one attached image. Track asset UUID, owning product,
   object key, content type, byte count, measured dimensions, alternative text,
-  uploader identity, state and explicit UTC creation/expiry timestamps.
+  uploader identity and explicit UTC timestamps. Implemented in
+  `product_images`; state and expiry live on `product_image_uploads`.
 - Track pending upload tickets separately from the attached image. Generate keys
   server-side under private `pending/products/{productId}/{assetId}/` for uploads
   and `media/products/{productId}/{assetId}/` for validated display assets. Never
@@ -73,10 +91,10 @@ The `uploadUrl` is a short-lived capability, never the saved display URL.
 
 ## S3 implementation requirements
 
-Use the official AWS SDK in Product's eventual implementation language. For a
-Java service, use AWS SDK for Java v2's S3 client and S3 presigner with its
-official BOM/setup. Select and lock a supported version when the service exists.
-No AWS SDK belongs in the static frontend; none has been installed there.
+Use the official AWS SDK in Product's implementation language. The service uses
+AWS SDK for Java v2's S3 client and S3 presigner through its official BOM
+(`software.amazon.awssdk:bom:2.59.1`). No AWS SDK belongs in the static
+frontend; none has been installed there.
 
 1. Authorize the administrator and confirm the product exists before creating a
    ticket. Allow JPEG/PNG only, at most 5 MiB, up to 4096 pixels per side and
@@ -135,10 +153,11 @@ Local fixture mode has a narrow same-origin `/api/fixture-media-upload/` excepti
 That test route uses in-memory tickets/files, trusts fixture dimensions and
 does not prove real image validation, S3 persistence or production security.
 
-## Acceptance when Product exists
+## Acceptance at deployment
 
-- Implement these routes and migrations in Product; integrate its real repository
-  and image into platform without replacing it with the fixture service.
+- The routes, migrations and storage backends are implemented in Product. Verify
+  the published image and the real repository integrate without the fixture
+  service.
 - Verify public product/image reads and admin-only presign/attach/edit/remove,
   including ordinary users, expired sessions and CSRF failures.
 - Test malformed files, mismatched MIME/size/dimensions, forged/reused/expired

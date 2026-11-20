@@ -4,7 +4,15 @@ Kubernetes is the production backend. It does not use local Compose defaults:
 database credentials, JWT credentials, and the production database URL must
 come from a Kubernetes Secret or the deployment workflow. Product and Exchange
 are external services and their production base URLs must be configured as
-`PRODUCT_URL` and `EXCHANGE_URL`.
+`PRODUCT_URL` and `EXCHANGE_URL`. Both also require the same `JWT_SECRET` as
+the platform services, and Product additionally requires its own
+`SPRING_DATASOURCE_URL/USERNAME/PASSWORD`. Leave `ADMIN_EMAIL`/`ADMIN_PASSWORD`
+unset: the Account bootstrap seeds a LOCAL-ONLY admin when both are set and
+refuses to start in an environment flagged as production by
+`ENV`/`APP_ENV`/`SPRING_PROFILES_ACTIVE`. Promote real accounts with SQL
+(see `docs/development/get_started.md`). Supply the platform secrets through
+`platform-secrets` or each service's own secret — the local Compose defaults
+must never be applied to this environment.
 
 The manifest targets MicroK8s with the Nginx ingress addon and can be adapted
 to AWS EKS by replacing local image names with registry references.

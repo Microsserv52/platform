@@ -7,12 +7,12 @@ icon: lucide/image
 Selected storage: **Amazon S3**, with the AWS SDK approved by the owner.
 CloudFront is the current image-delivery baseline. A potential move to Cloudflare
 CDN remains open, independently of the selected Cloudflare security layer; R2
-storage has not been selected. The Product
-service will be created later. Frontend rendering and admin image management are
-implemented against the [future Product contract](../services/product/images.md),
-with a disposable local fixture for testing. Real S3 persistence is deferred to
-that service. No cloud resource or paid feature has been provisioned, and no
-unused AWS dependency has been installed in a frontend or Gateway.
+storage has not been selected. Frontend rendering and admin image management are
+implemented against the [Product image contract](../services/product/images.md),
+with a disposable local fixture for testing. The Product service now implements
+that contract in [`api/product`](../../../api/product/) (S3 in production, a
+local blob mock in Compose). No cloud resource or paid feature has been
+provisioned, and no AWS dependency has been installed in a frontend or Gateway.
 
 ## Options
 

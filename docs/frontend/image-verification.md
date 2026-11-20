@@ -4,10 +4,11 @@ icon: lucide/clipboard-check
 
 # Product image verification
 
-The owner selected S3/CloudFront and approved the AWS SDK. Product is deliberately
-deferred until its repository exists. This delivery implements the frontend and
-records the remaining [backend work](../services/product/images.md). It does not
-claim S3 persistence, cloud provisioning or real-service acceptance.
+The owner selected S3/CloudFront and approved the AWS SDK. This page records the
+frontend verification; the backend image flow is implemented in
+[`api/product`](../../../api/product/) and recorded in the
+[image handoff](../services/product/images.md). It does not claim cloud
+provisioning or real-service acceptance.
 
 ## Executed checks
 

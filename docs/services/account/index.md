@@ -32,3 +32,13 @@ administrator is rejected with 409. The admin frontend exposes read-only account
 details. Auth accesses credentials through the protected internal header;
 Gateway blocks that internal route from public clients. See the
 [frontend authorization boundary](../../frontend/architecture.md#api-owned-browser-sessions).
+
+## Local admin bootstrap
+
+For local Compose testing only, Account seeds or promotes the account named by
+`ADMIN_EMAIL`/`ADMIN_PASSWORD` with `ROLE_ADMIN` on startup. The bootstrap is
+disabled unless both are set, it never overwrites an existing account's
+password, and it refuses to start when `ENV`/`APP_ENV`/`SPRING_PROFILES_ACTIVE`
+marks the environment as `prod`/`production`. In every other environment
+promote administrators with SQL instead of enabling the seed. See
+[get started](../../development/get_started.md#administrator-access-local).
