@@ -28,3 +28,6 @@
 [submodule "api/product-interface"]
 	path = api/product-interface
 	url = git@github.com:Microsserv52/product-interface.git
+[submodule "mocks"]
+	path = mocks
+	url = git@github.com:Microsserv52/mocks.git
