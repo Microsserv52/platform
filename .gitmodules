@@ -22,3 +22,9 @@
 [submodule "web/admin"]
 	path = web/admin
 	url = git@github.com:Microsserv52/admin.git
+[submodule "api/product"]
+	path = api/product
+	url = git@github.com:Microsserv52/product.git
+[submodule "api/product-interface"]
+	path = api/product-interface
+	url = git@github.com:Microsserv52/product-interface.git
