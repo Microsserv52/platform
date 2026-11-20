@@ -31,3 +31,9 @@
 [submodule "mocks"]
 	path = mocks
 	url = git@github.com:Microsserv52/mocks.git
+[submodule "api/exchange"]
+	path = api/exchange
+	url = git@github.com:Microsserv52/exchange.git
+[submodule "api/exchange-interface"]
+	path = api/exchange-interface
+	url = git@github.com:Microsserv52/exchange-interface.git
