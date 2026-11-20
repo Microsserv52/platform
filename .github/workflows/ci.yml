@@ -108,4 +108,4 @@ jobs:
           pull_or_build "ghcr.io/microsserv52/account:sha-${account_sha}" ./api/account ""
           pull_or_build "ghcr.io/microsserv52/auth:sha-${auth_sha}" ./api/auth ""
           pull_or_build "ghcr.io/microsserv52/gateway:sha-${gateway_sha}" ./api/gateway ""
-          pull_or_build "ghcr.io/microsserv52/order-service:sha-${order_sha}" . api/order-service/Dockerfile
+          pull_or_build "ghcr.io/microsserv52/order-service:sha-${order_sha}" ./api api/order-service/Dockerfile
