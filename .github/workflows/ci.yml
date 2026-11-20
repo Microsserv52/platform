@@ -28,6 +28,9 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
+      - name: Checkout mocks submodule
+        run: >-
+          git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive -- mocks
       - run: python -m unittest discover -s tests/infrastructure -p 'test_*.py'
 
   java:
