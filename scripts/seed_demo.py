@@ -203,14 +203,15 @@ def ensure_product_image(admin_token, product, image):
 
 
 def ensure_products(admin_token, manifest_products):
-    products = {
+    existing = {
         product["name"]: product for product in call("GET", "/products", retries=3)[1]
     }
+    products = {}
     for product in manifest_products:
         name = product["name"]
-        if name in products:
+        if name in existing:
             print(f"  product exists, skipping: {name}")
-            record = products[name]
+            record = existing[name]
         else:
             status, record = call(
                 "POST",
@@ -222,6 +223,7 @@ def ensure_products(admin_token, manifest_products):
             if status != 201:
                 fail(f"product creation returned {status} for {name}: {record}")
             print(f"  product created: {name}")
+        products[name] = record
         if product.get("image"):
             ensure_product_image(admin_token, record, product["image"])
     return {name: product["id"] for name, product in products.items()}
