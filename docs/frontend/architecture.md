@@ -25,7 +25,7 @@ Gateway/Account own the backend changes. Kubernetes frontends are deferred.
 | `/store/`                                                              | Store export   | Fixed `/store` base path; all assets/manifests remain under it |
 | `/admin/`                                                              | Admin export   | Fixed `/admin` base path; independent assets                   |
 | `/api/*`                                                               | Gateway        | Nginx strips `/api` only; authenticated responses use no-store |
-| Legacy `/auth`, `/accounts`, `/products`, `/orders`, `/exchange` paths | Gateway        | Existing Bearer API clients remain supported                   |
+| Legacy `/auth`, `/accounts`, `/products`, `/orders`, `/exchanges` paths | Gateway | Existing Bearer API clients remain supported |
 
 Exact `/store` and `/admin` requests redirect to their slash form; prefix
 matching cannot capture `/storefront`. Nginx serves actual exported paths and
@@ -116,9 +116,10 @@ The static CDN provider and domain name remain undecided.
 
 ## Remaining service prerequisites
 
-- Product/Exchange source and usable local images are absent. Verify Product
-  accepts anonymous GET, enforces its own write permissions and matches the
-  documented id/name/price/unit payload before real-service acceptance.
+- Product/Exchange images are external build artifacts in this repository.
+  Verify Product accepts anonymous GET, enforces its own write permissions,
+  returns the documented id/name/price/unit payload with the optional image and
+  serves `/media/` images before real-service acceptance.
 - The checked-in Order returns `productId` in items and rejects non-USD totals.
   The frontend uses that payload and USD only.
 - Exchange route naming differs between docs and Gateway; currency UI is deferred.

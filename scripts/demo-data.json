@@ -1,0 +1,61 @@
+{
+  "customer": {
+    "name": "Demo Customer",
+    "email": "demo@microsserv52.com",
+    "password": "demo-customer-password"
+  },
+  "products": [
+    {"name": "Tomato", "price": 3.25, "unit": "kg", "image": {"file": "tomato.jpg", "alt": "Ripe red tomatoes"}},
+    {"name": "Carrot", "price": 2.10, "unit": "kg", "image": {"file": "carrot.jpg", "alt": "Fresh orange carrots"}},
+    {"name": "Potato", "price": 1.90, "unit": "kg", "image": {"file": "potato.jpg", "alt": "Yellow potatoes"}},
+    {"name": "Broccoli", "price": 4.50, "unit": "unit", "image": {"file": "broccoli.jpg", "alt": "Green broccoli head"}},
+    {"name": "Apple", "price": 3.60, "unit": "kg", "image": {"file": "apple.jpg", "alt": "Red apples"}},
+    {"name": "Banana", "price": 2.40, "unit": "kg", "image": {"file": "banana.jpg", "alt": "Bananas"}},
+    {"name": "Strawberry", "price": 6.20, "unit": "unit", "image": {"file": "strawberry.jpg", "alt": "Strawberries"}},
+    {"name": "Chicken Breast", "price": 12.90, "unit": "kg", "image": {"file": "chicken-breast.jpg", "alt": "Raw chicken breast"}},
+    {"name": "Salmon Fillet", "price": 18.50, "unit": "kg", "image": {"file": "salmon-fillet.jpg", "alt": "Salmon fillet"}},
+    {"name": "Cheddar Cheese", "price": 9.80, "unit": "kg", "image": {"file": "cheddar-cheese.jpg", "alt": "Cheddar cheese wedge"}},
+    {"name": "Whole Milk", "price": 2.10, "unit": "unit", "image": {"file": "whole-milk.jpg", "alt": "Whole milk carton"}},
+    {"name": "Eggs", "price": 4.50, "unit": "unit", "image": {"file": "eggs.jpg", "alt": "Free-range eggs"}},
+    {"name": "Sourdough Loaf", "price": 5.40, "unit": "unit", "image": {"file": "sourdough-loaf.jpg", "alt": "Sourdough loaf"}},
+    {"name": "Croissant", "price": 2.90, "unit": "unit", "image": {"file": "croissant.jpg", "alt": "Butter croissant"}},
+    {"name": "Jasmine Rice", "price": 3.20, "unit": "kg", "image": {"file": "jasmine-rice.jpg", "alt": "Jasmine rice"}},
+    {"name": "Olive Oil", "price": 11.90, "unit": "unit", "image": {"file": "olive-oil.jpg", "alt": "Extra virgin olive oil"}},
+    {"name": "Coffee Beans", "price": 14.50, "unit": "kg", "image": {"file": "coffee-beans.jpg", "alt": "Roasted coffee beans"}},
+    {"name": "Orange Juice", "price": 4.80, "unit": "unit", "image": {"file": "orange-juice.jpg", "alt": "Orange juice carton"}},
+    {"name": "Butter", "price": 5.60, "unit": "unit", "image": {"file": "butter.jpg", "alt": "Unsalted butter"}},
+    {"name": "Honey", "price": 7.90, "unit": "unit", "image": {"file": "honey.jpg", "alt": "Wildflower honey"}}
+  ],
+  "orders": [
+    {
+      "items": [
+        {"product": "Tomato", "quantity": 2},
+        {"product": "Sourdough Loaf", "quantity": 1}
+      ]
+    },
+    {
+      "items": [
+        {"product": "Chicken Breast", "quantity": 1},
+        {"product": "Jasmine Rice", "quantity": 2}
+      ]
+    },
+    {
+      "items": [
+        {"product": "Salmon Fillet", "quantity": 1}
+      ]
+    },
+    {
+      "items": [
+        {"product": "Apple", "quantity": 4},
+        {"product": "Banana", "quantity": 3},
+        {"product": "Strawberry", "quantity": 2}
+      ]
+    },
+    {
+      "items": [
+        {"product": "Whole Milk", "quantity": 2},
+        {"product": "Eggs", "quantity": 1}
+      ]
+    }
+  ]
+}

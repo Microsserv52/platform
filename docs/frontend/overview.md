@@ -6,8 +6,10 @@ icon: lucide/panels-top-left
 
 The initial implementation is merged. The selected
 [product image architecture](product-images.md) adds URL-based rendering and
-admin image management, with S3 integration deferred to the future Product
-service. Upload controls are enabled only in explicit fixture mode until then.
+admin image management. The Product service implements the upload flow (S3 in
+production, a local mock in Compose); upload controls stay behind
+`NEXT_PUBLIC_ENABLE_PRODUCT_IMAGE_UPLOADS` and are enabled in explicit fixture
+mode until deployment acceptance.
 
 Three independent Next.js repositories are integrated as Git submodules and
 implemented for static CDN export. The local Docker setup serves them on one

@@ -28,14 +28,38 @@ services:
 
   product:
     image: ${PRODUCT_IMAGE:-microsserv52-product:local}
+    build:
+      context: ./api/product
+      dockerfile: Dockerfile
     hostname: product
     environment:
       - LOG_LEVEL=info
+      # Product requires an explicit datasource and JWT secret in the prod
+      # profile. It shares the platform PostgreSQL container; Flyway creates
+      # its tables on first startup. Point these at a dedicated database if
+      # you do not want it sharing the platform schema.
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/${POSTGRES_DB:-platform}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-admin}
+      # Must match the platform-wide secret used by Gateway, Auth, Account and Order.
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-development-use-a-long-random-secret}
+      # The platform schema is shared with JPA ddl-auto services, so Flyway must
+      # baseline it before applying its own migrations.
+      - SPRING_FLYWAY_BASELINE_ON_MIGRATE=true
+      - SPRING_FLYWAY_BASELINE_VERSION=0
       - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
+      - CACHE_ENABLED=${CACHE_ENABLED:-false}
+      - CACHE_TTL_SECONDS=${CACHE_TTL_SECONDS:-60}
+      # Local blob-storage mock; production deployments use PRODUCT_IMAGE_MODE=s3.
+      - PRODUCT_IMAGE_MODE=${PRODUCT_IMAGE_MODE:-mock}
+      - PRODUCT_IMAGE_STORAGE_URL=${PRODUCT_IMAGE_STORAGE_URL:-http://image-storage:8090}
     deploy:
       replicas: 3
     depends_on:
       database:
+        condition: service_healthy
+      image-storage:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -43,8 +67,8 @@ services:
   order:
     image: ${ORDER_IMAGE:-microsserv52-order:local}
     build:
-      context: .
-      dockerfile: api/order-service/Dockerfile
+      context: ./api
+      dockerfile: order-service/Dockerfile
     hostname: order
     environment:
       - LOG_LEVEL=info
@@ -66,12 +90,18 @@ services:
 
   exchange:
     image: ${EXCHANGE_IMAGE:-microsserv52-exchange:local}
+    build:
+      context: ./api/exchange/
+      dockerfile: Dockerfile
     hostname: exchange
     environment:
       - LOG_LEVEL=info
       - EXCHANGE_PROVIDER_URL=${EXCHANGE_PROVIDER_URL:-http://exchange-provider-mock:8080}
       - EXCHANGE_PROVIDER_API_KEY=${EXCHANGE_PROVIDER_API_KEY:-local-development}
       - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
+      # Required, no default. Must match the platform-wide secret used by
+      # Gateway, Auth, Account, Order and Product.
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-development-use-a-long-random-secret}
     deploy:
       replicas: 3
     depends_on:
@@ -80,9 +110,29 @@ services:
       redis:
         condition: service_healthy
 
+  image-storage:
+    build:
+      context: ./mocks/image-storage
+      dockerfile: Dockerfile
+    hostname: image-storage
+    volumes:
+      - image-storage-data:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8090/health')",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   exchange-provider-mock:
     build:
-      context: ./mocks/exchange-provider
+      context: ./mocks/exchange-provider/
+      dockerfile: Dockerfile
     hostname: exchange-provider-mock
     healthcheck:
       test:
@@ -100,6 +150,7 @@ services:
     image: ${ACCOUNT_IMAGE:-microsserv52-account:local}
     build:
       context: ./api/account
+      dockerfile: Dockerfile
     hostname: account
     environment:
       - LOG_LEVEL=info
@@ -109,6 +160,12 @@ services:
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-admin}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-admin}
       - CACHE_REDIS_URL=${CACHE_REDIS_URL:-redis://redis:6379}
+      # LOCAL-ONLY admin bootstrap: seed/promote this account as ROLE_ADMIN on
+      # startup. Defaults make local Compose usable out of the box. The
+      # bootstrap refuses to run when ENV/APP_ENV/SPRING_PROFILES_ACTIVE marks
+      # production, and setting both vars empty disables it entirely.
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@microsserv52.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-1berto52}
     deploy:
       replicas: 3
     depends_on:
@@ -121,6 +178,7 @@ services:
     image: ${AUTH_IMAGE:-microsserv52-auth:local}
     build:
       context: ./api/auth
+      dockerfile: Dockerfile
     hostname: auth
     environment:
       - LOG_LEVEL=info
@@ -138,6 +196,7 @@ services:
     image: ${GATEWAY_IMAGE:-microsserv52-gateway:local}
     build:
       context: ./api/gateway
+      dockerfile: Dockerfile
     hostname: gateway
     environment:
       - LOG_LEVEL=info
@@ -160,7 +219,8 @@ services:
   landing:
     image: microsserv52-landing:local
     build:
-      context: ./web/landing
+      context: ./web/landing/
+      dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_BASE_URL: /api
         NEXT_PUBLIC_DISPLAY_TIME_ZONE: ${DISPLAY_TIME_ZONE:-UTC}
@@ -169,7 +229,8 @@ services:
   store:
     image: microsserv52-store:local
     build:
-      context: ./web/store
+      context: ./web/store/
+      dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_BASE_URL: /api
         NEXT_PUBLIC_DISPLAY_TIME_ZONE: ${DISPLAY_TIME_ZONE:-UTC}
@@ -178,7 +239,8 @@ services:
   admin:
     image: microsserv52-admin:local
     build:
-      context: ./web/admin
+      context: ./web/admin/
+      dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_BASE_URL: /api
         NEXT_PUBLIC_DISPLAY_TIME_ZONE: ${DISPLAY_TIME_ZONE:-UTC}
@@ -197,5 +259,25 @@ services:
       - store
       - admin
 
+  demo-seeder:
+    image: python:3.13-alpine
+    hostname: demo-seeder
+    profiles: ["demo"]
+    volumes:
+      - ./scripts:/qa:ro
+    environment:
+      - DEMO_BASE_URL=http://nginx/api
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@microsserv52.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-1berto52}
+    command: ["python", "/qa/seed_demo.py"]
+    depends_on:
+      nginx:
+        condition: service_started
+      product:
+        condition: service_healthy
+      order:
+        condition: service_started
+
 volumes:
   redis-data:
+  image-storage-data:

@@ -13,12 +13,14 @@ provider = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(provider)
 
 
+def mid_rate(currency, base):
+    return provider.RATES[currency] / provider.RATES[base]
+
+
 class ExchangeProviderTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = ThreadingHTTPServer(
-            ("127.0.0.1", 0), provider.ExchangeProviderHandler
-        )
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), provider.ProviderHandler)
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
         cls.base_url = f"http://127.0.0.1:{cls.server.server_port}"
@@ -29,6 +31,9 @@ class ExchangeProviderTests(unittest.TestCase):
         cls.server.server_close()
         cls.thread.join()
 
+    def setUp(self):
+        provider.MODE = "ok"
+
     def get_json(self, path):
         with urlopen(self.base_url + path, timeout=5) as response:
             return json.load(response)
@@ -37,9 +42,12 @@ class ExchangeProviderTests(unittest.TestCase):
         result = self.get_json("/latest?base=EUR&symbols=USD,BRL,EUR")
         self.assertEqual(result["base"], "EUR")
         self.assertEqual(set(result["rates"]), {"USD", "BRL", "EUR"})
-        self.assertAlmostEqual(result["rates"]["USD"], 1 / 0.92)
-        self.assertAlmostEqual(result["rates"]["BRL"], 5.10 / 0.92)
-        self.assertEqual(result["rates"]["EUR"], 1)
+        for currency in ("USD", "BRL", "EUR"):
+            with self.subTest(currency=currency):
+                mid = mid_rate(currency, "EUR")
+                quote = result["rates"][currency]
+                self.assertAlmostEqual(quote["bid"], round(mid * 0.9975, 6), places=6)
+                self.assertAlmostEqual(quote["ask"], round(mid * 1.0025, 6), places=6)
 
     def test_rejects_unsupported_currencies(self):
         for path in ("/latest?base=XXX", "/latest?symbols=USD,XXX"):
@@ -47,9 +55,18 @@ class ExchangeProviderTests(unittest.TestCase):
                 self.get_json(path)
             self.assertEqual(raised.exception.code, 400)
 
-    def test_health_and_default_usd(self):
+    def test_health_and_default_quote(self):
         self.assertEqual(self.get_json("/health"), {"status": "ok"})
-        self.assertEqual(self.get_json("/v1/latest")["rates"]["USD"], 1)
+        result = self.get_json("/v1/latest")
+        self.assertEqual(result["base"], "USD")
+        self.assertEqual(set(result["rates"]), {"EUR"})
+
+    def test_control_switches_modes(self):
+        self.assertEqual(self.get_json("/control?mode=error"), {"mode": "error"})
+        with self.assertRaises(HTTPError) as raised:
+            self.get_json("/latest?base=USD&symbols=EUR")
+        self.assertEqual(raised.exception.code, 503)
+        self.assertEqual(self.get_json("/control?mode=ok"), {"mode": "ok"})
 
 
 if __name__ == "__main__":

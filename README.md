@@ -110,7 +110,7 @@
 
 Redis is selected for a dedicated Cart service: carts expire seven days after the last change; reads do not renew TTL. The service is not implemented yet; the current Store still uses browser storage. Existing Redis endpoint wiring does not provide carts or service-level caching. The Store PWA remains online-only.
 
-AWS/EKS/ECR deployment configuration and the VPC/RDS target architecture are documented; this does not mean cloud resources are provisioned. S3 storage and the AWS SDK are approved for the future Product backend; real image persistence is pending. CloudFront is the current image-delivery design baseline; a possible CDN move to Cloudflare remains open.
+AWS/EKS/ECR deployment configuration and the VPC/RDS target architecture are documented; this does not mean cloud resources are provisioned. Product implements image persistence with the AWS SDK for Java v2: S3 is the production backend, and a local blob-storage mock backs Compose. CloudFront is the current image-delivery design baseline; a possible CDN move to Cloudflare remains open. No S3 bucket or CloudFront distribution is provisioned by this repository.
 
 Grafana Cloud is selected for observability: Prometheus-compatible/Mimir metrics, Loki logs, Tempo traces, Pyroscope profiles, Faro, OpenTelemetry/Alloy and Graphite support. New metrics should use Prometheus/OTel; Graphite is available for Graphite-format producers. Collection and cloud provisioning remain pending. Umami stays a separate analytics integration. Cloudflare is selected for DDoS protection, WAF and Tunnel; its security role does not choose the frontend CDN, a CloudFront-to-Cloudflare delivery migration or the domain; those decisions remain open. Cloudflare R2 is still only an alternative, not a replacement for approved S3 storage. Kafka placement is proposed for post-order events and later Product background work; no broker or client is implemented.
 
@@ -193,6 +193,28 @@ Product and Exchange images must be available locally or in a registry because
 their source repositories are not included here. Compose supplies PostgreSQL,
 the checked-out Java services, and the local Exchange provider mock.
 
+> [!WARNING]
+> `.env.example` is a local-only starting point and its placeholder values are
+> unsafe. Replace at minimum `POSTGRES_PASSWORD`, `JWT_SECRET` and
+> `INTERNAL_SERVICE_SECRET` before exposing this stack. `JWT_SECRET` is
+> validated by Gateway, Auth, Account, Order, Product and Exchange and must be
+> identical for all of them. Product shares the local PostgreSQL database
+> (`POSTGRES_DB`, default `platform`); Flyway creates its tables on first
+> startup. The local Compose fallback also seeds a LOCAL-ONLY admin
+> (`admin@microsserv52.com` / `1berto52`) through `ADMIN_EMAIL`/`ADMIN_PASSWORD`;
+> `.env.example` leaves both empty and the bootstrap refuses to run in
+> production (`ENV`/`APP_ENV`/`SPRING_PROFILES_ACTIVE`). Never use these
+> defaults for MicroK8s or EKS.
+
+Optional demo data (20 products with pictures, a demo customer, and orders)
+through the real APIs:
+
+```bash
+docker compose --profile demo up --abort-on-container-exit demo-seeder
+```
+
+See [Get started → Demo data](docs/development/get_started.md#demo-data-optional).
+
 ### Run local MicroK8s
 
 Follow the [Kubernetes runbook](k8s/README.md). It requires MicroK8s with the
@@ -227,12 +249,15 @@ for each repository:
 | `Microsserv52/auth`          | `JWT_SECRET`, `INTERNAL_SERVICE_SECRET`, `ACCOUNT_URL`, `ACCESS_TOKEN_EXPIRATION_SECONDS`                                                                                                                |
 | `Microsserv52/gateway`       | `JWT_SECRET`, `AUTH_URL`, `ACCOUNT_URL`, `ORDER_URL`, `PRODUCT_URL`, `EXCHANGE_URL`                                                                                                                      |
 | `Microsserv52/order-service` | `JWT_SECRET`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `PRODUCT_URL`                                                                                         |
+| `Microsserv52/product`       | `JWT_SECRET`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`                                                                                                        |
+| `Microsserv52/exchange`      | `JWT_SECRET`, `EXCHANGE_PROVIDER_URL`, `EXCHANGE_PROVIDER_API_KEY`                                                                                                                                        |
 | `Microsserv52/order`         | No runtime secrets; this repository contains the reusable API contract.                                                                                                                                  |
 
 For local Compose, copy `.env.example` to `.env`; Compose provisions the local
-PostgreSQL database and defaults internal service settings. Product and
-Exchange images plus Exchange provider settings are the only external local
-inputs. For MicroK8s, create the `platform-secrets` Kubernetes secret as
+PostgreSQL database and defaults internal service settings. Product uses the
+same local PostgreSQL database and the shared `JWT_SECRET` (its Flyway
+migrations create its schema on first boot). Product and Exchange images plus
+Exchange provider settings are the only external local inputs. For MicroK8s, create the `platform-secrets` Kubernetes secret as
 described in [`k8s/README.md`](k8s/README.md). For EKS, use an RDS PostgreSQL
 URL, add secret values to the **platform** repository's Actions secrets, and
 configure `PRODUCT_URL` and `EXCHANGE_URL` as Actions variables and

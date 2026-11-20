@@ -48,6 +48,19 @@ docker compose ps
 
 Stop it with `docker compose down`.
 
+!!! warning "Local Compose defaults are not deployable"
+
+    Compose injects the `.env` values verbatim. Replace `POSTGRES_PASSWORD`,
+    `JWT_SECRET` and `INTERNAL_SERVICE_SECRET` before exposing the stack.
+    Product connects to the shared local PostgreSQL and requires
+    `SPRING_DATASOURCE_URL/USERNAME/PASSWORD` plus `JWT_SECRET`; Exchange
+    requires `JWT_SECRET`. Leave `ADMIN_EMAIL`/`ADMIN_PASSWORD` unset in real
+    environments: the Account service seeds a LOCAL-ONLY admin when both are
+    set, and refuses to start if both are set while `ENV`/`APP_ENV`/
+    `SPRING_PROFILES_ACTIVE` marks the environment as `prod`/`production`.
+    In any real environment provide these through the secret manager, never
+    through the compose file.
+
 For a deployment environment:
 
 1. Build and tag every service image with the names used by `compose.yml`.
@@ -65,7 +78,10 @@ The repository includes a manual `Deploy to AWS EKS` workflow. Configure
 `AWS_REGION`, `AWS_DEPLOY_ROLE_ARN`, `EKS_CLUSTER_NAME`, `JWT_SECRET`,
 `INTERNAL_SERVICE_SECRET`, `SPRING_DATASOURCE_URL`,
 `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` as GitHub
-Actions secrets. Also set `CACHE_REDIS_URL` as a secret and `PRODUCT_URL`/
+Actions secrets. Product also validates `JWT_SECRET` and needs its datasource
+values; Exchange additionally needs `EXCHANGE_PROVIDER_URL` and
+`EXCHANGE_PROVIDER_API_KEY` for the real provider (the local mock refuses to
+start in a production environment). Also set `CACHE_REDIS_URL` as a secret and `PRODUCT_URL`/
 `EXCHANGE_URL` as repository variables. The AWS role should use OIDC and least-privilege ECR/EKS
 permissions; no long-lived AWS access key is required.
 
@@ -88,7 +104,9 @@ disposable. Compose preserves Redis data in a named volume.
 
 The provider mock uses deterministic USD reference rates and rebases them for
 supported base currencies. Unsupported currencies return HTTP 400. Its date is
-the current UTC date; the rates are fixtures, not live financial data. Validate
+the current UTC date; the rates are fixtures, not live financial data. The mock
+refuses to start when `ENV` or `APP_ENV` is `prod` or `production`, and no
+Kubernetes manifest or EKS workflow builds or starts it. Validate
 its HTTP behavior without starting the full platform:
 
 ```bash

@@ -101,12 +101,15 @@ enabled; no local services were started for the visibility change.
 ## Real administrator setup
 
 New registrations always receive ROLE_USER. There is no public promote-to-admin
-endpoint or frontend role-editing control. In an explicitly local/non-production
-database, an authorized operator may promote a chosen demo account after
-registration. For example, connect with your local PostgreSQL tooling and use
-its bound-variable support to set that known account's roles to ROLE_ADMIN.
-Do not publish credentials or add an automatic production administrator seed.
-Record the operator action in deployment evidence when real environments are used.
+endpoint or frontend role-editing control. For local Compose testing only, the
+opt-in bootstrap (`ADMIN_EMAIL`/`ADMIN_PASSWORD`, a LOCAL-ONLY fallback default
+in `compose.yml`) seeds `admin@microsserv52.com` with `ROLE_ADMIN` on startup;
+it refuses to run in production and `.env.example` ships it disabled. In any
+other environment an authorized operator must promote a chosen account after
+registration — for example via the bound-parameter SQL shown in
+[get started](../development/get_started.md#administrator-access-local), and
+record that operator action in deployment evidence. Do not publish credentials
+or add an automatic production administrator seed.
 
 ## Release and acceptance
 
