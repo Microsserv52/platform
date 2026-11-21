@@ -70,7 +70,7 @@ faro.receiver "default" {
   server {
     listen_address       = "0.0.0.0"
     listen_port          = 12347
-    cors_allowed_origins = ["*"]
+    cors_allowed_origins = [sys.env("FARO_ALLOWED_ORIGINS")]
   }
 
   sourcemaps {

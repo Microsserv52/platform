@@ -27,3 +27,16 @@ The implementation is tracked in the [`api/auth`](../../../api/auth/)
 submodule. `POST /auth/login` validates credentials through Account and issues
 a short-lived HMAC-signed JWT. The signing secret and internal service secret
 are supplied through environment variables.
+
+## Observability requirements
+
+| Signal | Requirement | Current |
+| --- | --- | --- |
+| Health | `/actuator/health` with liveness/readiness semantics | implemented or planned with the service |
+| Metrics | `/actuator/prometheus` with low-cardinality route/status labels | implemented or planned with the service |
+| Traces | OTLP to Alloy, W3C `traceparent` propagation | OTel Java agent |
+| Logs | structured JSON with service, request/trace ID, route and status | implemented or planned |
+| Profiles | Pyroscope agent where approved | pending |
+
+See [Service observability requirements](../observability-requirements.md) for
+the full contract, redaction rules and verification commands.

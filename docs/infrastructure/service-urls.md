@@ -17,6 +17,7 @@ Environment: AWS account `730335608828`, region `us-east-1`, EKS cluster
 | API | `https://d15ogksm4jp6sl.cloudfront.net/api` | Verified 200, CloudFront `/api/*` → Gateway NLB |
 | API health | `https://d15ogksm4jp6sl.cloudfront.net/api/actuator/health` | Verified 200; prefix stripped |
 | Gateway NLB origin | `http://platform-gateway-ecaafe88209b53bc.elb.us-east-1.amazonaws.com` | CloudFront-only security group; direct access times out |
+| Faro ingest (prepared) | `https://d15ogksm4jp6sl.cloudfront.net/faro/collect` | Prepared behind `enable_faro_ingest`; not deployed |
 | Documentation | `https://microsserv52.github.io/platform/` | Published from `main` |
 
 CloudFront terminates TLS for viewers and forwards `/api/*` to the NLB over
@@ -80,7 +81,7 @@ use port-forward unless the Cognito ALB ingress is installed.
 | Tempo | `http://tempo.observability.svc.cluster.local:3200` | `http://localhost:3200` |
 | Pyroscope | `http://pyroscope.observability.svc.cluster.local:4040` | `http://localhost:4040` |
 | Alloy OTLP | `alloy.observability.svc.cluster.local:4317` | `localhost:4317` |
-| Faro ingest | `http://alloy.observability.svc.cluster.local:12347/collect` | `http://localhost:12347/collect` |
+| Faro ingest | `http://alloy.observability.svc.cluster.local:12347/collect` | `http://localhost:8080/faro/collect` (nginx → Alloy) |
 
 ## AWS service endpoints
 

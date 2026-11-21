@@ -167,9 +167,12 @@ kubectl -n observability port-forward svc/grafana 3000:3000
 open http://localhost:3000
 ```
 
-Faro ingest is `alloy.observability.svc.cluster.local:12347/collect`. It is
-ClusterIP only. Publishing the browser collector needs an HTTPS ingress; without
-a custom domain, keep browser telemetry local or use a temporary port-forward.
+Faro ingest is `alloy.observability.svc.cluster.local:12347/collect` inside the
+cluster and `https://<CloudFront-domain>/faro/collect` for browsers. The
+CloudFront `/faro/*` path is prepared behind `enable_faro_ingest = false` and
+reuses the existing NLB on HTTP port 8080 -> Alloy NodePort 30081. No new load
+balancer or custom domain is required. See
+[AWS observability assessment](../infrastructure/aws-observability-assessment.md).
 
 ## Step 4 — Publish behind an account
 
@@ -191,8 +194,9 @@ The ALB:
 
 Grafana additionally keeps `GF_AUTH_ANONYMOUS_ENABLED=false`,
 `GF_USERS_ALLOW_SIGN_UP=false` and `GF_SECURITY_COOKIE_SECURE=true`. Cognito is
-an additional gate, not a replacement for Grafana authorization. Attach an AWS
-WAF web ACL to the ALB and start in count mode; see
+an additional gate, not a replacement for Grafana authorization. Attach a
+separate AWS WAF web ACL to the ALB; the prepared `enable_waf` Terraform option
+covers the CloudFront distribution, not this ALB. See
 [AWS edge security](../infrastructure/aws-edge-security.md).
 
 Create Cognito groups such as `platform-admins` and `platform-viewers`, and map
@@ -279,8 +283,9 @@ is changed. Optional Grafana Cloud data is retained by its own stack policy.
 - Add the Exchange Python OpenTelemetry integration in its own repository.
 - Add Pyroscope language agents and decide the sampling/overhead budget.
 - Attach AWS WAF and enable CloudFront/WAF logging.
-- Publish Alloy Faro ingest through an HTTPS AWS route (CloudFront behavior plus
-  a dedicated NLB/ALB) before enabling Faro in production frontends.
+- Enable the prepared CloudFront `/faro/*` path (`enable_faro_ingest = true`) and
+  set the production frontend `NEXT_PUBLIC_FARO_URL` before claiming browser
+  telemetry.
 - Add a custom domain and ACM certificate; the CloudFront hostname is still the
   public application URL. See [Custom domains](../infrastructure/custom-domains.md).
 - Optionally apply the Grafana Cloud Terraform environment; it is not required.

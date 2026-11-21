@@ -46,3 +46,13 @@ output "ebs_csi_role_arn" {
   value       = module.eks.ebs_csi_role_arn
   description = "IRSA role used by the EBS CSI driver add-on."
 }
+
+output "faro_ingest_url" {
+  value       = var.enable_faro_ingest ? "https://${try(module.cloudfront[0].distribution_domain_name, "")}/faro/collect" : ""
+  description = "Public Faro collector URL when the /faro/* path is enabled."
+}
+
+output "waf_web_acl_arn" {
+  value       = var.enable_waf ? aws_wafv2_web_acl.cloudfront[0].arn : ""
+  description = "CloudFront WAF web ACL ARN when enabled."
+}

@@ -1,6 +1,7 @@
 locals {
   landing_origin = "s3-landing"
   api_enabled    = var.api_origin_domain != ""
+  faro_enabled   = var.faro_enabled && var.faro_origin_domain != ""
   # AWS-managed cache policy IDs are global and stable across accounts.
   cache_optimized = "658327ea-f89d-4fab-a63d-7e88639e58f6"
   cache_disabled  = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
@@ -61,6 +62,7 @@ resource "aws_cloudfront_distribution" "this" {
   enabled             = var.enabled
   is_ipv6_enabled     = true
   comment             = "${var.name} frontend and media"
+  web_acl_id          = var.waf_web_acl_arn != "" ? var.waf_web_acl_arn : null
   default_root_object = var.default_root_object
   aliases             = var.aliases
   price_class         = var.price_class
@@ -96,6 +98,20 @@ resource "aws_cloudfront_distribution" "this" {
         http_port              = 80
         https_port             = 443
         origin_protocol_policy = var.api_origin_protocol_policy
+        origin_ssl_protocols   = ["TLSv1.2"]
+      }
+    }
+  }
+
+  dynamic "origin" {
+    for_each = local.faro_enabled ? [1] : []
+    content {
+      domain_name = var.faro_origin_domain
+      origin_id   = "faro-gateway"
+      custom_origin_config {
+        http_port              = var.faro_origin_http_port
+        https_port             = 443
+        origin_protocol_policy = "http-only"
         origin_ssl_protocols   = ["TLSv1.2"]
       }
     }
@@ -148,6 +164,25 @@ resource "aws_cloudfront_distribution" "this" {
     content {
       path_pattern             = "/api/*"
       target_origin_id         = "api-gateway"
+      viewer_protocol_policy   = "redirect-to-https"
+      allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+      cached_methods           = ["GET", "HEAD"]
+      compress                 = true
+      cache_policy_id          = local.cache_disabled
+      origin_request_policy_id = local.all_viewer
+
+      function_association {
+        event_type   = "viewer-request"
+        function_arn = aws_cloudfront_function.rewrite.arn
+      }
+    }
+  }
+
+  dynamic "ordered_cache_behavior" {
+    for_each = local.faro_enabled ? [1] : []
+    content {
+      path_pattern             = "/faro/*"
+      target_origin_id         = "faro-gateway"
       viewer_protocol_policy   = "redirect-to-https"
       allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
       cached_methods           = ["GET", "HEAD"]

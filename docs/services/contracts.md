@@ -29,3 +29,10 @@ failure behavior that consumers can rely on.
 
 See the detailed endpoint pages for [Product](product/endpoints.md),
 [Order](order/endpoints.md) and [Exchange](exchange/endpoints.md).
+
+## Observability contract
+
+Every service must expose health, Prometheus metrics and structured logs, and
+participate in OTLP tracing. The exact endpoints, labels, trace resources,
+redaction rules and per-service status are in
+[Service observability requirements](observability-requirements.md).

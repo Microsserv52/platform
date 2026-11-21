@@ -71,3 +71,12 @@ product    1
 landing: Faro URL baked
 store: Faro URL baked
 admin: Faro URL baked
+
+## Faro same-origin route
+preflight http://localhost:8080/faro/collect: 204
+landing: URL baked
+store: URL baked
+admin: URL baked
+
+## Faro browser test
+Playwright loaded http://localhost:8080/ and observed POST /faro/collect -> 202 (2 requests).

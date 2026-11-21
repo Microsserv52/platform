@@ -19,7 +19,8 @@ migrate an existing MicroK8s/EKS setup.
 | Deployment | Shell-first `scripts/deploy-aws.sh`; `.github/workflows/deploy-eks.yml` removed |
 | Image publish | Manual **Publish EKS images** workflow builds/pushes ECR images; it does not deploy |
 | Public delivery | Frontends and `/api` on CloudFront; Gateway via a Terraform NLB with a CloudFront-only security group; `x-site` cache key; no custom domain |
-| Edge security | AWS Shield Standard, CloudFront OAC, security groups and an optional AWS WAF; no third-party edge proxy |
+| Edge security | AWS Shield Standard, CloudFront OAC, security groups and a prepared CloudFront WAF; no third-party edge proxy |
+| Faro ingress | Prepared CloudFront `/faro/*` path over the existing NLB port 8080 to Alloy NodePort 30081; local nginx same-origin route |
 | Autoscaling | Cluster Autoscaler (IRSA, 2–6 nodes) and metrics-server installed by the deploy script; HPA for all six services |
 | Observability | `observability/` config tree; Prometheus, Mimir, Grafana, Loki, Tempo, Pyroscope, Alloy and blackbox; five dashboards; unified alerts; AWS/LocalStack installers; OTel Java agent and Faro |
 | Service telemetry | Gateway, Auth, Account, Order and Product expose Prometheus metrics and load the OTel Java agent; the frontends use Faro |
@@ -181,7 +182,7 @@ kubectl -n platform patch secret platform-secrets --type merge \
   the distribution domain plus configured aliases automatically, so the upload
   origin no longer has to be known before the first apply.
 - The estimated continuous cost falls from ≈ $270 to ≈ $240/month; a scheduled
-  10 h × 5 d profile is ≈ $80/month, inside the USD 100 budget.
+  10 h × 5 d profile is ≈ $80/month, inside the USD 150 budget.
 
 ### Workload configuration
 

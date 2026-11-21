@@ -114,3 +114,16 @@ outage behavior, checkout retry and revision-safe cleanup. Migrate the legacy
 `ms52-cart-v1` browser cart once through an explicit idempotent import, then
 remove it only after server acknowledgement. Keep the online-only PWA and the
 mock-store/no-real-transactions message.
+
+## Observability requirements
+
+| Signal | Requirement | Current |
+| --- | --- | --- |
+| Health | planned `/health` with liveness/readiness semantics | implemented or planned with the service |
+| Metrics | planned `/metrics` with low-cardinality route/status labels | implemented or planned with the service |
+| Traces | OTLP to Alloy, W3C `traceparent` propagation | planned |
+| Logs | structured JSON with service, request/trace ID, route and status | implemented or planned |
+| Profiles | Pyroscope agent where approved | planned |
+
+See [Service observability requirements](../observability-requirements.md) for
+the full contract, redaction rules and verification commands.

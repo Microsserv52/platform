@@ -76,6 +76,9 @@ spec:
             - /etc/alloy/config.alloy
             - --server.http.listen-addr=0.0.0.0:12345
             - --storage.path=/var/lib/alloy/data
+          env:
+            - name: FARO_ALLOWED_ORIGINS
+              value: https://d15ogksm4jp6sl.cloudfront.net
           ports:
             - name: http
               containerPort: 12345
@@ -141,3 +144,22 @@ spec:
     - name: faro
       port: 12347
       targetPort: faro
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alloy-faro
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: alloy
+    app.kubernetes.io/part-of: platform-observability
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: alloy
+  ports:
+    - name: faro
+      port: 80
+      targetPort: faro
+      nodePort: 30081

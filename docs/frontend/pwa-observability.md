@@ -27,7 +27,7 @@ destination; Grafana Cloud export is optional. See
 [Observability](../operations/observability.md#optional-grafana-cloud-export)
 for the hosted Prometheus/Mimir, Loki, Tempo, Pyroscope and Grafana stack.
 The local Alloy Faro receiver is available at
-`http://localhost:12347/collect`. The `observability` Compose profile enables
+`http://localhost:8080/faro/collect` (same-origin nginx → Alloy). The `observability` Compose profile enables
 Faro for the landing, store and admin builds; a production URL is a deployment
 value.
 
