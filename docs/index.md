@@ -25,7 +25,7 @@ course](https://insper.github.io/platform/2026.2/exercises/project/).
 | [Deployment runbook](infrastructure/runbook.md) | Step-by-step AWS login, Terraform, deploy, verify, update and teardown |
 | [Service URLs](infrastructure/service-urls.md) | Public, cluster-internal and AWS endpoints for the deployed environment |
 | [LocalStack rehearsal](infrastructure/localstack.md) | AWS-like local rehearsal with Terraform, EKS, ECR, RDS, ElastiCache, S3 and CloudFront |
-| [Infrastructure changes](infrastructure/changes.md) | Manifest moves, secret rename, workflow removal and migration checklist |
+| [Staging environment](infrastructure/staging.md) | Separate private AWS environment with one replica per service, synthetic data and isolated observability |
 | [Infrastructure as code](https://github.com/Microsserv52/platform/blob/main/terraform/README.md) | Terraform modules, state, cost and provider caveats |
 | [Operations](operations/observability.md) | Logs, metrics, traces, health and alerts |
 | [Performance](operations/bottlenecks.md) | Bottleneck investigation and evidence |

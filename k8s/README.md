@@ -1,9 +1,8 @@
 # Kubernetes deployment
 
 For the full AWS and LocalStack operational sequence, see the
-[deployment runbook](../docs/infrastructure/runbook.md). For the manifest moves
-and secret rename, see
-[infrastructure changes](../docs/infrastructure/changes.md).
+[deployment runbook](../docs/infrastructure/runbook.md). For the staging
+configuration, see the [staging environment](../docs/infrastructure/staging.md).
 
 Kubernetes runs the backend during the LocalStack rehearsal and in real AWS EKS.
 Configuration is shared through Kustomize:
@@ -15,6 +14,7 @@ k8s/
     microk8s/           # local PostgreSQL and Redis, nginx ingress
     localstack/         # LocalStack EKS, Traefik ingress, exchange mock
     aws/                # EKS, nginx ingress, IRSA service account
+    staging/            # one replica per service, private staging configuration
   observability/        # Grafana, blackbox, ServiceMonitors, Probe
 ```
 
@@ -29,6 +29,7 @@ controller that LocalStack EKS provides.
 kubectl apply -k k8s/overlays/microk8s
 kubectl apply -k k8s/overlays/localstack
 kubectl apply -k k8s/overlays/aws
+kubectl apply -k k8s/overlays/staging
 ```
 
 For MicroK8s, also build the media mock image:
@@ -37,7 +38,7 @@ For MicroK8s, also build the media mock image:
 docker build -t microsserv52-image-storage:local mocks/image-storage
 ```
 
-The overlays do not contain credentials. Create the runtime secret first:
+Neither overlay contains credentials. Create the runtime secret first:
 
 ```bash
 JWT_SECRET="$(openssl rand -base64 48)" \
@@ -80,7 +81,8 @@ and local Compose profile.
 
 | Workload               | Replicas | Notes                                       |
 | ---------------------- | -------- | ------------------------------------------- |
-| `gateway`, `auth`, `account`, `order`, `product`, `exchange` | 2 | HPA and PDB included |
+| `gateway`, `auth`, `account`, `order`, `product`, `exchange` | 2 | HPA 2–6 and PDB in production |
+| `gateway`, `auth`, `account`, `order`, `product`, `exchange` | 1 | `staging` overlay; HPA fixed at 1 |
 | `database`, `redis`    | 1        | `microk8s` overlay only, disposable         |
 | `exchange-mock`        | 1        | `localstack` overlay only                   |
 
@@ -89,15 +91,16 @@ seeder is never deployed.
 
 ## Overlay differences
 
-| Setting            | microk8s                  | localstack                  | aws                                  |
-| ------------------ | ------------------------- | --------------------------- | ------------------------------------ |
-| Ingress class      | `nginx` (base)            | `traefik`                   | `nginx` with TLS redirect annotation |
-| Public API         | port-forward only         | LocalStack ingress          | `gateway-public` NodePort behind Terraform NLB |
-| Database           | local `database`          | LocalStack RDS              | RDS                                  |
-| Cache              | local `redis`             | LocalStack ElastiCache      | ElastiCache                          |
-| Image source       | local images              | LocalStack ECR              | ECR                                  |
-| S3 credentials     | not used                  | dummy env values            | Product IRSA service account         |
-| Product image mode | `s3` (bucket placeholder) | `s3` (LocalStack bucket)    | `s3` (real bucket)                   |
+| Setting            | microk8s                  | localstack                  | aws                                  | staging                              |
+| ------------------ | ------------------------- | --------------------------- | ------------------------------------ | ------------------------------------ |
+| Ingress class      | `nginx` (base)            | `traefik`                   | `nginx` with TLS redirect annotation | `nginx`, cluster-internal            |
+| Public API         | port-forward only         | LocalStack ingress          | `gateway-public` NodePort behind Terraform NLB | port-forward only          |
+| Database           | local `database`          | LocalStack RDS              | RDS                                  | private RDS                          |
+| Cache              | local `redis`             | LocalStack ElastiCache      | ElastiCache                          | private ElastiCache                  |
+| Image source       | local images              | LocalStack ECR              | ECR                                  | staging ECR                          |
+| S3 credentials     | not used                  | dummy env values            | Product IRSA service account         | Product IRSA service account         |
+| Product image mode | `s3` (bucket placeholder) | `s3` (LocalStack bucket)    | `s3` (real bucket)                   | `s3` (private staging bucket)        |
+| Replicas           | 2                         | 1                           | 2, HPA 2–6                           | 1, HPA fixed at 1                    |
 
 ## Runtime configuration
 
@@ -119,7 +122,8 @@ be set in the cluster; promote real accounts with SQL.
 
 ## Autoscaling
 
-The HPAs scale all six services from 2 to 6 replicas at 70% CPU.
+The production HPAs scale all six services from 2 to 6 replicas at 70% CPU. The
+`staging` overlay pins each HPA to one replica and there is no Cluster Autoscaler.
 `scripts/deploy-aws.sh` installs `metrics-server` and Cluster Autoscaler by
 default; pass `--skip-addons` when you manage them separately. Terraform
 creates the autoscaler IRSA role and tags the managed node group with

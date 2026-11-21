@@ -12,14 +12,14 @@ Step-by-step operations for the two Kubernetes deployment modes:
   Kubernetes contract against a local AWS emulator.
 
 For the design rationale see [Deployment](deployment.md), [AWS setup](aws.md),
-[EKS and Kubernetes](eks.md) and [LocalStack rehearsal](localstack.md). For the
-files changed in this implementation see [Infrastructure changes](changes.md).
+[EKS and Kubernetes](eks.md), [LocalStack rehearsal](localstack.md) and the
+[staging environment](staging.md).
 
 !!! info "No CI/CD deploy"
 
-    AWS deployment is intentionally shell-first. `.github/workflows/deploy-eks.yml`
-    was removed. CI still runs tests, CodeQL and documentation; it does not
-    provision or deploy AWS resources.
+    AWS deployment is shell-first. CI runs tests, CodeQL and documentation; it
+    does not provision or deploy AWS resources. The same applies to staging:
+    its Terraform environment and Kubernetes overlay are applied manually.
 
 ## Prerequisites
 
@@ -473,6 +473,6 @@ stack are lost.
 
 - [LocalStack rehearsal](localstack.md)
 - [Deployment](deployment.md)
-- [Infrastructure changes](changes.md)
+- [Staging environment](staging.md)
 - [Terraform modules](https://github.com/Microsserv52/platform/blob/main/terraform/README.md)
 - [Kubernetes overlays](https://github.com/Microsserv52/platform/blob/main/k8s/README.md)

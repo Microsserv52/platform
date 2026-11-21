@@ -1,0 +1,66 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: platform
+
+resources:
+  - ../../base
+
+labels:
+  - pairs:
+      app.kubernetes.io/environment: staging
+    includeSelectors: false
+
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: "gateway|auth|account|order|product"
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env/8/value
+        value: deployment.environment=staging,service.namespace=microsserv52
+  - target:
+      group: autoscaling
+      version: v2
+      kind: HorizontalPodAutoscaler
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 1
+  - target:
+      group: policy
+      version: v1
+      kind: PodDisruptionBudget
+    patch: |-
+      - op: remove
+        path: /spec/minAvailable
+      - op: add
+        path: /spec/maxUnavailable
+        value: 1
+  - target:
+      kind: ConfigMap
+      name: platform-config
+    patch: |-
+      - op: add
+        path: /data/DEPLOYMENT_ENV
+        value: staging
+      - op: replace
+        path: /data/SESSION_COOKIE_SECURE
+        value: "false"
+      - op: replace
+        path: /data/PRODUCT_IMAGE_S3_BUCKET
+        value: replace-with-staging-product-media-bucket
+      - op: remove
+        path: /data/PRODUCT_IMAGE_S3_MEDIA_ORIGIN

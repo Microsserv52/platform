@@ -2,269 +2,202 @@
 icon: lucide/flask-conical
 ---
 
-# Staging environment — TODO, planning only
+# Staging environment
 
-**Status: NOT IMPLEMENTED.** This page is the staging design and implementation
-backlog. It creates no infrastructure, application configuration, secrets,
-scheduler or deployment workflow. Merging the documentation does not authorize
-provisioning. The owner confirmed **scheduled availability** and **synthetic demo
-seed data**. Exact operating hours/timezone, budget, region and resource classes
-remain open. The domain and frontend CDN provider remain undecided.
+Staging is a separate AWS deployment for developer acceptance of the same
+service versions and contracts used in production. It has its own VPC, EKS
+cluster, RDS instance, ElastiCache cluster, S3 buckets, ECR repositories and
+observability stack.
 
-Tracking: [implementation TODO #13](https://github.com/Microsserv52/platform/issues/13).
-Keep it open until implementation is separately authorized and verified.
+The configuration lives in two places:
 
-## Requirements and parity boundary
+| Layer | Path | Contents |
+| --- | --- | --- |
+| Infrastructure | `terraform/environments/staging` | VPC, EKS node group, RDS, ElastiCache, S3, ECR and the EBS CSI add-on |
+| Workloads | `k8s/overlays/staging` | One replica per service, fixed HPA bounds, staging ConfigMap and OpenTelemetry environment |
 
-Staging must run the same application services, API contracts, engine/protocol
-versions, schema migrations and security boundaries as production, at smaller
-fixed capacity. It is developer-only behind AWS WAF + ALB + Amazon Cognito when a domain and
-certificate exist; until then, access is limited to SSM/port-forward. It uses
-separate resources, credentials and observability. Umami and all product-usage
-analytics are disabled. **Faro remains enabled for technical error reporting.**
+!!! note "Delivery status"
 
-One replica, one availability zone and fixed-size data services intentionally
-reduce availability and throughput. Staging validates functionality and release
-compatibility; it cannot prove production HA, quorum, autoscaling or capacity.
-There is no automatic horizontal, vertical, node or database storage scaling in
-the proposed baseline. Budget alerts request manual action rather than silently
-increasing resources.
+    The repository contains the staging configuration. No GitHub Actions
+    workflow provisions or deploys staging. An operator runs Terraform and
+    `kubectl` from an authenticated workstation. Nothing in this repository
+    deploys the stack automatically.
 
-The missing Product/Exchange implementations and future Cart/Kafka work are
-dependencies. Staging cannot be called complete while production services are
-replaced with the frontend HTTP fixture. Bring the same real service versions
-into both environments as those services are delivered.
-
-## Proposed low-cost topology; hosting approval still needed
-
-Use a **dedicated staging environment**, preferably in a separate AWS account,
-otherwise in an isolated VPC/cluster with strict IAM and network boundaries.
-Do not place staging in the production database, Redis, Kafka broker or cluster
-just to reduce the bill. A namespace and an environment label alone are not the
-required data/security separation.
-
-| Option                                                        | Fit                                                                                                                                                         | Tradeoff / decision                                                                                                                                                                      |
-| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| One fixed EC2 VM with the already-documented MicroK8s runtime | Proposed cost-first baseline: Kubernetes application manifests, one replica per service, no managed control-plane fee; stop the VM outside working windows. | Self-managed node/control plane and a single failure domain. It does not test EKS-specific behavior; approve this parity exception and validate EKS-specific release changes separately. |
-| Dedicated small EKS cluster with a fixed node group           | Choose when managed EKS/control-plane parity is required.                                                                                                   | Recurring cluster fee plus workers, networking and storage. Stopping workers does not remove the cluster fee; obtain a separate estimate before choosing.                                |
-
-Production remains targeted at EKS. Final staging hosting is **not selected by
-this plan**. A starting fit exercise for the VM option is approximately 4 vCPU
-and 8–16 GiB RAM, choosing the smallest fixed size that actually boots every
-service with headroom. Seven API services plus Kafka and collection agents must
-be measured together; a tiny VM is not assumed to fit multiple JVMs. Prefer the
-existing image architecture until multi-architecture images are verified.
-
-[AWS EKS pricing](https://aws.amazon.com/eks/pricing/) separates the cluster fee
-from worker resources. Compare total cost, including operations and mandatory
-private-network egress, rather than only VM price. Prefer private application
-subnets and restricted outbound access. NAT, endpoints and any alternative
-egress design require their own estimate/security review; do not silently make
-the origin public to avoid those costs.
+## Topology
 
 ```mermaid
 flowchart LR
-    developer[Approved developer + MFA] --> access[AWS WAF + ALB + Cognito: host TBD]
-    access --> web[Private staging static frontend origin / CDN TBD]
-    access --> gateway[Staging Gateway]
-    gateway --> services[Auth / Account / Order / Product / Exchange / Cart]
-    services --> db[(Small fixed staging PostgreSQL)]
-    services --> redis[(Staging Cart Redis)]
-    services --> kafka[Staging Kafka / outbox consumers]
-    services --> media[Private staging S3 media]
-    services --> alloy[Staging Alloy]
-    alloy --> grafana[Separate self-hosted staging observability stack]
-    web -. Faro errors only .-> grafana
+    operator[Operator workstation] -->|SSM / port-forward| ingress[ingress-nginx]
+    ingress --> gateway[Gateway]
+    gateway --> services[Auth / Account / Order / Product / Exchange]
+    services --> db[(RDS PostgreSQL)]
+    services --> redis[(ElastiCache Redis)]
+    services --> media[(Private S3 media)]
+    services --> alloy[Alloy]
+    alloy --> obs[Prometheus / Mimir / Loki / Tempo / Pyroscope / Graphite / Grafana]
+    obs --> ebs[(EBS volumes)]
 ```
 
-## Component coverage and starting sizing envelope
+The VPC uses `10.30.0.0/16` and two availability zones. Worker nodes run in the
+private subnets; the NAT gateway provides image-pull and AWS API egress. RDS and
+ElastiCache are private and single-AZ.
 
-These are planning targets, not tested resource limits or an approved bill.
-Choose exact classes after a cold-start/steady-state fit test and budget review.
+There is no CloudFront distribution, WAF, Route 53 record or public load
+balancer in the staging environment. The cluster is reached through the EKS
+endpoint with IAM authentication and through `kubectl port-forward`. This keeps
+the environment developer-only without a custom domain or certificate.
 
-| Component                                              | Staging plan                                                                                                                                                                                  | Parity and isolation                                                                                                                                                                             |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Landing, Store, Admin                                  | Three static exports, each built with staging-only public values; isolated origin/artifacts, no Next.js server.                                                                               | Same source commit and routes as the release candidate; keep frontends outside Kubernetes. Hosting/CDN must support developer-only access with no public preview-origin bypass.                  |
-| Gateway, Auth, Account, Order, Product, Exchange, Cart | One fixed instance/pod of each deployed service. Initial per-JVM planning range: 100–250m CPU request, 256 MiB request, 512–768 MiB memory limit, then measure and tune heap/native overhead. | Same images, versions, contracts, auth, CSRF, migrations and features. Keep services separate; the reusable Order contract is a library, not an extra running service.                           |
-| PostgreSQL                                             | One separate small provisioned Single-AZ instance, same production engine major/extensions; evaluate a 1–2 GiB class first, fixed storage at the supported minimum plus measured headroom.    | No serverless scaling, storage autoscaling, read replicas or Multi-AZ in this baseline. Restrict connections and use small per-service pools; pool totals must fit the DB. Synthetic seed only.  |
-| Redis Cart                                             | One separate fixed instance/process with persistence/volume policy and bounded memory; a 128–256 MiB **data** budget is a starting estimate, not total process RAM.                           | Same protocol/data model and seven-day write-based cart TTL. Dedicated cart memory/eviction policy; do not share production or disposable cache resources. No automatic failover capacity claim. |
-| Kafka and implemented relay/consumers                  | One small staging broker/controller and one consumer replica per implemented group; fixed disk/retention/partition limits.                                                                    | Same Kafka version and event schemas. Single-node KRaft is a development compromise, not production quorum validation. Stage-only replication/ISR/internal-topic settings must match one broker. |
-| Product media                                          | Separate private S3 bucket and IAM policy; small synthetic image dataset and explicit lifecycle.                                                                                              | Same upload/validation flow. Staging media delivery is private behind Cognito/WAF; no public bucket or unprotected CDN-origin URL. CDN migration remains open.                                        |
-| Exchange provider / other external dependencies        | Real Exchange service with separate sandbox/read-only test credentials or a documented deterministic provider behind its adapter.                                                             | Never replace a business service with the frontend fixture or share production provider credentials. External limitations must be visible in release evidence.                                   |
-| AWS WAF + ALB + Cognito                                | Separate staging web ACL, ALB, Cognito user pool/client and certificates after a domain exists. Until then, SSM/port-forward only.                                                            | Whole-host protection and no direct origin ingress; same WAF/application authorization principles.                                                                                               |
-| Self-hosted observability / Alloy / Faro              | Separate staging Prometheus/Mimir/Loki/Tempo/Pyroscope/Grafana and one Alloy collector, with lower retention and CPU/memory budgets.                                                         | Production telemetry, dashboards and alerts must not ingest staging data. Faro errors enabled.                                                                                                   |
-| Umami / usage analytics                                | No staging tracker, pageviews, demo funnel events or analytics ingestion; no staging Umami deployment required.                                                                               | Intentional exception to service parity, explicitly requested by the owner. Technical error/health telemetry remains active.                                                                     |
+## Infrastructure defaults
 
-Do not apply production overlays unchanged. Current `k8s/base/hpa.yaml` scales
-services from two to six replicas and `k8s/base/pdb.yaml` requires one available
-replica. The future staging overlay must fix one replica, omit or disable HPA,
-and use a compatible disruption/rollout policy so maintenance is not blocked. Fix node count and
-database storage/compute size as well; removing HPA alone is insufficient.
-Keep resource/probe/security settings and budget for rollout surge, or document
-an intentional short maintenance outage. This page does **not** edit manifests.
+The values are defined in `terraform/environments/staging/variables.tf` and can
+be overridden through a `terraform.tfvars` file.
 
-For Kafka, see the official [KRaft deployment guidance](https://kafka.apache.org/41/operations/kraft/).
-Retention must cover the maximum planned shutdown plus the required replay
-window within a fixed disk budget. One broker cannot demonstrate replication,
-controller quorum or production fault tolerance. The outbox/consumer behavior
-must still be real and tested for retries, duplicates and recovery.
+| Resource | Default | Notes |
+| --- | --- | --- |
+| Kubernetes | EKS `1.35` | Public endpoint with IAM authentication |
+| Nodes | 1 × `t3.xlarge`, `SPOT` | Fixed at 1–1; no Cluster Autoscaler |
+| Database | `db.t4g.micro`, 20 GB | Single-AZ, 1-day backups, deletion protection off |
+| Cache | 1 × `cache.t4g.micro` | No replica or failover |
+| Storage | media + landing/store/admin buckets | Private, versioned, lifecycle rules |
+| Registry | six ECR repositories | `force_delete` for disposable rebuilds |
+| Observability storage | EBS CSI add-on and IRSA role | Required by the observability PVCs |
+| NAT | 1 gateway | Private node egress |
+| Name prefix | `platform-staging` | Separates every resource from production |
 
-## Developer-only access
+The Terraform state uses the same S3 backend and native locking as production,
+with a staging-specific key. State contains the generated database password;
+keep the bucket private and encrypted.
 
-1. Protect the entire staging hostname and all paths with AWS WAF + ALB +
-   Cognito, including `/`, `/store/`, `/admin/`, `/api/*`, media and diagnostics.
-   Require an explicit developer identity-provider group with MFA; default deny.
-   Use limited session duration and remove access when group membership changes.
-   Without a custom domain, use SSM/port-forward instead of a public ALB.
-2. Keep backend, database, Redis and Kafka off direct Internet ingress. Protect
-   the Kubernetes control plane and administration path with approved private
-   access. A public ALB is only a front door, never a direct origin bypass.
-3. Preserve application login, roles and CSRF after Cognito succeeds. A developer
-   may test an ordinary demo account; Cognito must not silently grant ROLE_ADMIN.
-4. Restrict static hosting preview URLs, bucket URLs and media origin bypasses.
-   An obscure URL, `robots.txt` or `noindex` is not authorization. No staging
-   release is accepted until every content origin has an enforceable private path.
-   Presigned upload capabilities, if used, must be short-lived, staging-bucket-only
-   and issued after Cognito plus application authorization; uploaded objects and
-   media reads remain private. Never expose production signing credentials.
-5. If CI must reach staging, use a separately approved, narrowly scoped Cognito
-   client or IAM/SSM path. Store credentials only in CI secrets, rotate them, and
-   send headers only to the staging origin—not to Faro, S3 or other third parties.
-   Public PR builds must not receive staging credentials.
+## Workload differences
 
-Cognito and ALB authentication need a domain and ACM certificate; see
-[Custom domains](custom-domains.md). Until then, no public staging hostname is
-created. Do not broadly bypass authentication to make tests or telemetry work.
+`k8s/overlays/staging` builds on `k8s/base` and changes only the staging
+operating envelope:
 
-## Separate observability, Faro on, analytics off
+| Setting | Production | Staging |
+| --- | --- | --- |
+| Service replicas | 2, HPA 2–6 | 1, HPA fixed at 1 |
+| Pod disruption budget | `minAvailable: 1` | `maxUnavailable: 1` |
+| OpenTelemetry environment | `deployment.environment=cluster` | `deployment.environment=staging` |
+| Session cookie | `SESSION_COOKIE_SECURE=true` | `false` because access is HTTP port-forward |
+| Product media origin | CloudFront domain | Removed; Product uses the private S3 bucket |
+| Ingress exposure | CloudFront → NLB → NodePort | Cluster-internal; port-forward only |
 
-Use a **separate self-hosted staging observability stack**, with separate
-Prometheus/Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy credentials/volumes,
-dashboards, alert routing and access roles. An `environment=staging` label
-remains useful but is not isolation by itself. If the staging budget cannot
-provide the required storage and isolation, resolve it before deployment
-instead of mixing staging into production.
+The deployment keeps the production probes, security contexts, resource
+requests and rolling-update strategy. The Exchange provider URL and API key are
+supplied through the staging ConfigMap and Secret before rollout, as in
+production. Services still read `platform-config` and `platform-secrets` from
+the `platform` namespace, so the Product IRSA role matches the service account.
 
-Keep Prometheus/Mimir, Loki, Tempo, Pyroscope, OTel/Alloy and Graphite support
-consistent with implemented production signals. Limit sampling/retention to
-the approved staging budget; do not invent a Graphite producer or disable all
-diagnostics just to reduce ingestion. Expected schedule downtime must suppress
-staging availability alerts, but failed start/stop jobs and budget/secret alerts
-remain monitored externally. Staging alerts go to developers, not production
-on-call routes. Disable usage/funnel exporters and Kafka analytics consumers too; operational
-read models and error/health metrics are not product analytics. No real alert
-messages are sent as part of this plan.
+Frontends are static exports and are not Kubernetes workloads. The staging
+Terraform creates their private S3 buckets, but no staging CDN or public web
+origin exists. A staging frontend build runs locally against the forwarded
+Gateway endpoint.
 
-**Required frontend TODO:** the three current `Telemetry` components use
-`NEXT_PUBLIC_ENABLE_TELEMETRY` to gate both Faro and Umami, and manual Umami
-tracking is not independently environment-gated. Separate the controls before
-staging is accepted. Proposed future build contract:
+## Access
 
-| Setting                         | Required staging behavior                                                                                             | Implementation status                                                            |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_APP_ENV`           | `staging` with the release version                                                                                    | Existing setting; staging build/config still TODO.                               |
-| `NEXT_PUBLIC_ENABLE_FARO`       | `true`, pointing only at the staging collector                                                                        | Proposed new independent control; not implemented.                               |
-| `NEXT_PUBLIC_ENABLE_ANALYTICS`  | `false`, regardless of accidentally supplied Umami configuration                                                      | Proposed new independent control; not implemented.                               |
-| Umami script/site configuration | Unset, with both script injection and every manual tracking call blocked                                              | Required code/build/test work; blank configuration alone is insufficient.        |
-| Faro payloads                   | Technical errors and approved diagnostic signals only; no product-usage events, replay, sensitive URLs or credentials | Preserve existing sanitization/opt-out/DNT policy; add staging acceptance tests. |
+Prerequisites are an AWS identity with EKS access, the cluster name from the
+Terraform output, and an ingress-nginx controller in the cluster.
 
-Do not treat `NEXT_PUBLIC_ENABLE_TELEMETRY=false` as the staging solution: that
-also disables Faro. Introduce independent code gates in all three frontend
-repositories, update Docker build arguments/environment examples and privacy
-copy, and plan the legacy flag migration without accidentally enabling
-production collection. This is a future task, not a configuration change made
-by this document. Frontend environment values are public, never secret tokens.
+```bash
+aws eks update-kubeconfig --name platform-staging --region us-east-1
+kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 8080:80
+```
 
-## Data, secrets and deployment boundaries
+The Gateway is then available at `http://localhost:8080/api`. Direct pod access
+is also possible through `kubectl port-forward svc/gateway 8080:8080`, but the
+Ingress path preserves the `/api` prefix and the session cookie path.
 
-- Use versioned, repeatable **synthetic demo seeds** with fake accounts, products,
-  images and demo orders. Never copy unsanitized production records, sessions,
-  tokens, Redis carts, Kafka events or telemetry. Reset is an explicit developer
-  operation with environment checks and no production credentials available.
-  Inject generated staging-only seed credentials through the secret store; do
-  not publish fixed admin passwords or add public role-promotion behavior.
-- Use the same migration chain and database extensions as production. A small
-  independent database copy means schema/engine parity, not a production data
-  clone or a replication connection.
-- Isolate DB users, Redis credentials, broker ACLs/topics, S3 buckets/keys,
-  encryption/IAM roles, Tunnel tokens, JWT/service secrets and telemetry tokens.
-  Prefer short-lived CI cloud credentials and least-privilege staging roles;
-  staging must have no production write access.
-- Plan a protected GitHub `staging` environment with its own approvals/secrets,
-  concurrency and explicit deployment target. The production deployment path
-  targets production and must not be reused for staging without a separate
-  reviewed design.
-- Promote immutable backend image digests. Frontends use the same tested source
-  commits but need separate builds because public environment values are baked
-  into static exports. Keep staging/prod artifacts and browser cookies isolated;
-  no cookie `Domain` shared across environment hosts.
-- Give staging S3/Redis/Kafka volumes and DB backups fixed quotas/lifecycle and
-  a reset/restore procedure. Synthetic data reduces recovery requirements but
-  does not remove the need to test migrations and restores before promotion.
+The EKS endpoint is public but requires IAM authentication. Database, cache,
+media bucket and observability endpoints have no public ingress.
 
-## Scheduled operation and cost control
+## Data and secrets
 
-The owner selected scheduled availability. **Hours, days, schedule timezone,
-startup lead time, maximum manual extension and monthly cap are TBD.** Store
-timestamps in UTC and use a configurable IANA timezone for the schedule; do not
-hardcode a developer's local timezone in scripts.
+- Use synthetic accounts, products, images and orders. Staging has no
+  connection to production data stores, buckets, Secrets Manager entries or
+  telemetry backends.
+- Create `platform-secrets` in the staging cluster with
+  `scripts/create-platform-secrets.sh` and staging-only values. The script
+  targets the current kubectl context; verify the context before running it.
+- Database credentials come from the Terraform output. Do not commit a
+  `terraform.tfvars` file or a rendered Secret.
+- The Product service account is annotated with the staging IRSA role so the
+  pod reads and writes only the staging media bucket.
+- The Exchange provider points at a sandbox or adapter endpoint supplied for
+  staging; never use production provider credentials.
 
-Future start/stop automation must run outside the environment it shuts down.
-Start database/stateful dependencies before applications, wait for migrations,
-health and service parity checks, then mark staging ready. Keep a protected
-maintenance response until ready. Stop new writes, drain bounded in-flight
-work, checkpoint/flush stateful services, stop applications/broker/Redis and
-then stop compute/database safely. Kafka/outbox state survives according to
-the chosen volume/retention policy. A manual extension must expire automatically.
+## Observability
 
-Stopped compute does not mean zero cost: storage, snapshots, addresses/egress
-resources, observability, static hosting, security plans and some managed
-services can still be billed. RDS can automatically restart after seven stopped
-days and startup can take time; its external schedule must detect/reconcile that
-behavior. See [RDS stop/start constraints](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_StopInstance.html).
-Redis cart TTL follows elapsed time, including downtime; do not pause the agreed
-seven-day cart expiry when staging sleeps.
+Staging runs its own observability namespace and storage on the same cluster.
+`enable_ebs_csi = true` provisions the CSI add-on and IRSA role; the manifests
+in `k8s/observability` are applied after the cluster exists. Prometheus, Mimir,
+Loki, Tempo, Pyroscope, Graphite, Alloy and Grafana use staging-only volumes and
+credentials. Production dashboards and alerts do not ingest staging data.
 
-Estimate cost with operating hours, not an assumed 24/7 month, while pricing
-persistent resources for the full billing period. Include compute, DB/storage,
-backups, Redis/Kafka disk, network egress/NAT/endpoints, S3 requests, private
-frontend hosting, self-hosted observability storage and optional AWS WAF/ALB. Choose the
-exact region/classes and dated price estimate through the
-[AWS Pricing Calculator](https://calculator.aws/) before authorizing resources.
-No free tier, subscription entitlement or monetary total is assumed here.
+Services export traces to the cluster Alloy endpoint through the OpenTelemetry
+Java agent. The resource attribute is `deployment.environment=staging`, which
+separates staging traces from production traces in Tempo.
 
-## Implementation backlog — all TODO
+There is no public Faro collector. The staging frontends are local builds, so
+browser telemetry is not part of the staging cluster. Umami and product-usage
+analytics are not deployed in staging.
 
-- [ ] **Owner + Platform:** approve monthly cap, schedule/timezone, region and
-      cost-first MicroK8s versus dedicated EKS; record the accepted parity exceptions.
-- [ ] **Platform:** inventory production services and lock staging engine/image
-      versions, resource limits, single-replica overlays, HPA/PDB behavior and private egress.
-- [ ] **Security:** choose IdP/developer group/MFA, Cognito/WAF policies, protected
-      origins, Tunnel/admin paths and optional CI identity; test direct-origin denial.
-- [ ] **Data:** create separate fixed-size DB, cart Redis, broker/volumes and S3
-      resources with quotas, secrets, restore/reset and lifecycle policies.
-- [ ] **Service owners:** supply real Product/Exchange/Cart services and the
-      implemented Kafka/outbox/consumer components; block readiness on missing services.
-- [ ] **Service owners:** create repeatable synthetic seeds and migration/contract
-      tests; prevent staging credentials or data paths from reaching production.
-- [ ] **Frontend owners:** implement independent Faro/analytics controls in all
-      three repositories and update build arguments, examples, privacy copy and tests.
-- [ ] **Observability:** provision the separate staging self-hosted stack and
-      Faro collector; set retention/sampling, dashboards and developer alerts.
-- [ ] **Delivery:** design staging-only CI environments, immutable artifact/source
-      promotion, approvals, rollback and test identities; obtain dependency approvals.
-- [ ] **Operations:** implement external start/stop scheduling, readiness gates,
-      downtime-aware alerts, expiring extensions and stop-failure/budget monitoring.
-- [ ] **QA:** verify approved-developer access, denied outsiders, app-role/CSRF
-      enforcement, all-service flows and environment isolation.
-- [ ] **QA:** trigger a sanitized browser error and verify it reaches only staging
-      Faro; verify **zero Umami scripts, requests, pageviews or demo analytics events**
-      even if analytics URLs are accidentally supplied. Test offline/collector failure.
-- [ ] **QA + Platform:** verify restart/recovery, cart expiry through downtime,
-      outbox replay and no unexpected scale-up; measure simultaneous startup fit/cost.
-- [ ] **Release owner:** accept limitations and require a separate production-like
-      exercise for EKS-specific, HA/quorum, HPA and real capacity changes before promotion.
+## Cost
 
-The plan stays TODO until these tasks have implementation/evidence. Staging is
-not a production capacity test, and all environments keep the mock-store
-notice: no real payments, transactions or shipments.
+The estimate uses `us-east-1` list prices and the defaults above.
+
+| Resource | Continuous (USD/month) |
+| --- | ---: |
+| EKS control plane | ≈ 73 |
+| 1 × `t3.xlarge` SPOT node | ≈ 36 |
+| NAT gateway and public IPv4 | ≈ 36 |
+| RDS `db.t4g.micro` + 20 GB | ≈ 14 |
+| ElastiCache `cache.t4g.micro` | ≈ 12 |
+| EBS, S3, ECR and observability volumes | ≈ 10–20 |
+| **Total** | **≈ 180–190** |
+
+On-Demand capacity replaces the node line with ≈ 121, for ≈ 265/month.
+Running compute for 10 hours × 5 days lowers the compute, cluster and NAT lines
+to ≈ 60–90/month while storage and backups remain at full-month rates. The
+[cost analysis](costs.md#staging-estimate) records the assumptions and the
+scheduled-operation caveats. Staging has no free-tier guarantee.
+
+## Manual operation
+
+The stack is provisioned and updated by an operator, not by CI:
+
+```bash
+export AWS_PROFILE=platform
+export TF_STATE_BUCKET=platform-tfstate-<account-id>
+
+terraform -chdir=terraform/environments/staging init \
+  -backend-config="bucket=$TF_STATE_BUCKET" \
+  -backend-config="key=platform/staging.tfstate" \
+  -backend-config="region=us-east-1"
+terraform -chdir=terraform/environments/staging apply
+
+aws eks update-kubeconfig --name platform-staging --region us-east-1
+kubectl apply -k k8s/overlays/staging
+```
+
+Push the six service images to the staging ECR repositories before applying the
+overlay, and install ingress-nginx and the observability stack afterward. The
+[deployment runbook](runbook.md) covers AWS authentication, image publishing and
+the observability installer. Teardown is a normal `terraform destroy`; the
+staging environment keeps no deletion protection.
+
+## Limits
+
+Staging validates functionality and release compatibility at low fixed
+capacity. It does not prove production high availability, quorum, autoscaling
+or database throughput: one node, one availability zone and single-instance
+data services are intentional. Scheduled shutdown of compute does not stop
+storage, backups or public IPv4 billing, and RDS and ElastiCache do not have a
+stopped state that preserves the instance.
+
+## Related
+
+- [Deployment](deployment.md)
+- [Costs](costs.md)
+- [AWS](aws.md)
+- [EKS](eks.md)
+- [Observability](../operations/observability.md)

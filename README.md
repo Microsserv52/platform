@@ -110,17 +110,13 @@
 [![Amazon CloudFront](https://img.shields.io/badge/Amazon_CloudFront-FF9900?style=flat&logo=amazoncloudfront&logoColor=white)](https://aws.amazon.com/cloudfront/)
 [![Amazon Cognito](https://img.shields.io/badge/Amazon_Cognito-FF9900?style=flat&logo=amazonwebservices&logoColor=white)](https://aws.amazon.com/cognito/)
 
-**Kafka proposal; not implemented**
+There is no Cart service. The Store keeps its cart in browser storage, Redis is provisioned as a shared endpoint with `CACHE_ENABLED=false`, and no service-level caching exists. The Store PWA is online-only.
 
-[![Apache Kafka](https://img.shields.io/badge/Apache_Kafka-231F20?style=flat&logo=apachekafka&logoColor=white)](https://kafka.apache.org/)
+Terraform provisions the AWS environment: VPC, EKS with 2–6 `t3.medium` nodes, ECR, RDS PostgreSQL, ElastiCache Redis, private S3 buckets and CloudFront. Product implements image persistence with the AWS SDK for Java v2; Compose still uses the local blob-storage mock. CloudFront delivers product images. The deployed inventory is recorded in [delivery evidence](docs/project/delivery.md).
 
-Redis is selected for a dedicated Cart service: carts expire seven days after the last change; reads do not renew TTL. The service is not implemented yet; the current Store still uses browser storage. Existing Redis endpoint wiring does not provide carts or service-level caching. The Store PWA remains online-only.
+Observability is self-hosted with Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy and blackbox, with five dashboards and unified alerts. Services use OpenTelemetry and the frontends use Faro. The same stack runs on EKS; Grafana Cloud is optional and not required. Edge protection uses AWS Shield Standard, CloudFront and security groups; an AWS WAF managed-rule web ACL is prepared but not attached. No Kafka broker or client is implemented.
 
-Terraform provisions the AWS environment: VPC, EKS with 2–6 `t3.medium` nodes, ECR, RDS PostgreSQL, ElastiCache Redis, private S3 buckets and CloudFront. Product implements image persistence with the AWS SDK for Java v2; Compose still uses the local blob-storage mock. CloudFront is the image-delivery baseline; no alternate CDN is selected. The deployed inventory is recorded in [delivery evidence](docs/project/delivery.md).
-
-Observability is self-hosted with Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy and blackbox, with five dashboards and unified alerts. Services use OpenTelemetry and the frontends use Faro. The same stack is prepared for EKS; Grafana Cloud is optional and not required. Edge protection uses AWS Shield Standard, CloudFront and security groups; an AWS WAF managed-rule web ACL is prepared but not attached. Kafka placement is proposed for post-order events and later Product background work; no broker or client is implemented.
-
-Architecture details: [Observability](docs/operations/observability.md), [Grafana on AWS](docs/operations/grafana-aws.md), [AWS assessment](docs/infrastructure/aws-observability-assessment.md), [Cart service](docs/services/cart/index.md), [Kafka proposals](docs/project/asynchronous-events.md) and [AWS edge security](docs/infrastructure/aws-edge-security.md). There is no custom domain; see [custom domains](docs/infrastructure/custom-domains.md).
+Architecture details: [Observability](docs/operations/observability.md), [Grafana on AWS](docs/operations/grafana-aws.md), [AWS assessment](docs/infrastructure/aws-observability-assessment.md), [Cart service](docs/services/cart/index.md), [Asynchronous events](docs/project/asynchronous-events.md) and [AWS edge security](docs/infrastructure/aws-edge-security.md). There is no custom domain; see [custom domains](docs/infrastructure/custom-domains.md).
 
 Web application that allows authenticated users to buy and sell products
 through a set of microservices.
@@ -151,10 +147,9 @@ The agreed UI is English, with a shared modern brand and a public catalog.
 This is an **educational mock store: no real payments or transactions take
 place, and no goods are shipped**. Authenticated users create persisted
 demo orders. The store includes an online-only PWA manifest; Grafana Faro and
-Umami are integrated but disabled until their deployment values are agreed.
-Each app exports static files and has a Dockerfile. Production CDN hosting and
-per-app environment values will be discussed before deployment; frontend
-Kubernetes deployment is deferred.
+Umami are integrated; production collection values are not configured. Each app
+exports static files and has a Dockerfile. CloudFront serves the static exports
+with per-app build values; frontends are not Kubernetes workloads.
 
 To test the frontend independently of the missing Product/Exchange images:
 
@@ -166,14 +161,14 @@ Open `http://localhost:8081/`, `/store/` or `/admin/`. This separate local-only
 mode visibly labels disposable API fixtures. See the [local testing guide](docs/frontend/delivery.md)
 for fixture inputs, real-service mode and verification limits.
 
-## Planned staging environment — TODO
+## Staging environment
 
-The [staging plan](docs/infrastructure/staging.md) specifies a smaller, fixed-capacity
-copy of every production application service, scheduled developer availability,
-synthetic data and AWS WAF + Cognito (or SSM until a domain exists). Observability
-is isolated in a separate self-hosted stack; Faro errors remain enabled and
-Umami/usage analytics are disabled. It is not implemented. Budget, operating
-hours/timezone, hosting, domain and CDN decisions remain open.
+The [staging environment](docs/infrastructure/staging.md) is defined in
+`terraform/environments/staging` and `k8s/overlays/staging`. It is a dedicated
+VPC and EKS cluster with one replica per service, private RDS, ElastiCache and S3,
+and a separate observability stack. It has no public edge; access goes through
+the EKS endpoint and `kubectl port-forward`. No CI/CD workflow provisions or
+deploys it.
 
 ## Which environment should I run?
 
@@ -183,6 +178,7 @@ hours/timezone, hosting, domain and CDN decisions remain open.
 | LocalStack     | AWS deployment rehearsal                  | LocalStack RDS                    | Local exchange mock by default      | LocalStack CloudFront/gateway     |
 | MicroK8s       | Local Kubernetes validation               | `k8s/overlays/microk8s/database.yaml` | External Exchange service URL   | Ingress address                  |
 | AWS EKS        | Production backend                        | RDS PostgreSQL                    | External Exchange service URL       | Production Ingress/load balancer |
+| AWS EKS staging | Developer acceptance, one replica         | Private RDS PostgreSQL            | Staging sandbox or adapter          | EKS endpoint + port-forward      |
 
 Compose and Kubernetes are separate runtime environments. Do not use the
 Compose mock or its local defaults in EKS.
@@ -243,8 +239,8 @@ Log in with a short-lived AWS profile, optionally set `TF_STATE_BUCKET`, then ru
 creates the cluster secret and deploys the `aws` overlay. A manual
 **Publish EKS images** workflow builds and pushes images to ECR; deployment
 remains shell-first. See the [AWS deployment runbook](docs/infrastructure/runbook.md#aws-deployment),
-[infrastructure changes](docs/infrastructure/changes.md),
-[Terraform](terraform/README.md) and [Deployment](docs/infrastructure/deployment.md).
+[Kubernetes](k8s/README.md), [Terraform](terraform/README.md) and
+[Deployment](docs/infrastructure/deployment.md).
 
 ## CI/CD and environment variables
 

@@ -1,16 +1,18 @@
 # Infrastructure as code
 
 For the end-to-end operational commands, see the
-[deployment runbook](../docs/infrastructure/runbook.md). For the list of files
-changed by this implementation, see
-[infrastructure changes](../docs/infrastructure/changes.md).
+[deployment runbook](../docs/infrastructure/runbook.md). For the staging
+environment, see the [staging configuration](../docs/infrastructure/staging.md).
 
-Terraform owns all AWS resources for both run modes:
+Terraform owns all AWS resources for every run mode:
 
 - `environments/localstack` — the deployment rehearsal. Uses the LocalStack
   endpoints, dummy credentials and local state. No AWS account required.
 - `environments/aws` — the real account. Uses the standard AWS provider, remote
   S3 state when `TF_STATE_BUCKET` is set, and CloudFront in `us-east-1`.
+- `environments/staging` — a separate VPC and EKS cluster with one SPOT node,
+  private RDS, ElastiCache, S3 and ECR. No CloudFront, WAF, DNS or public load
+  balancer.
 - `environments/grafana-cloud` — optional Grafana Cloud folder, dashboards,
   contact point, alert rules and synthetic checks. Uses the `grafana/grafana`
   provider and is validated locally without credentials.
@@ -68,6 +70,25 @@ Required inputs before the first real deployment:
 Use `--skip-terraform`, `--skip-images`, `--skip-addons`, `--frontends` or
 `--no-auto-approve` to control individual phases. Deployment is intentionally
 shell-first; there is no CI/CD deploy workflow.
+
+## Staging
+
+Staging reuses the same modules with a `platform-staging` name prefix, one
+`t3.xlarge` SPOT node and single-AZ data services. The stack has no public edge;
+services are reached through the EKS endpoint and `kubectl port-forward`. It
+uses a separate state key:
+
+```bash
+terraform -chdir=terraform/environments/staging init \
+  -backend-config="bucket=$TF_STATE_BUCKET" \
+  -backend-config="key=platform/staging.tfstate" \
+  -backend-config="region=us-east-1"
+terraform -chdir=terraform/environments/staging apply
+```
+
+No CI/CD workflow provisions or deploys staging. The Kubernetes overlay is
+`k8s/overlays/staging`; see the [staging environment](../docs/infrastructure/staging.md)
+for sizing, access, observability and cost.
 
 ## State
 

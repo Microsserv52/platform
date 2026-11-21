@@ -297,27 +297,30 @@ versions keep billing until they are deleted explicitly.
 
 ## Staging estimate
 
-The [planned staging environment](staging.md) is a separate, scheduled
-deployment with synthetic data and a fixed monthly cap. Its region, classes and
-cap remain undecided; no free-tier eligibility is assumed. Two reference
-points from this estimate:
+The [staging environment](staging.md) is a separate EKS deployment defined in
+`terraform/environments/staging`: one `t3.xlarge` SPOT node, one NAT gateway,
+`db.t4g.micro`, `cache.t4g.micro`, 20 GB of database storage, EBS volumes for
+observability, and four S3 buckets. It has no CloudFront distribution, WAF,
+Route 53 record or public load balancer.
 
-| Option                                                | Indicative cost                                                        |
-| ----------------------------------------------------- | ---------------------------------------------------------------------- |
-| Dedicated small EKS, 10 h × 5 d                       | ≈ $80/month for this stack, plus observability and AWS edge charges |
-| Single VM for MicroK8s, 4 vCPU / 16 GiB, same schedule | ≈ $45–60/month, plus EBS, snapshots and separate observability charges  |
+| Resource | Configuration | USD/month |
+| --- | --- | ---: |
+| EKS control plane | 1 cluster | 73 |
+| Worker node | 1 × `t3.xlarge`, SPOT | 36 |
+| NAT gateway | 1, plus public IPv4 | 36 |
+| PostgreSQL | `db.t4g.micro`, 20 GB, Single-AZ | 14 |
+| Redis | 1 × `cache.t4g.micro` | 12 |
+| EBS, S3, ECR and observability volumes | ≈ 40 GB EBS and low storage | 10–20 |
+| **Total** | | **≈ 180–190** |
 
-The single-VM option avoids the $73 cluster fee and the managed database/cache
-fees but must fit seven JVMs, Kafka and collection agents, and it gives up
-EKS/IRSA parity. Scheduled EKS is closer in price than a 24/7 comparison
-suggests because the cluster fee also stops when the cluster is destroyed.
-
-Estimate compute/database running hours separately from full-month storage,
-backups, networking, security plans, static hosting and self-hosted
-observability storage. An external scheduler must reconcile RDS stop/start behavior; shutdown
-is not zero-cost. Set budget alerts and manual resizing approval rather than
-autoscaling the database or application resources. All implementation remains
-on the staging TODO checklist.
+On-Demand capacity replaces the node line with ≈ 121, for ≈ 265/month.
+Running compute for 10 hours × 5 days lowers the cluster, node and NAT lines to
+≈ 60–90/month; storage, backups and public IPv4 addresses keep billing for the
+full month. Scheduled operation requires destroying the EKS cluster because it
+has no stopped state, and neither RDS nor ElastiCache keeps a stopped instance.
+Estimate compute hours separately from full-month storage and re-check the
+total in the [AWS Pricing Calculator](https://calculator.aws/) before applying
+the environment.
 
 ## PaaS decisions
 

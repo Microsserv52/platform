@@ -22,7 +22,7 @@ submission.
 - [ ] Cost estimate, actual spend and PaaS decisions.
 - [x] SLO/SLA definitions and observability dashboards (local stack and AWS-ready IaC).
 - [x] Test strategy and final verification.
-- [x] Known limitations and future work.
+- [x] Known limitations.
 
 ## 2026.2 requirements status
 
@@ -36,7 +36,7 @@ delivered.
 | AWS provisioning | Provisioned | Terraform state, resource inventory and budget in this page |
 | EKS deployment | Provisioned | EKS 1.35, two nodes, metrics-server and Cluster Autoscaler; rollout evidence below |
 | CI/CD | Partial by design | CI tests/CodeQL/GHCR and a manual **Publish EKS images** workflow; deployment remains shell-first; no CI deploy step |
-| Load tests | Partial | Read-only catalog baseline, HPA run and authenticated order flow completed 2026-11-21; provider-failure flow pending |
+| Load tests | Partial | Read-only catalog baseline, HPA run and authenticated order flow completed; provider-failure flow pending |
 | PaaS, costs and SLA | Documented | [Costs, PaaS and SLA](../infrastructure/costs.md); actual spend pending |
 | Documentation | Published | `https://microsserv52.github.io/platform/`; LocalStack, runbook, observability and Grafana AWS pages are on `main` |
 | Public application URL | Available | `https://d15ogksm4jp6sl.cloudfront.net/` (landing), `/store/`, `/admin/`, `/api` |
@@ -50,7 +50,7 @@ AWS path is prepared with EBS CSI, Secrets Manager, Helm values, LGTM manifests
 and a Cognito/ALB example. The AWS stack is not applied; Exchange traces and
 Pyroscope language agents remain pending.
 
-## Deployment evidence — 2026-11-21
+## Deployment evidence
 
 The deployment was run from the root repository with `scripts/deploy-aws.sh`.
 Endpoint names are listed in [Service URLs](../infrastructure/service-urls.md).
@@ -191,7 +191,7 @@ preflight returns 204 and a headless browser POSTed twice to /faro/collect (202)
 - [AWS deployment plan](../operations/grafana-aws.md)
 - [AWS Faro/WAF/cost assessment](../infrastructure/aws-observability-assessment.md)
 
-## Known limitations and next work
+## Known limitations
 
 These are deliberate gaps, not hidden claims:
 
@@ -204,7 +204,8 @@ These are deliberate gaps, not hidden claims:
   [Custom domains](../infrastructure/custom-domains.md).
 - **Grafana AWS stack is prepared, not applied.** The repository has the Helm
   values, manifests, EBS CSI flag, Secrets Manager containers and Cognito ingress
-  example. Applying them changes AWS resources and still needs an owner decision.
+  example. Applying them provisions AWS resources and is a separate operator
+  action.
 - **Exchange traces and profiles need agents.** The Java services load the
   OpenTelemetry agent; Exchange (Python) still exports metrics/logs only, and
   Pyroscope needs language agents and an overhead decision.
@@ -224,19 +225,20 @@ These are deliberate gaps, not hidden claims:
   [CI/CD](../development/cicd.md#eks-image-publishing-workflow).
 - **Database scaling ceiling.** Four replicas per database-backed service exceed
   the `db.t4g.micro` connection limit until the pool is reduced or RDS resized.
-- **No staging environment.** The developer-only staging plan remains a backlog
-  item.
+- **Staging is configuration-only.** The Terraform environment in
+  `terraform/environments/staging` and the overlay in `k8s/overlays/staging`
+  define a private one-replica deployment with its own RDS, ElastiCache, S3,
+  ECR and observability storage. No CI/CD workflow provisions or deploys it, so
+  a running staging environment is not part of the delivery evidence.
 
-## Staging backlog — not implemented
+## Staging configuration
 
-- [ ] Implement and accept the [developer-only staging plan](../infrastructure/staging.md):
-      fixed small copies of all production business services, scheduled availability,
-      synthetic seed data, AWS WAF + Cognito, separate observability stack,
-      Faro errors enabled and Umami/usage analytics disabled.
-- [ ] Record the approved budget/schedule, hosting/parity tradeoffs, isolation
-      tests, independent telemetry gates, recovery/rollback and operating evidence.
-
-These items are TODO; documenting the plan does not complete them.
+The [staging environment](../infrastructure/staging.md) uses the same service
+images, contracts and probes as production at one replica per service. It has no
+public edge; access is through the EKS endpoint and `kubectl port-forward`.
+Applying the Terraform environment and the Kubernetes overlay is a manual
+operator action. The environment uses `deployment.environment=staging`, synthetic
+data and separate telemetry storage.
 
 ## AI disclosure
 

@@ -5,9 +5,8 @@ icon: lucide/server
 # Deployment
 
 Use the [deployment runbook](runbook.md) for the exact AWS and LocalStack
-commands, verification and troubleshooting. See [infrastructure changes](changes.md)
-for the manifest moves and migration steps introduced by the current
-implementation.
+commands, verification and troubleshooting. The Kubernetes layout and overlay
+differences are listed in [`k8s/README.md`](https://github.com/Microsserv52/platform/blob/main/k8s/README.md).
 
 ## Documentation deployment
 
@@ -22,14 +21,17 @@ uv sync
 uv run zensical build --clean
 ```
 
-## Planned staging — not implemented
+## Staging environment
 
-See the [staging environment plan](staging.md) and its unchecked implementation
-backlog. The owner selected scheduled developer-only access and synthetic seed
-data. The plan keeps all production business services at smaller fixed capacity,
-separates observability, enables Faro errors and disables Umami/
-usage analytics. Current deployment workflows and Kubernetes files do not
-implement that environment and must not be applied as an assumed staging setup.
+The [staging environment](staging.md) has its own Terraform configuration in
+`terraform/environments/staging` and a one-replica Kubernetes overlay in
+`k8s/overlays/staging`. It runs in a dedicated VPC and cluster, uses private RDS,
+ElastiCache and S3 resources, and has no CloudFront, WAF, DNS record or public
+load balancer. Access is limited to the EKS endpoint and `kubectl port-forward`.
+
+No CI/CD workflow provisions or deploys staging. An operator applies Terraform
+and the overlay from an authenticated workstation. The runtime modes below
+describe the production deployment and the local rehearsal paths.
 
 ## Application deployment
 
@@ -43,6 +45,8 @@ The repository supports four distinct runtime modes:
 3. **MicroK8s** — local Kubernetes validation through the `microk8s` overlay.
 4. **AWS EKS** — production. Terraform provisions the infrastructure and shell
    scripts deploy from an authenticated workstation.
+5. **AWS EKS staging** — the same workload definitions at one replica in the
+   separate staging account or VPC; see [Staging](staging.md).
 
 The local application topology is declared in [`compose.yml`](../../compose.yml).
 Nginx listens on port `8080` and forwards traffic to the gateway. Run it with:
