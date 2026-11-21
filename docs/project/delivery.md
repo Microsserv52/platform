@@ -149,9 +149,9 @@ Exactly one VPC, NAT gateway, EKS cluster, RDS instance, ElastiCache cluster and
 CloudFront distribution exist. There are four application S3 buckets, one
 Terraform state bucket, six ECR repositories and no duplicate stacks.
 
-At three nodes the steady run-rate is approximately **$240/month** (EKS $73,
-nodes $91 + EBS, RDS, ElastiCache, NAT, storage); at the two-node baseline it is
-about **$210/month**. The internet-facing Gateway NLB is included in the estimate; CloudFront serves the public frontend and `/api`. The account budget is USD 100, so
+At the observed two-node steady state the run-rate is approximately
+**$240/month** (EKS $73, nodes $61 + EBS, NLB, RDS, ElastiCache, NAT, storage);
+a three-node rollout is about **$270/month**. The internet-facing Gateway NLB is included in the estimate; CloudFront serves the public frontend and `/api`. The account budget is USD 100, so
 the stack must be destroyed or scheduled after the demo.
 
 ## Known limitations and next work
