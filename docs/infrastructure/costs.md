@@ -39,7 +39,7 @@ icon: lucide/badge-dollar-sign
     is the steady target. The internet-facing Gateway NLB adds the load-balancer
     line to the estimate. At the two-node steady state the run-rate is
     ≈ $240/month; at three nodes ≈ $270/month. The AWS Budget is
-    USD 100, so destroy or schedule the stack after the demo.
+    configured at USD 150, so destroy or schedule the stack after the demo.
 
 ### Continuous operation
 
@@ -66,18 +66,19 @@ egress) is a small share of the demo bill; running hours and cleanup dominate.
 
 ### Budget guardrail
 
-!!! warning "Monthly budget: USD 100"
+!!! warning "Monthly budget: USD 150"
 
-    The account has a USD 100/month AWS Budget (set 2026-11-20). It is the
-    planning cap for this project: validate spend in Cost Explorer and treat a
-    forecast above USD 100 as an incident.
+    The account has an AWS Budget named `Limit budget 100`, configured at
+    **USD 150/month** (set 2026-11-20). It is the planning cap for this project:
+    validate spend in Cost Explorer and treat a forecast above USD 150 as an
+    incident.
 
 A budget is an alerting guardrail; it does not stop resources by itself. The
 continuous-operation estimate (≈ $240/month, ≈ $7.90/day) crosses the cap after
-about 13 days. Staying inside USD 100 requires the scheduled profile
+about 19 days. Staying inside USD 150 requires the scheduled profile
 (≈ $80/month), destroying the stack after the demo, or Spot workers on a shorter
 schedule. A six-node peak (≈ $365/month run-rate) consumes the budget in about
-8 days.
+12 days.
 
 ### Node sizing
 
@@ -178,7 +179,7 @@ per request.
 | Spot workers, two nodes               |     2 |     ≈ 205 |
 | Spot workers, six nodes               |     6 |     ≈ 255 |
 
-Every continuous row is above the USD 100 budget; only the scheduled or
+Every continuous row is above the USD 150 budget; only the scheduled or
 destroyed profiles fit. Autoscaling pods alone does not change the bill: the
 node count and the fixed EKS/NAT/NLB/RDS/Redis charges do. Only the node
 autoscaler (or teardown) moves the node line, and it saves money only if the
@@ -249,7 +250,7 @@ snapshot). For load tests, Cluster Autoscaler buys elasticity, not idleness.
 ### Scheduled operation
 
 A demo or staging-like schedule of 10 hours × 5 days (≈ 217 hours/month) costs
-≈ **$80/month** for the same stack, leaving ≈ $20 under the USD 100 budget:
+≈ **$80/month** for the same stack, leaving ≈ $70 under the USD 150 budget:
 compute, NAT, database, cache and load balancer are billed only while up, while
 S3, ECR, EBS, DNS and snapshots bill for the full month. Stopping is not
 zero-cost, and it is not the same as deleting:
@@ -341,6 +342,18 @@ requests, and is expected to add a third `t3.medium` node. Budget approximately
 **$280/month** at the two-node application baseline plus observability, before
 optional AWS WAF or an ALB for Grafana. There is no custom domain; Route 53 and
 ACM are not currently billed. See [Custom domains](custom-domains.md).
+
+AWS WAF is not attached; Terraform prepares it behind `enable_waf = false`. A CloudFront web ACL with three managed rule groups and
+one rate rule costs about **$9.60/month at 1M requests** and **$15/month at
+10M requests** (plus CloudWatch Logs). Continuous 300 req/s would cost roughly
+$476/month in WAF request fees alone. The prepared Faro path reuses the existing
+NLB and CloudFront, so it adds no load-balancer base fee; demo traffic is under
+$5/month. See
+[AWS observability assessment](aws-observability-assessment.md).
+
+The account budget is named `Limit budget 100` but is configured at **USD 150**.
+Actual spend reads `$0.00` because billing ingestion is delayed; the forecast at
+the time of the assessment was `$0.07`.
 
 The Terraform boundary is explicit: EKS, ECR, RDS, ElastiCache, S3, CloudFront,
 VPC/NAT and IAM are provisioned by Terraform. Kubernetes workloads, HPAs,

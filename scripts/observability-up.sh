@@ -44,11 +44,11 @@ Observability stack is up (localhost only)
   Tempo        http://localhost:3200
   Pyroscope    http://localhost:4040
   Alloy        http://localhost:12345
-  Faro ingest  http://localhost:12347/collect
+  Faro ingest  http://localhost:8080/faro/collect (nginx -> Alloy)
 
 Enable browser telemetry for the local frontends:
   NEXT_PUBLIC_ENABLE_TELEMETRY=true
-  NEXT_PUBLIC_FARO_URL=http://localhost:12347/collect
+  NEXT_PUBLIC_FARO_URL=http://localhost:8080/faro/collect
 then rebuild landing/store/admin.
 
 Stop without deleting data:

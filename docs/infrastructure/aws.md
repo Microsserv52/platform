@@ -15,7 +15,7 @@ official AWS documentation.
 - Prefer IAM roles and short-lived credentials over long-lived access keys.
 - Configure AWS CLI with a named profile and an explicit region.
 - Apply least-privilege policies and record who can access production resources.
-- The account has a USD 100/month AWS Budget; see the
+- The account has an AWS Budget named `Limit budget 100`, configured at USD 150; see the
   [budget guardrail](costs.md#budget-guardrail). Keep billing alerts active
   before creating infrastructure.
 
@@ -56,10 +56,11 @@ stacks were created.
 | Public frontend/API | `https://d15ogksm4jp6sl.cloudfront.net/`; `/store/`, `/admin/`, `/api` |
 | NAT gateway | 1 |
 | Load balancer | Gateway NLB `platform-gateway-ecaafe88209b53bc.elb.us-east-1.amazonaws.com` (internet-facing, HTTP 80, CloudFront-only SG) |
-| Budget | AWS Budget `Limit budget 100` (USD 100/month) |
+| Budget | AWS Budget `Limit budget 100`, configured limit **USD 150**; actual `$0.00` is delayed billing |
 | Observability | Full self-hosted stack locally: Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy, blackbox. AWS manifests prepared behind `enable_observability` |
-| Edge protection | AWS Shield Standard; CloudFront OAC; CloudFront-only NLB security group; AWS WAF optional and not enabled |
+| Edge protection | AWS Shield Standard; CloudFront OAC; CloudFront-only NLB security group; AWS WAF prepared behind `enable_waf` and not attached |
 | Custom domain | None; CloudFront hostname is the public URL. See [Custom domains](custom-domains.md). |
+| AWS assessment | [Faro feasibility, WAF and cost investigation](aws-observability-assessment.md) |
 
 The workload rollout and cost evidence are recorded in
 [delivery evidence](../project/delivery.md). The public, internal and AWS
@@ -83,6 +84,16 @@ CSI add-on, two empty secret containers, and `gp3` volumes for Prometheus,
 Grafana, Mimir, Loki, Tempo, Pyroscope and Alloy. The observability pods are
 expected to add a third node. The Helm values, manifests and Cognito ingress
 example are in [Grafana on AWS](../operations/grafana-aws.md).
+
+Two further opt-in flags prepare the edge features:
+
+```bash
+export TF_VAR_enable_faro_ingest=true   # CloudFront /faro/* -> existing NLB :8080 -> Alloy
+export TF_VAR_enable_waf=true           # CloudFront managed rules + /api rate limit
+```
+
+Both default to `false` and are documented in the
+[AWS observability assessment](aws-observability-assessment.md).
 
 There is no custom domain or ACM certificate. The CloudFront hostname remains
 the public application URL; adding a domain is documented in

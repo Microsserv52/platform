@@ -103,6 +103,18 @@ variable "protect_state" {
   description = "Keep RDS deletion protection, the final snapshot, S3 object versions and ECR images. Apply with false before destroying the stack."
 }
 
+variable "enable_waf" {
+  type        = bool
+  default     = false
+  description = "Create and attach an AWS WAF web ACL with managed rules and a rate limit to CloudFront."
+}
+
+variable "enable_faro_ingest" {
+  type        = bool
+  default     = false
+  description = "Prepare a CloudFront /faro/* path to Alloy through the existing Gateway NLB. Does not deploy the stack."
+}
+
 variable "enable_observability" {
   type        = bool
   default     = false

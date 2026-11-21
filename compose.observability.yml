@@ -94,6 +94,8 @@ services:
     profiles: ["observability"]
     hostname: alloy
     user: "0:0"
+    environment:
+      FARO_ALLOWED_ORIGINS: ${FARO_ALLOWED_ORIGINS:-http://localhost:8080}
     command:
       - run
       - /etc/alloy/config.alloy
@@ -247,7 +249,7 @@ services:
     build:
       args:
         NEXT_PUBLIC_ENABLE_TELEMETRY: ${NEXT_PUBLIC_ENABLE_TELEMETRY:-true}
-        NEXT_PUBLIC_FARO_URL: ${NEXT_PUBLIC_FARO_URL:-http://localhost:12347/collect}
+        NEXT_PUBLIC_FARO_URL: ${NEXT_PUBLIC_FARO_URL:-http://localhost:8080/faro/collect}
         NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV:-local}
         NEXT_PUBLIC_GRAFANA_DASHBOARD_URL: ${NEXT_PUBLIC_GRAFANA_DASHBOARD_URL:-http://localhost:3000/d/platform-overview}
 
@@ -255,7 +257,7 @@ services:
     build:
       args:
         NEXT_PUBLIC_ENABLE_TELEMETRY: ${NEXT_PUBLIC_ENABLE_TELEMETRY:-true}
-        NEXT_PUBLIC_FARO_URL: ${NEXT_PUBLIC_FARO_URL:-http://localhost:12347/collect}
+        NEXT_PUBLIC_FARO_URL: ${NEXT_PUBLIC_FARO_URL:-http://localhost:8080/faro/collect}
         NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV:-local}
         NEXT_PUBLIC_GRAFANA_DASHBOARD_URL: ${NEXT_PUBLIC_GRAFANA_DASHBOARD_URL:-http://localhost:3000/d/platform-overview}
 
@@ -263,7 +265,7 @@ services:
     build:
       args:
         NEXT_PUBLIC_ENABLE_TELEMETRY: ${NEXT_PUBLIC_ENABLE_TELEMETRY:-true}
-        NEXT_PUBLIC_FARO_URL: ${NEXT_PUBLIC_FARO_URL:-http://localhost:12347/collect}
+        NEXT_PUBLIC_FARO_URL: ${NEXT_PUBLIC_FARO_URL:-http://localhost:8080/faro/collect}
         NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV:-local}
         NEXT_PUBLIC_GRAFANA_DASHBOARD_URL: ${NEXT_PUBLIC_GRAFANA_DASHBOARD_URL:-http://localhost:3000/d/platform-overview}
 

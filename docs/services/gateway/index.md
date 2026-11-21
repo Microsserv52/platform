@@ -28,3 +28,16 @@ Static frontends call `/api/session/*` through the local edge. Gateway owns the
 HttpOnly session cookie and CSRF checks; no Next.js session server is required.
 See [browser sessions and authorization](../../frontend/architecture.md#api-owned-browser-sessions)
 for the endpoint table, cookie configuration and real-service acceptance limits.
+
+## Observability requirements
+
+| Signal | Requirement | Current |
+| --- | --- | --- |
+| Health | `/actuator/health` with liveness/readiness semantics | implemented or planned with the service |
+| Metrics | `/actuator/prometheus` with low-cardinality route/status labels | implemented or planned with the service |
+| Traces | OTLP to Alloy, W3C `traceparent` propagation | OTel Java agent |
+| Logs | structured JSON with service, request/trace ID, route and status | implemented or planned |
+| Profiles | Pyroscope agent where approved | pending |
+
+See [Service observability requirements](../observability-requirements.md) for
+the full contract, redaction rules and verification commands.

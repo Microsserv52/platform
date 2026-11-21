@@ -132,6 +132,10 @@ module "cloudfront" {
   certificate_arn            = local.certificate_arn
   api_origin_domain          = var.cloudfront_api_origin_domain != "" ? var.cloudfront_api_origin_domain : aws_lb.gateway.dns_name
   api_origin_protocol_policy = var.cloudfront_api_origin_protocol_policy
+  faro_enabled               = var.enable_faro_ingest
+  faro_origin_domain         = aws_lb.gateway.dns_name
+  faro_origin_http_port      = 8080
+  waf_web_acl_arn            = var.enable_waf ? aws_wafv2_web_acl.cloudfront[0].arn : ""
   tags                       = local.tags
 }
 
@@ -267,4 +271,207 @@ resource "aws_security_group_rule" "gateway_nodes_health" {
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   description       = "Allow NLB health checks to the Gateway NodePort"
+}
+
+resource "aws_lb_target_group" "alloy" {
+  count       = var.enable_faro_ingest ? 1 : 0
+  name        = "${local.name}-alloy"
+  port        = 30081
+  protocol    = "TCP"
+  vpc_id      = module.network.vpc_id
+  target_type = "instance"
+
+  health_check {
+    protocol            = "TCP"
+    port                = "traffic-port"
+    interval            = 30
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+  }
+
+  tags = merge(local.tags, { Name = "${local.name}-alloy" })
+}
+
+resource "aws_lb_listener" "alloy" {
+  count             = var.enable_faro_ingest ? 1 : 0
+  load_balancer_arn = aws_lb.gateway.arn
+  port              = 8080
+  protocol          = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.alloy[0].arn
+  }
+
+  tags = merge(local.tags, { Name = "${local.name}-alloy" })
+}
+
+resource "aws_autoscaling_attachment" "alloy" {
+  count                  = var.enable_faro_ingest ? 1 : 0
+  autoscaling_group_name = module.eks.node_group_asg_name
+  lb_target_group_arn    = aws_lb_target_group.alloy[0].arn
+}
+
+resource "aws_security_group_rule" "gateway_nlb_faro" {
+  count             = var.enable_faro_ingest ? 1 : 0
+  type              = "ingress"
+  security_group_id = aws_security_group.gateway_nlb.id
+  from_port         = 8080
+  to_port           = 8080
+  protocol          = "tcp"
+  prefix_list_ids   = [data.aws_ec2_managed_prefix_list.cloudfront.id]
+  description       = "Faro ingest from CloudFront origin-facing ranges"
+}
+
+resource "aws_security_group_rule" "alloy_nodes_vpc" {
+  count             = var.enable_faro_ingest ? 1 : 0
+  type              = "ingress"
+  security_group_id = module.eks.eks_cluster_security_group_id
+  from_port         = 30081
+  to_port           = 30081
+  protocol          = "tcp"
+  cidr_blocks       = [module.network.vpc_cidr]
+  description       = "Alloy Faro NodePort from the VPC and NLB health checks"
+}
+
+resource "aws_security_group_rule" "alloy_nodes_cloudfront" {
+  count             = var.enable_faro_ingest ? 1 : 0
+  type              = "ingress"
+  security_group_id = module.eks.eks_cluster_security_group_id
+  from_port         = 30081
+  to_port           = 30081
+  protocol          = "tcp"
+  prefix_list_ids   = [data.aws_ec2_managed_prefix_list.cloudfront.id]
+  description       = "Alloy Faro NodePort from CloudFront"
+}
+
+resource "aws_security_group_rule" "alloy_nodes_health" {
+  count             = var.enable_faro_ingest ? 1 : 0
+  type              = "ingress"
+  security_group_id = module.eks.eks_cluster_security_group_id
+  from_port         = 30081
+  to_port           = 30081
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "Allow NLB health checks to the Alloy Faro NodePort"
+}
+
+resource "aws_wafv2_web_acl" "cloudfront" {
+  count = var.enable_waf ? 1 : 0
+  name  = "${local.name}-cloudfront"
+  scope = "CLOUDFRONT"
+
+  default_action {
+    allow {}
+  }
+
+  rule {
+    name     = "aws-common"
+    priority = 1
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "aws-common"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "aws-known-bad-inputs"
+    priority = 2
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "aws-known-bad-inputs"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "aws-ip-reputation"
+    priority = 3
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesAmazonIpReputationList"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "aws-ip-reputation"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "rate-limit"
+    priority = 10
+
+    action {
+      block {}
+    }
+
+    statement {
+      rate_based_statement {
+        limit              = 2000
+        aggregate_key_type = "IP"
+
+        scope_down_statement {
+          byte_match_statement {
+            field_to_match {
+              uri_path {}
+            }
+            positional_constraint = "STARTS_WITH"
+            search_string         = "/api/"
+            text_transformation {
+              priority = 0
+              type     = "NONE"
+            }
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "rate-limit"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "${local.name}-cloudfront"
+    sampled_requests_enabled   = true
+  }
+
+  tags = merge(local.tags, { Name = "${local.name}-cloudfront" })
 }

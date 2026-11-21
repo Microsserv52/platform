@@ -68,7 +68,7 @@ were applied. No resources were deleted or recreated unnecessarily.
 | RDS | `platform-postgres.cf0a6omck937.us-east-1.rds.amazonaws.com:5432` |
 | ElastiCache | `platform-redis.wkuz0g.0001.use1.cache.amazonaws.com:6379` |
 | CloudFront | `E2HCWED02TM6CL`, `d15ogksm4jp6sl.cloudfront.net` |
-| Budget | AWS Budget `Limit budget 100` (USD 100/month) |
+| Budget | AWS Budget `Limit budget 100`, configured at **USD 150/month** |
 | Load balancer | Gateway NLB `platform-gateway-ecaafe88209b53bc.elb.us-east-1.amazonaws.com` (HTTP 80, CloudFront origin) |
 
 ### Images
@@ -163,7 +163,7 @@ Terraform state bucket, six ECR repositories and no duplicate stacks.
 At the observed two-node steady state the run-rate is approximately
 **$240/month** (EKS $73, nodes $61 + EBS, NLB, RDS, ElastiCache, NAT, storage).
 The full observability stack adds about 70 GiB of EBS and likely a third node,
-so budget approximately **$280/month**. The internet-facing Gateway NLB is included in the estimate; CloudFront serves the public frontend and `/api`. The account budget is USD 100, so
+so budget approximately **$280/month**. The internet-facing Gateway NLB is included in the estimate; CloudFront serves the public frontend and `/api`. The account budget is configured at USD 150 (its name says 100), so
 the stack must be destroyed or scheduled after the demo.
 
 ### Observability evidence — 2026-11-21
@@ -182,12 +182,14 @@ Recording rules: 13 healthy
 Synthetic probes: 5/5 successful (landing, store, admin, catalog, health)
 Loki: container logs received; Tempo: OTel spans from gateway, auth, account, order and product
 Pyroscope: ready; Alloy: OTLP, Faro and log pipelines ready
-Faro: landing, store and admin builds contain the local /collect URL
+Faro: landing, store and admin builds use http://localhost:8080/faro/collect;
+preflight returns 204 and a headless browser POSTed twice to /faro/collect (202)
 ```
 
 - [Observability verification log](../operations/verification/2026-11-21-observability.log)
 - [Local stack guide](../operations/observability.md)
 - [AWS deployment plan](../operations/grafana-aws.md)
+- [AWS Faro/WAF/cost assessment](../infrastructure/aws-observability-assessment.md)
 
 ## Known limitations and next work
 

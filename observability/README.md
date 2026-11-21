@@ -29,6 +29,7 @@ scripts/validate-observability.sh
 | Tempo | <http://localhost:3200> |
 | Pyroscope | <http://localhost:4040> |
 | Alloy | <http://localhost:12345> |
+| Faro ingest | <http://localhost:8080/faro/collect> (nginx → Alloy) |
 
 ## Layout
 

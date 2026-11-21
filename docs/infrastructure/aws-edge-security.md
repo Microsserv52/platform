@@ -25,7 +25,7 @@ flowchart LR
 | Origin isolation | Gateway NLB security group allows only `com.amazonaws.global.cloudfront.origin-facing` |
 | Static origins | S3 public access blocked; CloudFront OAC reads the buckets |
 | API TLS | Viewer HTTPS to CloudFront; CloudFront to NLB is HTTP inside AWS |
-| WAF | **Not enabled**; CloudFront has no web ACL yet |
+| WAF | **Not attached**; an optional web ACL with managed rules and a rate limit is prepared behind `enable_waf = false` |
 | Edge logs | **Not enabled**; CloudFront standard logs and WAF logs are not configured |
 | Grafana exposure | ClusterIP only; ALB + Cognito is documented but not applied |
 | Secrets | Kubernetes Secret or Secrets Manager; no long-lived keys in Git |
@@ -40,10 +40,17 @@ Attach a web ACL to the CloudFront distribution:
 - a rate-based rule for `/api/auth/login`, `/api/session/*` and write routes;
 - body-size and method constraints for upload and API paths;
 - logging to CloudWatch Logs or S3 with a retention budget;
-- count mode first, then block after reviewing legitimate traffic.
+- review sampled requests and legitimate traffic before enabling the prepared
+  blocking rules.
 
-WAF adds a monthly web ACL charge plus request charges. It is not enabled by
-this repository.
+The Terraform environment prepares a CloudFront WAF web ACL (three managed rule
+groups + one rate rule) behind `enable_waf = false`. WAF adds $5/month per web
+ACL, $1/month per rule or rule group and $0.60 per million requests (up to 1500
+WCU). The prepared baseline (3 managed rule groups + 1 rate rule) is about
+$9.60/month at 1M requests and $15/month at 10M. It is not
+enabled by this repository. See
+[AWS observability assessment](aws-observability-assessment.md) for the full
+calculation and Faro investigation.
 
 ### CloudFront and WAF logs
 
@@ -80,6 +87,6 @@ access path is `kubectl port-forward` or an SSM session. See
 - [ ] S3 buckets reject public access.
 - [ ] CloudFront serves `/`, `/store/`, `/admin/`, `/api/products` and
       `/api/actuator/health`.
-- [ ] WAF is in count mode, then block mode, with reviewed logs.
+- [ ] WAF sampled requests are reviewed before enabling; legitimate traffic is not blocked.
 - [ ] Grafana is unreachable without Cognito or port-forward.
 - [ ] No third-party edge proxy resources, tokens or DNS records are required.

@@ -121,7 +121,7 @@ builds by default:
 
 ```bash
 NEXT_PUBLIC_ENABLE_TELEMETRY=true
-NEXT_PUBLIC_FARO_URL=http://localhost:12347/collect
+NEXT_PUBLIC_FARO_URL=http://localhost:8080/faro/collect
 ```
 
 Rebuild the three frontends after changing these values. The admin app also
@@ -317,5 +317,6 @@ nodes. See [Costs, PaaS and SLA](../infrastructure/costs.md).
 - LocalStack uses emptyDir for Prometheus/Grafana and `local-path` for the
   LGTM backends; it is a rehearsal, not durable storage.
 - CloudFront/WAF logging is not enabled; the AWS-native path is documented but not applied.
-- AWS Faro ingest is ClusterIP only. Publishing it needs an HTTPS route such as a
-  CloudFront behavior with a dedicated NLB/ALB; the local Alloy receiver is ready.
+- AWS Faro ingest is ClusterIP only until `enable_faro_ingest=true` is applied.
+  The prepared CloudFront `/faro/*` path reuses the existing NLB port 8080 ->
+  Alloy NodePort 30081; the local same-origin `/faro/collect` path is ready.

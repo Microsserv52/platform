@@ -93,11 +93,15 @@ terraform -chdir=terraform/environments/aws apply
 ```
 
 This creates the `aws-ebs-csi-driver` add-on with its IRSA role and the Secrets
-Manager containers `platform/grafana/admin` and `platform/grafana/alerting`. It
-does not write secret values or deploy the observability stack. After the apply,
+Manager containers `platform/grafana/admin` and `platform/grafana/alerting`. Set
+`TF_VAR_enable_faro_ingest=true` to prepare the CloudFront `/faro/*` path on the
+existing NLB port 8080 -> Alloy NodePort 30081. Set `TF_VAR_enable_waf=true` to
+attach the prepared CloudFront WAF with managed rules and a rate limit. It does not write secret values
+or deploy the observability stack. After the apply,
 `scripts/install-observability.sh` deploys Prometheus, Mimir, Loki, Tempo,
 Pyroscope, Grafana, Alloy, blackbox and the OTel Java agent. See
-[Grafana on AWS](../docs/operations/grafana-aws.md).
+[Grafana on AWS](../docs/operations/grafana-aws.md) and
+[AWS observability assessment](../docs/infrastructure/aws-observability-assessment.md).
 
 The Grafana Cloud environment is optional and separate because it needs Cloud
 tokens:
