@@ -39,7 +39,7 @@ delivered.
 | Load tests | Partial | Read-only catalog baseline and HPA run completed 2026-11-21; authenticated/write flows pending |
 | PaaS, costs and SLA | Documented | [Costs, PaaS and SLA](../infrastructure/costs.md); actual spend pending |
 | Documentation | Branch only | LocalStack, runbook and changes pages exist on this branch; merge to `main` republishes Pages |
-| Public application URL | Not available | No ingress controller or frontend publish yet; backend is reachable by port-forward |
+| Public application URL | Available | `https://d15ogksm4jp6sl.cloudfront.net/` (landing), `/store/`, `/admin/`, `/api` |
 | Grafana / SLI dashboard | Not implemented | Explicitly out of this change; SLO targets and alert plan are documented |
 | Team names, AI disclosure, presentation | Out of repository scope | Intentionally excluded by the project owner |
 
@@ -66,7 +66,7 @@ were applied. No resources were deleted or recreated unnecessarily.
 | ElastiCache | `platform-redis.wkuz0g.0001.use1.cache.amazonaws.com:6379` |
 | CloudFront | `E2HCWED02TM6CL`, `d15ogksm4jp6sl.cloudfront.net` |
 | Budget | AWS Budget `Limit budget 100` (USD 100/month) |
-| Load balancer | none installed; no public ingress |
+| Load balancer | Gateway NLB `a1c0373b905d84f4396e183863b684a0-13b4c7888342d782.elb.us-east-1.amazonaws.com` (HTTP 80, CloudFront origin) |
 
 ### Images
 
@@ -99,6 +99,16 @@ kubectl top nodes
 
 kubectl -n kube-system get deploy
 metrics-server 1/1, cluster-autoscaler-aws-cluster-autoscaler 1/1
+```
+
+Public frontend and API verification:
+
+```text
+GET https://d15ogksm4jp6sl.cloudfront.net/         200  landing
+GET https://d15ogksm4jp6sl.cloudfront.net/store/   200  store
+GET https://d15ogksm4jp6sl.cloudfront.net/admin/   200  admin
+GET https://d15ogksm4jp6sl.cloudfront.net/api/products          200
+GET https://d15ogksm4jp6sl.cloudfront.net/api/actuator/health  200 UP
 ```
 
 The ASG carries `k8s.io/cluster-autoscaler/enabled` and
@@ -139,17 +149,18 @@ Terraform state bucket, six ECR repositories and no duplicate stacks.
 
 At three nodes the steady run-rate is approximately **$240/month** (EKS $73,
 nodes $91 + EBS, RDS, ElastiCache, NAT, storage); at the two-node baseline it is
-about **$210/month**. There is no ingress NLB. The account budget is USD 100, so
+about **$210/month**. The internet-facing Gateway NLB is included in the estimate; CloudFront serves the public frontend and `/api`. The account budget is USD 100, so
 the stack must be destroyed or scheduled after the demo.
 
 ## Known limitations and next work
 
 These are deliberate gaps, not hidden claims:
 
-- **No public application URL.** The cluster has no ingress controller or load
-  balancer, and the static frontends are not published. The backend is reachable
-  by `kubectl port-forward`; CloudFront serves only the buckets after a frontend
-  sync.
+- **NLB origin is HTTP.** CloudFront terminates TLS for viewers but reaches the
+  Gateway NLB over HTTP. Restrict the NLB security group to the CloudFront
+  origin-facing prefix list, or terminate TLS at the NLB, before treating the
+  origin as private.
+- **No custom domain.** The public URL is the CloudFront hostname.
 - **No Grafana/Alloy stack.** Product and Exchange expose metrics; Gateway,
   Auth, Account and Order do not yet expose Prometheus metrics, so the SLO
   targets in [Costs, PaaS and SLA](../infrastructure/costs.md#sla-and-slo) are

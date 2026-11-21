@@ -36,8 +36,9 @@ icon: lucide/badge-dollar-sign
 
     EKS, RDS, ElastiCache, NAT, S3, ECR and CloudFront are provisioned. The
     autoscaler ran three `t3.medium` nodes during rollout; the two-node baseline
-    is the steady target. There is no ingress NLB. At three nodes the estimated
-    run-rate is ≈ $240/month; at two nodes ≈ $210/month. The AWS Budget is
+    is the steady target. The internet-facing Gateway NLB adds the load-balancer
+    line to the estimate. At three nodes the run-rate is ≈ $240/month; at two
+    nodes ≈ $210/month. The AWS Budget is
     USD 100, so destroy or schedule the stack after the demo.
 
 ### Continuous operation

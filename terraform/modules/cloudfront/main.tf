@@ -24,6 +24,31 @@ resource "aws_cloudfront_origin_access_control" "media" {
   signing_protocol                  = "sigv4"
 }
 
+resource "aws_cloudfront_cache_policy" "site" {
+  name        = "${var.name}-site"
+  comment     = "Separate frontend sites by x-site header"
+  default_ttl = 86400
+  max_ttl     = 31536000
+  min_ttl     = 0
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    cookies_config {
+      cookie_behavior = "none"
+    }
+    headers_config {
+      header_behavior = "whitelist"
+      headers {
+        items = ["x-site"]
+      }
+    }
+    query_strings_config {
+      query_string_behavior = "none"
+    }
+    enable_accept_encoding_brotli = true
+    enable_accept_encoding_gzip   = true
+  }
+}
+
 resource "aws_cloudfront_function" "rewrite" {
   name    = "${var.name}-rewrite"
   runtime = "cloudfront-js-2.0"
@@ -82,7 +107,7 @@ resource "aws_cloudfront_distribution" "this" {
     allowed_methods        = ["GET", "HEAD", "OPTIONS"]
     cached_methods         = ["GET", "HEAD"]
     compress               = true
-    cache_policy_id        = local.cache_optimized
+    cache_policy_id        = aws_cloudfront_cache_policy.site.id
 
     function_association {
       event_type   = "viewer-request"
@@ -99,7 +124,7 @@ resource "aws_cloudfront_distribution" "this" {
       allowed_methods        = ["GET", "HEAD", "OPTIONS"]
       cached_methods         = ["GET", "HEAD"]
       compress               = true
-      cache_policy_id        = local.cache_optimized
+      cache_policy_id        = aws_cloudfront_cache_policy.site.id
 
       function_association {
         event_type   = "viewer-request"
