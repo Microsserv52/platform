@@ -58,14 +58,17 @@ the Exchange Deployment treats that secret key as optional.
 
 ## Observability
 
-`k8s/observability` deploys Mimir, Loki, Tempo, Pyroscope, Alloy, Grafana,
-blackbox, ServiceMonitors and synthetic probes. Prometheus comes from
-`kube-prometheus-stack` and remote-writes to Mimir. The base overlay also adds
+`k8s/observability` deploys Mimir, Loki, Tempo, Pyroscope, Graphite, Telegraf,
+Alloy, Grafana, blackbox, ServiceMonitors and synthetic probes. Staging uses
+`k8s/overlays/staging/observability`, which removes the production edge probe.
+Prometheus comes from `kube-prometheus-stack` and remote-writes to Mimir. The base overlay also adds
 the OpenTelemetry Java agent init container to the five Java Deployments. It is
 installed after `kube-prometheus-stack`:
 
 ```bash
 scripts/install-observability.sh
+# Staging EKS (private overlay, no production probe):
+scripts/install-observability.sh --staging
 # LocalStack EKS rehearsal:
 scripts/install-observability.sh --localstack
 ```

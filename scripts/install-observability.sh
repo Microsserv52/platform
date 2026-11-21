@@ -7,9 +7,11 @@ require_cmd kubectl
 require_cmd helm
 
 LOCALSTACK=false
+STAGING=false
 for arg in "$@"; do
   case "$arg" in
     --localstack) LOCALSTACK=true ;;
+    --staging) STAGING=true ;;
     *) echo "unknown option: $arg" >&2; exit 1 ;;
   esac
 done
@@ -17,8 +19,13 @@ done
 AWS_REGION="${AWS_REGION:-us-east-1}"
 export AWS_REGION
 CLUSTER_NAME="${EKS_CLUSTER_NAME:-${TF_VAR_cluster_name:-}}"
-if [[ -z "$CLUSTER_NAME" ]] && terraform -chdir="$TF_AWS" output -raw eks_cluster_name >/dev/null 2>&1; then
-  CLUSTER_NAME="$(tf_out "$TF_AWS" eks_cluster_name)"
+TF_ENV="$TF_AWS"
+if [[ "$STAGING" == "true" ]]; then
+  CLUSTER_NAME="${CLUSTER_NAME:-platform-staging}"
+  TF_ENV="$TF_STAGING"
+fi
+if [[ -z "$CLUSTER_NAME" ]] && terraform -chdir="$TF_ENV" output -raw eks_cluster_name >/dev/null 2>&1; then
+  CLUSTER_NAME="$(tf_out "$TF_ENV" eks_cluster_name)"
 fi
 if [[ "$LOCALSTACK" == "false" && -z "$CLUSTER_NAME" ]]; then
   echo "error: set EKS_CLUSTER_NAME or initialize the AWS Terraform state" >&2
@@ -114,6 +121,9 @@ KUSTOMIZE_PATH="$ROOT_DIR/k8s/observability"
 if [[ "$LOCALSTACK" == "true" ]]; then
   HELM_VALUES+=(-f "$ROOT_DIR/observability/helm/values.localstack.yaml")
   KUSTOMIZE_PATH="$ROOT_DIR/k8s/overlays/localstack/observability"
+fi
+if [[ "$STAGING" == "true" ]]; then
+  KUSTOMIZE_PATH="$ROOT_DIR/k8s/overlays/staging/observability"
 fi
 
 helm upgrade --install observability prometheus-community/kube-prometheus-stack \

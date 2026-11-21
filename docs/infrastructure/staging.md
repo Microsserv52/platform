@@ -128,14 +128,24 @@ media bucket and observability endpoints have no public ingress.
 ## Observability
 
 Staging runs its own observability namespace and storage on the same cluster.
-`enable_ebs_csi = true` provisions the CSI add-on and IRSA role; the manifests
-in `k8s/observability` are applied after the cluster exists. Prometheus, Mimir,
-Loki, Tempo, Pyroscope, Graphite, Alloy and Grafana use staging-only volumes and
-credentials. Production dashboards and alerts do not ingest staging data.
+`enable_ebs_csi = true` provisions the CSI add-on and IRSA role, and the
+`k8s/overlays/staging/observability` overlay applies the shared manifests with
+an `app.kubernetes.io/environment=staging` label and without the production
+external probe. Apply it from the platform checkout:
+
+```bash
+scripts/install-observability.sh --staging
+```
+
+Prometheus, Mimir, Loki, Tempo, Pyroscope, Graphite, Telegraf, Alloy and Grafana
+use staging-only volumes and credentials. Production dashboards and alerts do
+not ingest staging data.
 
 Services export traces to the cluster Alloy endpoint through the OpenTelemetry
 Java agent. The resource attribute is `deployment.environment=staging`, which
-separates staging traces from production traces in Tempo.
+separates staging traces from production traces in Tempo. Tempo remote-writes
+service-graph and span metrics to the staging Prometheus. Telegraf reads kubelet
+summary metrics for the staging pods and writes them to Graphite.
 
 There is no public Faro collector. The staging frontends are local builds, so
 browser telemetry is not part of the staging cluster. Umami and product-usage
