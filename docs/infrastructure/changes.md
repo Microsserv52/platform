@@ -18,6 +18,7 @@ migrate an existing MicroK8s/EKS setup.
 | Workloads | Product and Exchange manifests added; frontends remain static S3/CloudFront exports |
 | Deployment | Shell-first `scripts/deploy-aws.sh`; `.github/workflows/deploy-eks.yml` removed |
 | Image publish | Manual **Publish EKS images** workflow builds/pushes ECR images; it does not deploy |
+| Public delivery | Frontends and `/api` on CloudFront; Gateway via internet-facing NLB; `x-site` cache key |
 | Autoscaling | Cluster Autoscaler (IRSA, 2–6 nodes) and metrics-server installed by the deploy script; HPA for all six services |
 | Cost | 2-node `t3.medium` baseline, 2 replicas per service, budget/capacity documentation |
 | Secrets | `platform-secrets` now uses `SPRING_DATASOURCE_PASSWORD`, not `POSTGRES_PASSWORD` |
@@ -232,6 +233,11 @@ scripts/deploy-aws.sh --frontends
 CI still runs tests, CodeQL and documentation. `.github/workflows/publish-eks-images.yml`
 adds a manual ECR image publish step; it deliberately does not touch Terraform,
 add-ons or the cluster. Deployment remains shell-first.
+
+Frontend publication adds an internet-facing Gateway NLB and a CloudFront
+`/api/*` behavior. The CloudFront function stamps an `x-site` header
+(`landing`/`store`/`admin`) and the site cache policy includes it in the cache
+key; without that, all static sites shared the same `/index.html` cache entry.
 
 ### LocalStack runtime hardening
 

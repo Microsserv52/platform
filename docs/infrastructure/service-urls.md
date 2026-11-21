@@ -5,33 +5,50 @@ icon: lucide/link
 # Service URLs
 
 Environment: AWS account `730335608828`, region `us-east-1`, EKS cluster
-`platform`. The infrastructure is live, but there is **no public API ingress**
-and the static frontends are not published yet.
+`platform`. The frontend and API are published through CloudFront.
 
 ## Public endpoints
 
 | Endpoint | URL | Status |
 | --- | --- | --- |
-| Frontend CDN | `https://d15ogksm4jp6sl.cloudfront.net` | Distribution deployed; buckets not synced, so the root returns an S3 error until a frontend is published |
-| Frontend routes | `https://d15ogksm4jp6sl.cloudfront.net/`, `/store/`, `/admin/` | Reserved by the CloudFront path behaviors; not populated |
-| Public API | — | **Not exposed**; no ingress controller or load balancer is installed |
-| Documentation | `https://microsserv52.github.io/platform/` | Published from `main`; these branch docs appear after merge |
+| Landing | `https://d15ogksm4jp6sl.cloudfront.net/` | Verified 200, CloudFront static S3 export |
+| Store | `https://d15ogksm4jp6sl.cloudfront.net/store/` | Verified 200, CloudFront static S3 export |
+| Admin | `https://d15ogksm4jp6sl.cloudfront.net/admin/` | Verified 200, CloudFront static S3 export |
+| API | `https://d15ogksm4jp6sl.cloudfront.net/api` | Verified 200, CloudFront `/api/*` → Gateway NLB |
+| API health | `https://d15ogksm4jp6sl.cloudfront.net/api/actuator/health` | Verified 200; prefix stripped |
+| Gateway NLB origin | `http://a1c0373b905d84f4396e183863b684a0-13b4c7888342d782.elb.us-east-1.amazonaws.com` | CloudFront origin; HTTP only |
+| Documentation | `https://microsserv52.github.io/platform/` | Published from `main` |
 
-There is no custom domain or ACM certificate in the current environment. The
-CloudFront domain is the only public hostname.
+CloudFront terminates TLS for viewers and forwards `/api/*` to the NLB over
+HTTP. The CloudFront function strips the `/api` prefix, so the Gateway receives
+`/products`, `/auth/login`, `/session/login`, etc.
+
+The function also adds an `x-site` header (`landing`, `store`, `admin`) and the
+site cache policy includes it in the cache key. Without that header, all three
+static sites rewrote to `/index.html` and shared one cache entry, so every route
+returned the first cached site.
+
+There is no custom domain or ACM certificate yet; the CloudFront hostname is
+the public application URL.
 
 ## Access from a workstation
 
-The API is reachable through the Gateway Service only:
+Use the public URL:
+
+```bash
+curl -fsS https://d15ogksm4jp6sl.cloudfront.net/api/actuator/health
+curl -fsS https://d15ogksm4jp6sl.cloudfront.net/api/products
+```
+
+For cluster debugging, bypass CloudFront with the Gateway Service:
 
 ```bash
 kubectl -n platform port-forward svc/gateway 8080:8080
 curl http://localhost:8080/actuator/health
-curl http://localhost:8080/products
 ```
 
-This is the URL used for the load tests and smoke checks. It is not an internet
-endpoint.
+Do not use the NLB HTTP origin directly for normal clients; it bypasses
+CloudFront TLS and the path rewrite.
 
 ## Cluster-internal services
 
@@ -47,9 +64,6 @@ These names resolve only inside the `platform` namespace:
 | Exchange | `http://exchange:8080` | `/health` |
 | Exchange mock | `http://exchange-mock:8080` (LocalStack only) | `/health` |
 
-The Gateway strips `/api`; callers use `/products`, `/auth/login`,
-`/session/login`, not `/api/products`.
-
 ## AWS service endpoints
 
 | Service | Endpoint |
@@ -59,18 +73,26 @@ The Gateway strips `/api`; callers use `/products`, `/auth/login`,
 | RDS PostgreSQL | `platform-postgres.cf0a6omck937.us-east-1.rds.amazonaws.com:5432` |
 | ElastiCache Redis | `platform-redis.wkuz0g.0001.use1.cache.amazonaws.com:6379` |
 | CloudFront | `E2HCWED02TM6CL` / `d15ogksm4jp6sl.cloudfront.net` |
+| Gateway NLB | `a1c0373b905d84f4396e183863b684a0-13b4c7888342d782.elb.us-east-1.amazonaws.com` |
 
-RDS and ElastiCache are in private subnets and are not publicly accessible.
+RDS and ElastiCache are in private subnets and are not publicly accessible. The
+NLB is internet-facing on HTTP port 80; restrict its security group to the AWS
+CloudFront origin-facing prefix list before treating the origin as private.
 
-## Missing public URL
+## Frontend delivery
 
-To make the application available on the internet, one of these is still
-required:
+The three applications are static Next.js exports. `scripts/sync-frontends.sh`
+builds `web/landing`, `web/store` and `web/admin` with
+`NEXT_PUBLIC_API_BASE_URL=/api`, syncs each `out/` directory to its bucket and
+invalidates CloudFront.
 
-1. Install ingress-nginx or the AWS Load Balancer Controller, wait for its
-   external address, and use that as the API origin; or
-2. Set `TF_VAR_cloudfront_api_origin_domain` to the ingress hostname and deploy
-   the frontends with `scripts/deploy-aws.sh --skip-terraform --skip-images --frontends`.
+| Site | S3 bucket | CloudFront behaviour |
+| --- | --- | --- |
+| Landing | `platform-landing-730335608828` | default `/*` |
+| Store | `platform-store-730335608828` | `/store/*` |
+| Admin | `platform-admin-730335608828` | `/admin/*` |
+| Media | `platform-media-730335608828` | `/media/*` |
 
-Until then, the EKS workloads and CloudFront distribution are live but the
-application is not reachable as a public website.
+The admin build also needs
+`NEXT_PUBLIC_IMAGE_UPLOAD_ORIGINS=https://platform-media-730335608828.s3.us-east-1.amazonaws.com`
+for browser presigned uploads.

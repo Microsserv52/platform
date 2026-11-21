@@ -70,6 +70,7 @@ seeder is never deployed.
 | Setting            | microk8s                  | localstack                  | aws                                  |
 | ------------------ | ------------------------- | --------------------------- | ------------------------------------ |
 | Ingress class      | `nginx` (base)            | `traefik`                   | `nginx` with TLS redirect annotation |
+| Public API         | port-forward only         | LocalStack ingress          | `gateway-public` internet-facing NLB |
 | Database           | local `database`          | LocalStack RDS              | RDS                                  |
 | Cache              | local `redis`             | LocalStack ElastiCache      | ElastiCache                          |
 | Image source       | local images              | LocalStack ECR              | ECR                                  |

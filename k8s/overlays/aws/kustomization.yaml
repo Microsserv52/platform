@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: platform
 resources:
   - ../../base
+  - gateway-public.yaml
 
 patches:
   - target:

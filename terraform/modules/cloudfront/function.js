@@ -17,12 +17,15 @@ function handler(event) {
     }
 
     if (uri === "/store" || uri.indexOf("/store/") === 0) {
+        request.headers["x-site"] = { value: "store" };
         request.uri = toIndex(uri.substring("/store".length));
     } else if (uri === "/admin" || uri.indexOf("/admin/") === 0) {
+        request.headers["x-site"] = { value: "admin" };
         request.uri = toIndex(uri.substring("/admin".length));
     } else if (uri === "/api" || uri.indexOf("/api/") === 0) {
         request.uri = uri.substring("/api".length) || "/";
     } else {
+        request.headers["x-site"] = { value: "landing" };
         request.uri = toIndex(uri);
     }
 

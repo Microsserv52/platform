@@ -52,9 +52,10 @@ stacks were created.
 | ElastiCache | `platform-redis.wkuz0g.0001.use1.cache.amazonaws.com:6379` |
 | S3 | `platform-media-730335608828`, `platform-landing-…`, `platform-store-…`, `platform-admin-…` |
 | ECR | `730335608828.dkr.ecr.us-east-1.amazonaws.com` (6 repositories) |
-| CloudFront | `E2HCWED02TM6CL`, `d15ogksm4jp6sl.cloudfront.net` |
+| CloudFront | `E2HCWED02TM6CL`, `d15ogksm4jp6sl.cloudfront.net` (frontend and `/api`) |
+| Public frontend/API | `https://d15ogksm4jp6sl.cloudfront.net/`; `/store/`, `/admin/`, `/api` |
 | NAT gateway | 1 |
-| Load balancer / ingress | none installed |
+| Load balancer | Gateway NLB `a1c0373b905d84f4396e183863b684a0-13b4c7888342d782.elb.us-east-1.amazonaws.com` (internet-facing, HTTP 80) |
 | Budget | AWS Budget `Limit budget 100` (USD 100/month) |
 
 The workload rollout and cost evidence are recorded in
