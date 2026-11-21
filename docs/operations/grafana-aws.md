@@ -4,31 +4,40 @@ icon: lucide/cloud
 
 # Grafana on AWS
 
-This page describes the prepared AWS deployment. It is **not applied**; the
-live stack currently runs Prometheus and Grafana only in local Docker Compose.
+This page describes the prepared AWS deployment. It is **not applied**. The
+local Docker Compose stack already hosts Prometheus, Mimir, Loki, Tempo,
+Pyroscope, Grafana, Alloy and blackbox.
 
 ## Topology
 
 ```mermaid
 flowchart LR
-    user[Engineer] -->|HTTPS 443| cf[Cloudflare Access / Tunnel<br/>optional]
-    cf --> alb[AWS ALB + ACM]
-    user -->|HTTPS 443| alb
+    user[Engineer] -->|HTTPS 443| shield[AWS Shield Standard<br/>optional AWS WAF]
+    shield --> alb[AWS ALB + ACM]
     alb -->|Cognito OIDC| cog[Amazon Cognito]
     alb -->|authenticated| graf[Grafana ClusterIP]
     graf --> prom[Prometheus]
+    graf --> mimir[Mimir]
+    graf --> loki[Loki]
+    graf --> tempo[Tempo]
+    graf --> pyro[Pyroscope]
     prom --> apps[Platform services]
+    prom -->|remote write| mimir
     prom --> bb[Blackbox exporter]
+    apps -->|OTLP| alloy[Alloy]
+    alloy --> loki
+    alloy --> tempo
+    alloy -->|Faro| loki
     eso[External Secrets Operator] -->|IRSA| sm[AWS Secrets Manager]
     eso -->|sync| secret[Kubernetes Secret]
     secret --> graf
-    alloy[Alloy] -->|remote write| cloud[Grafana Cloud<br/>Mimir / Loki / Tempo / Pyroscope]
 ```
 
 Grafana is never exposed with a `LoadBalancer` Service or a public ALB without
 authentication. The ALB uses Cognito; Grafana sees only authenticated requests.
-The alternative is Cloudflare Tunnel + Cloudflare Access, which avoids an ALB
-and inbound ports at near-zero cost.
+Without a custom domain, the supported access path is `kubectl port-forward` or
+SSM. The ALB + Cognito option needs an ACM certificate and a DNS name. See
+[custom domains](../infrastructure/custom-domains.md).
 
 ## What the repository provides
 
@@ -36,8 +45,14 @@ and inbound ports at near-zero cost.
 | --- | --- |
 | `observability/helm/values.yaml` | kube-prometheus-stack with Grafana/Alertmanager disabled |
 | `k8s/observability/grafana.yaml` | Grafana Deployment, PVC and ClusterIP Service |
+| `k8s/observability/mimir.yaml` | Long-term metrics, 10 GiB PVC |
+| `k8s/observability/loki.yaml` | Logs, 10 GiB PVC |
+| `k8s/observability/tempo.yaml` | OTLP traces, 10 GiB PVC |
+| `k8s/observability/pyroscope.yaml` | Profiles, 10 GiB PVC |
+| `k8s/observability/alloy.yaml` | OTLP, Faro and pod-log collector |
 | `k8s/observability/blackbox.yaml` | In-cluster blackbox exporter |
 | `k8s/observability/servicemonitors.yaml` | Scrapes all six services |
+| `k8s/base/otel-instrumentation.yaml` | Java agent init container and OTel env |
 | `k8s/observability/probe.yaml` | External CloudFront synthetic checks |
 | `k8s/observability/grafana-ingress-cognito.example.yaml` | ALB + Cognito ingress |
 | `k8s/observability/external-secret.example.yaml` | Secrets Manager → Kubernetes |
@@ -48,12 +63,15 @@ and inbound ports at near-zero cost.
 ## Prerequisites
 
 1. **EBS CSI driver and a `gp3` StorageClass.** Terraform creates the IRSA role
-   and add-on when `enable_observability = true`.
+   and add-on when `enable_observability = true`; the install script applies the
+   `gp3` StorageClass.
 2. **AWS Load Balancer Controller** with IRSA. It is not installed by this
    repository; install it once per cluster.
 3. **Cognito user pool, app client and domain** for the ALB authentication
    action. Restrict sign-up: admins create users.
 4. **ACM certificate** in the ALB region and a DNS record for the Grafana host.
+   Without a custom domain there is no stable ALB TLS hostname; use
+   `kubectl port-forward` for now.
 5. **External Secrets Operator** or an equivalent secret sync. The example uses
    a `ClusterSecretStore` named `aws-secrets-manager`.
 6. **Kubernetes context** for the target EKS cluster.
@@ -79,7 +97,11 @@ This adds:
 - Secrets Manager containers `platform/grafana/admin` and
   `platform/grafana/alerting`.
 
-It does **not** write secret values and does **not** deploy Grafana.
+The stack creates seven `gp3` PVCs (Prometheus, Mimir, Loki, Tempo, Pyroscope,
+Grafana and Alloy). Expect the full stack to add a third `t3.medium` node.
+
+Terraform does **not** write secret values and does **not** deploy the
+observability stack; `scripts/install-observability.sh` does that in Step 3.
 
 ## Step 2 — Write secrets out of band
 
@@ -128,21 +150,26 @@ The script:
 
 1. Creates the `observability` namespace.
 2. Creates or reuses `grafana-admin` and `grafana-alerting`.
-3. Creates ConfigMaps from `observability/grafana/provisioning`,
-   `observability/grafana/dashboards` and `observability/blackbox`. The
-   cluster uses `observability/grafana/aws/datasources.prometheus.yml`; Grafana Cloud owns logs, traces
-   and profiles, so no in-cluster Loki/Tempo/Pyroscope is required.
+3. Creates ConfigMaps for Grafana provisioning, dashboards, blackbox, Mimir,
+   Loki, Tempo, Pyroscope and Alloy.
 4. Converts the recording rules into a `PrometheusRule`.
 5. Installs `kube-prometheus-stack` with Grafana and Alertmanager disabled.
-6. Applies Grafana, blackbox, ServiceMonitors, Probe and NetworkPolicy.
-7. Waits for Grafana and blackbox rollouts.
+6. Applies Mimir, Loki, Tempo, Pyroscope, Alloy, Grafana, blackbox,
+   ServiceMonitors, Probe and NetworkPolicy.
+7. Waits for every observability Deployment to roll out.
 
-Access it through a port-forward first:
+Prometheus remote-writes to Mimir. Alloy receives OTLP traces from the Java
+agent, reads Kubernetes pod logs, and accepts Faro browser telemetry. Access
+Grafana through a port-forward first:
 
 ```bash
 kubectl -n observability port-forward svc/grafana 3000:3000
 open http://localhost:3000
 ```
+
+Faro ingest is `alloy.observability.svc.cluster.local:12347/collect`. It is
+ClusterIP only. Publishing the browser collector needs an HTTPS ingress; without
+a custom domain, keep browser telemetry local or use a temporary port-forward.
 
 ## Step 4 — Publish behind an account
 
@@ -164,18 +191,19 @@ The ALB:
 
 Grafana additionally keeps `GF_AUTH_ANONYMOUS_ENABLED=false`,
 `GF_USERS_ALLOW_SIGN_UP=false` and `GF_SECURITY_COOKIE_SECURE=true`. Cognito is
-an additional gate, not a replacement for Grafana authorization.
+an additional gate, not a replacement for Grafana authorization. Attach an AWS
+WAF web ACL to the ALB and start in count mode; see
+[AWS edge security](../infrastructure/aws-edge-security.md).
 
 Create Cognito groups such as `platform-admins` and `platform-viewers`, and map
 them to Grafana roles with generic OAuth if Grafana-native login is not desired.
 The ALB authentication alone does not assign Grafana roles.
 
-### Option B — Cloudflare Access / Tunnel
+### Option B — Wait for a domain
 
-Run `cloudflared` in the cluster, point the tunnel at
-`http://grafana.observability.svc.cluster.local:3000`, and protect the hostname
-with a Cloudflare Access policy. This avoids an ALB, ACM certificate and inbound
-ports. Cloudflare credentials belong in a Kubernetes Secret, never in Git.
+Without a custom domain there is no stable TLS hostname for a public ALB. Use
+`kubectl port-forward` or an SSM session until a domain and ACM certificate are
+available. See [Custom domains](../infrastructure/custom-domains.md).
 
 ## Step 5 — Verify
 
@@ -209,7 +237,7 @@ curl -fsS 'http://localhost:9090/api/v1/targets?state=active'
 | Alert recipient | Secrets Manager `platform/grafana/alerting` | `ALERT_EMAIL_TO` via `secretKeyRef` | update + restart |
 | Cognito client secret | Secrets Manager or Cognito console | ALB auth action / Grafana OAuth | new client secret + restart |
 | SMTP password | Secrets Manager | `GF_SMTP_PASSWORD` | provider rotation |
-| Grafana Cloud token | Grafana Cloud / secret store | Alloy environment | rotate access policy |
+| Grafana Cloud token (optional) | Grafana Cloud / secret store | Alloy environment | rotate access policy |
 | AWS access | GitHub OIDC → IAM role | Actions | no static keys |
 
 No secret value belongs in a Terraform variable, Helm value, provisioning file,
@@ -220,12 +248,13 @@ dashboard JSON or CI workflow.
 | Item | Estimate |
 | --- | ---: |
 | Prometheus/Grafana/blackbox requests | ~0.8–1.2 vCPU, ~2–3 GiB |
-| 30 GiB EBS (20 GiB Prometheus + 10 GiB Grafana) | ≈ $2.5/month |
+| Mimir/Loki/Tempo/Pyroscope/Alloy requests | ~0.5–1 vCPU, ~1.2–2 GiB |
+| 70 GiB EBS (Prometheus 20, Grafana 10, four backends 10 each) | ≈ $7/month |
 | Extra node if the two-node baseline cannot fit | ≈ +$31/month |
 | ALB 24/7 | ≈ $20/month |
 | Cognito, ACM, Route 53 | effectively free at this scale |
 | Secrets Manager | ≈ $0.40/secret/month |
-| Cloudflare Access/Tunnel alternative | ≈ $0 |
+| AWS WAF (optional) | web ACL + request charges |
 
 The current two-node run-rate is ≈ $240/month. Observability likely adds a third
 node; see [Costs, PaaS and SLA](../infrastructure/costs.md).
@@ -238,16 +267,20 @@ kubectl delete -k k8s/observability
 kubectl delete namespace observability
 ```
 
-This deletes the Prometheus and Grafana PVCs. The Secrets Manager containers and
-EBS CSI add-on remain until Terraform is changed. Grafana Cloud data is retained
-according to the Cloud stack retention policy.
+This deletes the Prometheus, Grafana, Mimir, Loki, Tempo, Pyroscope and Alloy
+PVCs. The Secrets Manager containers and EBS CSI add-on remain until Terraform
+is changed. Optional Grafana Cloud data is retained by its own stack policy.
 
 ## Remaining work
 
 - Install and verify the AWS Load Balancer Controller and Cognito flow in the
   live account.
 - Decide whether Grafana keeps native login or delegates to Cognito OIDC.
-- Add backend OpenTelemetry agents for traces and Pyroscope agents for profiles.
+- Add the Exchange Python OpenTelemetry integration in its own repository.
+- Add Pyroscope language agents and decide the sampling/overhead budget.
+- Attach AWS WAF and enable CloudFront/WAF logging.
+- Publish Alloy Faro ingest through an HTTPS AWS route (CloudFront behavior plus
+  a dedicated NLB/ALB) before enabling Faro in production frontends.
 - Add a custom domain and ACM certificate; the CloudFront hostname is still the
-  public application URL.
-- Apply the Grafana Cloud Terraform environment with real stack tokens.
+  public application URL. See [Custom domains](../infrastructure/custom-domains.md).
+- Optionally apply the Grafana Cloud Terraform environment; it is not required.

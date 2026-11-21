@@ -5,10 +5,9 @@ icon: lucide/image-plus
 # Image implementation handoff for the Product service
 
 The owner selected **Amazon S3 storage** and approved the AWS SDK. CloudFront
-is the delivery baseline for this handoff; a possible move to Cloudflare CDN
-remains open. If delivery changes, revise origin authentication, routing, cache
-headers and purge behavior before provisioning. Cloudflare security does not
-select R2 or authorize a storage migration. This document is the required
+is the delivery baseline for this handoff. No alternate CDN or object store is
+selected. If delivery changes, revise origin authentication, routing, cache
+headers and purge behavior before provisioning. This document is the required
 backend contract; the Product service now implements it (see
 [Implementation status](#implementation-status)). Do not move product ownership
 into Gateway or a frontend repository. The initial UI supports file uploads

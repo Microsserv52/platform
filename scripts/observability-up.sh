@@ -9,6 +9,8 @@ require_cmd curl
 OBS_COMPOSE=(-f "$ROOT_DIR/compose.yml" -f "$ROOT_DIR/compose.observability.yml")
 PROFILE=(--profile observability)
 
+"$ROOT_DIR/scripts/fetch-otel-agent.sh"
+
 docker compose "${OBS_COMPOSE[@]}" "${PROFILE[@]}" up -d
 
 wait_for() {
@@ -25,6 +27,7 @@ wait_for() {
 }
 
 wait_for prometheus http://127.0.0.1:9090/-/ready
+wait_for mimir http://127.0.0.1:9009/ready
 wait_for loki http://127.0.0.1:3100/ready
 wait_for tempo http://127.0.0.1:3200/ready
 wait_for pyroscope http://127.0.0.1:4040/ready
@@ -36,6 +39,7 @@ Observability stack is up (localhost only)
 
   Grafana      http://localhost:3000   (${GRAFANA_ADMIN_USER:-admin})
   Prometheus   http://localhost:9090
+  Mimir        http://localhost:9009
   Loki         http://localhost:3100
   Tempo        http://localhost:3200
   Pyroscope    http://localhost:4040

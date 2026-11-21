@@ -57,7 +57,10 @@ the Exchange Deployment treats that secret key as optional.
 
 ## Observability
 
-`k8s/observability` deploys Grafana, blackbox and the ServiceMonitors. It is
+`k8s/observability` deploys Mimir, Loki, Tempo, Pyroscope, Alloy, Grafana,
+blackbox, ServiceMonitors and synthetic probes. Prometheus comes from
+`kube-prometheus-stack` and remote-writes to Mimir. The base overlay also adds
+the OpenTelemetry Java agent init container to the five Java Deployments. It is
 installed after `kube-prometheus-stack`:
 
 ```bash
@@ -66,8 +69,10 @@ scripts/install-observability.sh
 scripts/install-observability.sh --localstack
 ```
 
-Grafana is ClusterIP only. The ALB + Cognito and Cloudflare Access options are
-documented in [Grafana on AWS](../docs/operations/grafana-aws.md). See
+The observability PVCs use `gp3` on AWS and `local-path` in the LocalStack
+overlay. Grafana is ClusterIP only. The ALB + Cognito option and the
+custom-domain prerequisite are documented in
+[Grafana on AWS](../docs/operations/grafana-aws.md). See
 [Observability](../docs/operations/observability.md) for the dashboards, alerts
 and local Compose profile.
 

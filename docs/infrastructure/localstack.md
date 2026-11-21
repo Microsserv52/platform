@@ -58,8 +58,8 @@ docker compose -f compose.yml -f compose.observability.yml \
   --profile observability up -d
 ```
 
-The LocalStack EKS rehearsal can install the same Prometheus/Grafana stack with
-emptyDir storage and the control-plane toleration:
+The LocalStack EKS rehearsal can install the same observability stack with
+`local-path` storage and the control-plane toleration:
 
 ```bash
 scripts/install-observability.sh --localstack
@@ -69,7 +69,10 @@ kubectl -n observability port-forward svc/grafana 3000:3000
 It uses `observability/helm/values.localstack.yaml` and
 `k8s/overlays/localstack/observability`. The external CloudFront `Probe` is
 deleted in that overlay because LocalStack has no public edge. Prometheus and
-Grafana data is not durable in this mode; it is a rehearsal, not storage.
+Grafana use emptyDir; the LGTM backends use `local-path`. The full LGTM set can
+exceed the single LocalStack node; use the Compose profile for the complete
+local stack or reduce rehearsal replicas. It is a rehearsal, not durable
+storage.
 
 See [Observability](../operations/observability.md).
 

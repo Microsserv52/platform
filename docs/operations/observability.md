@@ -44,22 +44,26 @@ management.metrics.distribution.slo.http.server.requests=50ms,100ms,250ms,500ms,
 ### Logs
 
 Services emit structured JSON with UTC timestamps, service, request ID, route
-and status. Alloy reads Docker container logs locally and writes them to Loki.
-In Grafana Cloud, the same Alloy pipeline writes to the Cloud Loki endpoint.
-Secrets, JWTs and provider credentials are never logged.
+and status. Alloy reads Docker container logs locally and Kubernetes pod logs on
+EKS, then writes to Loki. Grafana Cloud remote write is optional; it is not
+required for the hosted stack. Secrets, JWTs and provider credentials are never
+logged.
 
 ### Traces
 
-Tempo is part of the local stack and Alloy accepts OTLP on `4317`/`4318`.
-Browser traces travel through Alloy's Faro receiver. Java and Python services
-need an OpenTelemetry agent or SDK before backend spans are exported; the
-collector path and Tempo/Grafana Cloud endpoints are ready.
+Tempo is part of the local and EKS stacks, and Alloy accepts OTLP on
+`4317`/`4318`. Java services load the OpenTelemetry Java agent through the
+Compose entrypoint or a Kubernetes init container; no service source change is
+needed. The frontends send Faro browser telemetry to Alloy's `faro.receiver`.
+
+Exchange is Python and still exports metrics and structured logs only. Backend
+spans for Exchange need an OpenTelemetry Python package and entrypoint change in
+its own repository; that change is intentionally not made here.
 
 ### Profiles
 
-Pyroscope is part of the local stack. The Cloud write path is configured in
-Alloy. CPU/allocation profiling still needs a language agent and an overhead
-decision; no profiler is claimed as enabled.
+Pyroscope is hosted locally and on EKS. CPU/allocation profiling still needs a
+language agent and an overhead decision; no profiler is claimed as enabled.
 
 ## Local stack
 
@@ -67,10 +71,13 @@ decision; no profiler is claimed as enabled.
 flowchart LR
     browser[Browser Faro SDK] --> alloy[Alloy]
     services[Gateway / Auth / Account / Order / Product / Exchange] --> prom[Prometheus]
-    services --> alloy
+    services -->|OTLP traces| alloy[Alloy]
+    browser --> alloy
+    prom -->|remote write| mimir[Mimir]
     alloy --> loki[Loki]
     alloy --> tempo[Tempo]
     prom --> grafana[Grafana]
+    mimir --> grafana
     loki --> grafana
     tempo --> grafana
     pyroscope[Pyroscope] --> grafana
@@ -84,7 +91,8 @@ docker compose -f compose.yml -f compose.observability.yml \
   --profile observability up -d
 ```
 
-Or use the wrapper:
+Or use the wrapper, which also downloads the checksum-verified OpenTelemetry
+Java agent:
 
 ```bash
 scripts/observability-up.sh
@@ -93,32 +101,53 @@ scripts/observability-up.sh
 | Component | Local URL | Purpose |
 | --- | --- | --- |
 | Grafana | <http://localhost:3000> | Dashboards, unified alerting |
-| Prometheus | <http://localhost:9090> | Metrics, recording rules |
+| Prometheus | <http://localhost:9090> | Scraping, recording rules, 15-day local retention |
+| Mimir | <http://localhost:9009> | Long-term metrics, remote-write target |
 | Loki | <http://localhost:3100> | Logs |
 | Tempo | <http://localhost:3200> | Traces |
 | Pyroscope | <http://localhost:4040> | Profiles |
 | Alloy | <http://localhost:12345> | Collection, Faro receiver |
 | Blackbox | <http://localhost:9115> | Synthetic HTTP probes |
 
-All ports bind to `127.0.0.1`. Stop without deleting data:
+All ports bind to `127.0.0.1`. Grafana uses the Compose default `admin/admin`
+unless `GRAFANA_ADMIN_PASSWORD` is set. Stop without deleting data:
 
 ```bash
 scripts/observability-down.sh
 ```
 
-Enable browser telemetry before rebuilding the frontends:
+The `observability` Compose profile enables Faro for the landing, store and admin
+builds by default:
 
 ```bash
 NEXT_PUBLIC_ENABLE_TELEMETRY=true
 NEXT_PUBLIC_FARO_URL=http://localhost:12347/collect
 ```
 
-The admin app also links to `NEXT_PUBLIC_GRAFANA_DASHBOARD_URL` when set.
+Rebuild the three frontends after changing these values. The admin app also
+links to `NEXT_PUBLIC_GRAFANA_DASHBOARD_URL` when set.
+
+### OpenTelemetry
+
+`scripts/observability-up.sh` downloads the pinned Java agent into
+`.cache/otel/` and verifies its release checksum before starting the stack.
+Compose mounts the agent read-only and wraps the JVM entrypoint; Kubernetes uses
+an init container and `JAVA_TOOL_OPTIONS`. Metrics stay on the Micrometer
+endpoint; the agent exports traces only.
+
+```bash
+scripts/fetch-otel-agent.sh
+docker compose -f compose.yml -f compose.observability.yml \
+  --profile observability up -d
+```
+
+The agent is version `v2.34.0` by default. Override it with
+`OTEL_JAVAAGENT_VERSION` for both the download and the Kubernetes init container.
 
 ### LocalStack rehearsal
 
-LocalStack EKS uses k3s with a single tainted control-plane node and no dynamic
-`gp3` provisioner. Install the same stack with emptyDir storage:
+LocalStack EKS uses k3s with a single tainted control-plane node. Install the
+same stack with `local-path` storage:
 
 ```bash
 scripts/install-observability.sh --localstack
@@ -127,7 +156,8 @@ scripts/install-observability.sh --localstack
 It uses [`values.localstack.yaml`](https://github.com/Microsserv52/platform/blob/main/observability/helm/values.localstack.yaml)
 and the overlay in
 [`k8s/overlays/localstack/observability`](https://github.com/Microsserv52/platform/tree/main/k8s/overlays/localstack/observability).
-The external `Probe` is omitted there because the rehearsal has no public edge.
+The external `Probe` is omitted there because the rehearsal has no public edge,
+and PVCs use the k3s `local-path` StorageClass.
 
 ## Dashboards
 
@@ -191,12 +221,13 @@ as `observability/grafana/examples/contact-points.slack.example.yml`; copy it in
    `hikaricp_connections_max`; the retained pool is 8 per pod.
 7. Record the incident and link the dashboard time range in the delivery notes.
 
-## Grafana Cloud ingestion
+## Optional Grafana Cloud export
 
-Grafana Cloud remains the managed destination for signals that should outlive
-the cluster. All credentials are environment variables; no token is committed.
+The self-hosted stack is the required destination. Grafana Cloud is an optional
+second copy for signals that should outlive the cluster. All credentials are
+environment variables; no token is committed.
 
-| Grafana Cloud product | Role | Repository status |
+| Grafana Cloud product | Optional role | Repository status |
 | --- | --- | --- |
 | Prometheus / Mimir | Metrics remote write | Configured in `observability/alloy/config.cloud.alloy` |
 | Loki | Logs | Configured through Alloy Docker log collection |
@@ -227,21 +258,21 @@ Cloud stack URL, service-account token and Synthetic Monitoring access token.
 
 ## AWS deployment
 
-The prepared EKS deployment runs Prometheus Operator and self-hosted Grafana;
-Grafana stays `ClusterIP` and is published behind **Amazon Cognito** at an ALB,
-or behind **Cloudflare Access/Tunnel**. The cluster installer provisions the
-in-cluster Prometheus datasource; logs, traces and profiles stay in Grafana
-Cloud and are queried from the Cloud UI, so there are no broken in-cluster
-Loki/Tempo/Pyroscope datasources on EKS. See
-[Grafana on AWS](grafana-aws.md) for the topology, prerequisites, secret flow
-and exact commands.
+The prepared EKS deployment runs Prometheus Operator plus single-binary Mimir,
+Loki, Tempo and Pyroscope with `gp3` PVCs. Alloy collects pod logs, OTLP traces
+and Faro telemetry; Prometheus remote-writes to Mimir. Grafana stays
+`ClusterIP` and is published behind **Amazon Cognito** at an ALB when a custom
+domain and ACM certificate exist. The full stack needs roughly a third
+`t3.medium` node. See [Grafana on AWS](grafana-aws.md) for prerequisites, secret
+flow and exact commands.
 
-## Cloudflare edge
+## AWS edge security
 
-Cloudflare is the security edge, not the metrics backend. Edge logs can be
-exported with Logpush when the plan allows it; the optional path is documented
-in [Cloudflare edge telemetry](observability-cloudflare.md). It does not replace
-the Grafana Cloud signal pipeline.
+Edge protection uses AWS Shield Standard, CloudFront, security groups and an
+optional AWS WAF. CloudFront and WAF logs are an AWS-native path, not a third-party
+log pipeline. See
+[AWS observability and edge security](observability-aws-security.md) and
+[AWS edge security](../infrastructure/aws-edge-security.md).
 
 ## Verification
 
@@ -249,8 +280,14 @@ the Grafana Cloud signal pipeline.
 scripts/validate-observability.sh
 
 curl -fsS http://localhost:9090/-/ready
+curl -fsS http://localhost:9009/ready
+curl -fsS http://localhost:3100/ready
+curl -fsS http://localhost:3200/ready
+curl -fsS http://localhost:4040/ready
+curl -fsS http://localhost:12345/-/ready
 curl -fsS 'http://localhost:9090/api/v1/targets?state=active'
 curl -fsS 'http://localhost:9090/api/v1/query?query=probe_success'
+curl -fsS 'http://localhost:9009/prometheus/api/v1/query?query=up'
 curl -fsS http://localhost:3000/api/health
 curl -fsS -u admin:admin http://localhost:3000/api/search?type=dash-db
 ```
@@ -263,9 +300,10 @@ The validation script checks Prometheus configuration and rules with
 | Item | Local | AWS estimate |
 | --- | ---: | ---: |
 | Prometheus + Grafana + blackbox requests | $0 | ~0.8–1.2 vCPU, ~2–3 GiB |
-| EBS for Prometheus (20 GiB) + Grafana (10 GiB) | $0 | ≈ $2.5/month |
+| Mimir + Loki + Tempo + Pyroscope + Alloy | $0 | ~0.5–1 vCPU, ~1.2–2 GiB |
+| EBS: Prometheus 20 GiB + Grafana 10 GiB + four 10 GiB backends | $0 | ≈ $7/month |
 | Extra node if the two-node baseline cannot fit | $0 | ≈ +$31/month |
-| Grafana Cloud | Free tier possible | Plan-dependent |
+| Grafana Cloud (optional) | Free tier possible | Plan-dependent |
 
 The observability stack likely pushes the current two-node baseline to three
 nodes. See [Costs, PaaS and SLA](../infrastructure/costs.md).
@@ -276,6 +314,8 @@ nodes. See [Costs, PaaS and SLA](../infrastructure/costs.md).
   collector and storage paths are configured.
 - AWS deployment is prepared and validated, not applied.
 - Grafana Cloud Terraform cannot be applied without a real stack and tokens.
-- LocalStack stores Prometheus/Grafana data in emptyDir; it is a rehearsal, not
-  durable storage.
-- Cloudflare Logpush availability depends on the selected plan.
+- LocalStack uses emptyDir for Prometheus/Grafana and `local-path` for the
+  LGTM backends; it is a rehearsal, not durable storage.
+- CloudFront/WAF logging is not enabled; the AWS-native path is documented but not applied.
+- AWS Faro ingest is ClusterIP only. Publishing it needs an HTTPS route such as a
+  CloudFront behavior with a dedicated NLB/ALB; the local Alloy receiver is ready.

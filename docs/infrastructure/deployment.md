@@ -27,7 +27,7 @@ uv run zensical build --clean
 See the [staging environment plan](staging.md) and its unchecked implementation
 backlog. The owner selected scheduled developer-only access and synthetic seed
 data. The plan keeps all production business services at smaller fixed capacity,
-separates Grafana Cloud observability, enables Faro errors and disables Umami/
+separates observability, enables Faro errors and disables Umami/
 usage analytics. Current deployment workflows and Kubernetes files do not
 implement that environment and must not be applied as an assumed staging setup.
 
@@ -108,9 +108,12 @@ requires authentication. Use `--skip-terraform`, `--skip-images` or
 run `scripts/seed_demo.py` manually against the deployed URL.
 
 Observability is a separate opt-in step. Set `TF_VAR_enable_observability=true`
-and apply Terraform, then run `scripts/install-observability.sh`. Grafana stays
-ClusterIP and is published behind Cognito or Cloudflare Access; see
-[Grafana on AWS](../operations/grafana-aws.md).
+and apply Terraform, then run `scripts/install-observability.sh`. It installs
+Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy and blackbox, with
+EBS-backed PVCs. Grafana stays ClusterIP and is published behind Amazon Cognito
+at an ALB when a custom domain exists; see
+[Grafana on AWS](../operations/grafana-aws.md) and
+[custom domains](custom-domains.md).
 
 Images can also be built and pushed by the manual
 **Publish EKS images** workflow. It does not deploy; after it finishes, roll out

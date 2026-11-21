@@ -20,14 +20,20 @@ installation still needs acceptance on the chosen deployment. The current browse
 authenticated API. The selected [Redis Cart service](../services/cart/index.md)
 will make the server cart authoritative; offline mutation/replay remains out of scope. See [Next.js PWA guidance](https://nextjs.org/docs/app/guides/progressive-web-apps).
 
-## Grafana Cloud and Faro
+## Faro and OpenTelemetry
 
-Grafana Cloud is the selected destination for Faro. See the
-[complete managed stack plan](../operations/observability.md#grafana-cloud-ingestion)
-for Prometheus/Mimir, Loki, Tempo, Pyroscope, OTel/Alloy and Graphite support.
+Faro is the browser telemetry path. The self-hosted Alloy receiver is the default
+destination; Grafana Cloud export is optional. See
+[Observability](../operations/observability.md#optional-grafana-cloud-export)
+for the hosted Prometheus/Mimir, Loki, Tempo, Pyroscope and Grafana stack.
 The local Alloy Faro receiver is available at
-`http://localhost:12347/collect`; Cloud collector credentials, region and policy
-remain deployment values.
+`http://localhost:12347/collect`. The `observability` Compose profile enables
+Faro for the landing, store and admin builds; a production URL is a deployment
+value.
+
+Backend Java services use the OpenTelemetry agent and export OTLP traces to
+Alloy/Tempo. Faro trace propagation is still limited to the public catalog
+endpoint because private routes need a privacy/CORS review.
 
 The approved SDK and tracing packages initialize once in the browser when
 `NEXT_PUBLIC_ENABLE_TELEMETRY=true`, a Faro URL is configured and the visitor has
@@ -89,20 +95,20 @@ Gateway uses backend-only `AUTH_URL`, `ACCOUNT_URL`, `JWT_SECRET`,
 `SESSION_COOKIE_SECURE` and `SESSION_COOKIE_PATH`. Production uses Secure cookies;
 only the explicit local HTTP setup disables that cookie flag.
 
-Before deployment, ask the owner to choose CDN provider, public/API origins,
-per-app variables, Grafana Cloud stack/collector values, Umami hosting, allowed
-script/connect origins, retention
-and any collection policy. Do not create production resources or Kubernetes
-frontends as part of local delivery.
+Before deployment, choose the public/API origins, Faro URL, Umami hosting,
+allowed script/connect origins and retention. A custom domain is not available;
+the CloudFront hostname remains the origin. Do not create production resources
+or Kubernetes frontends as part of local delivery.
 
-Cloudflare is selected for DDoS/WAF/Tunnel security. This does not select the
-static CDN provider or domain name; both remain open. See the
-[security edge plan](../infrastructure/cloudflare.md).
+Edge protection uses AWS Shield Standard, CloudFront, security groups and an
+optional AWS WAF. There is no custom domain yet; see
+[AWS edge security](../infrastructure/aws-edge-security.md) and
+[custom domains](../infrastructure/custom-domains.md).
 
 ## Planned staging telemetry — TODO
 
 [Staging](../infrastructure/staging.md#separate-observability-faro-on-analytics-off)
-will use a separate Grafana Cloud/Faro destination with error reporting enabled
+will use a separate self-hosted Faro/Alloy destination with error reporting enabled
 and Umami/usage analytics disabled. The existing shared
 `NEXT_PUBLIC_ENABLE_TELEMETRY` flag does not express that policy independently.
 Future work must add separate Faro and analytics gates in all three apps, guard

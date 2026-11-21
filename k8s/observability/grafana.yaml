@@ -86,6 +86,8 @@ spec:
               value: /var/log/grafana
             - name: PROMETHEUS_URL
               value: http://observability-kube-prometheus-prometheus.observability.svc.cluster.local:9090
+            - name: MIMIR_URL
+              value: http://mimir.observability.svc.cluster.local:9009/prometheus
             - name: LOKI_URL
               value: http://loki.observability.svc.cluster.local:3100
             - name: TEMPO_URL

@@ -1,13 +1,23 @@
-# Observability verification — 2026-11-21T05:46:08Z
+# Observability verification — 2026-11-21T09:09:30Z
 
 ## Containers
-platform-alloy-1 Up 59 minutes
-platform-blackbox-exporter-1 Up 59 minutes
-platform-grafana-1 Up 20 seconds
-platform-loki-1 Up 59 minutes
-platform-prometheus-1 Up 59 minutes
-platform-pyroscope-1 Up 31 minutes
-platform-tempo-1 Up 59 minutes
+platform-alloy-1 Up 23 minutes
+platform-blackbox-exporter-1 Up 23 minutes
+platform-grafana-1 Up 23 minutes
+platform-loki-1 Up 23 minutes
+platform-mimir-1 Up 23 minutes
+platform-prometheus-1 Up 23 minutes
+platform-pyroscope-1 Up 23 minutes
+platform-tempo-1 Up 23 minutes
+
+## Readiness
+http://127.0.0.1:9090/-/ready              200
+http://127.0.0.1:9009/ready                200
+http://127.0.0.1:3100/ready                200
+http://127.0.0.1:3200/ready                200
+http://127.0.0.1:4040/ready                200
+http://127.0.0.1:12345/-/ready             200
+http://127.0.0.1:3000/api/health           200
 
 ## Prometheus targets
 account up
@@ -23,8 +33,12 @@ order up
 product up
 prometheus up
 
-## Grafana health
-{"database":"ok","version":"13.3.1","commit":"da3aa3ff574e7dbbf808c66b6daa744defed0441"}
+## Grafana datasources
+Loki
+Mimir
+Prometheus
+Pyroscope
+Tempo
 
 ## Dashboards
 Dependencies
@@ -43,27 +57,17 @@ Database connection pool saturation
 Exchange provider errors
 Product cache errors
 
-## Notification policy
-{"receiver":"platform-email","group_by":["alertname","service","severity"],"routes":[{"receiver":"platform-email","object_matchers":[["severity","=","page"]],"group_wait":"10s","repeat_interval":"1h"}]}
+## OTel traces in Tempo by service
+gateway    1
+auth       1
+account    1
+order      1
+product    1
 
-## Recording rules
-platform:http_requests:rate5m ok
-platform:http_errors:rate5m ok
-platform:availability:ratio5m ok
-platform:latency:p95_5m ok
-platform:latency:p99_5m ok
-platform:error_budget:burn_rate5m ok
-platform:error_budget:burn_rate1h ok
-platform:http_requests:increase28d ok
-platform:http_errors:increase28d ok
-platform:availability:ratio28d ok
-platform:error_budget:remaining28d ok
-platform:jvm_heap:ratio ok
-platform:hikari:utilization ok
+## Mimir
+{"series":12}
 
-## Synthetic probes
-http://nginx/ 1
-http://nginx/admin/ 1
-http://nginx/api/products 1
-http://nginx/api/actuator/health 1
-http://nginx/store/ 1
+## Faro build
+landing: Faro URL baked
+store: Faro URL baked
+admin: Faro URL baked

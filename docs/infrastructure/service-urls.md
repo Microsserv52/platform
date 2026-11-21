@@ -29,7 +29,9 @@ static sites rewrote to `/index.html` and shared one cache entry, so every route
 returned the first cached site.
 
 There is no custom domain or ACM certificate yet; the CloudFront hostname is
-the public application URL.
+the public application URL. Adding one requires a domain, Route 53 hosted zone,
+ACM certificate, CloudFront alias and updates to CORS, cookies, Cognito and
+Faro origins; see [Custom domains](custom-domains.md).
 
 ## Access from a workstation
 
@@ -63,6 +65,22 @@ These names resolve only inside the `platform` namespace:
 | Product | `http://product:8080` | `/actuator/health` |
 | Exchange | `http://exchange:8080` | `/health` |
 | Exchange mock | `http://exchange-mock:8080` (LocalStack only) | `/health` |
+
+## Observability endpoints
+
+These are ClusterIP services in the `observability` namespace. None is public;
+use port-forward unless the Cognito ALB ingress is installed.
+
+| Component | Internal URL | Local URL |
+| --- | --- | --- |
+| Grafana | `http://grafana.observability.svc.cluster.local:3000` | `http://localhost:3000` |
+| Prometheus | `http://observability-kube-prometheus-prometheus.observability.svc.cluster.local:9090` | `http://localhost:9090` |
+| Mimir | `http://mimir.observability.svc.cluster.local:9009/prometheus` | `http://localhost:9009` |
+| Loki | `http://loki.observability.svc.cluster.local:3100` | `http://localhost:3100` |
+| Tempo | `http://tempo.observability.svc.cluster.local:3200` | `http://localhost:3200` |
+| Pyroscope | `http://pyroscope.observability.svc.cluster.local:4040` | `http://localhost:4040` |
+| Alloy OTLP | `alloy.observability.svc.cluster.local:4317` | `localhost:4317` |
+| Faro ingest | `http://alloy.observability.svc.cluster.local:12347/collect` | `http://localhost:12347/collect` |
 
 ## AWS service endpoints
 

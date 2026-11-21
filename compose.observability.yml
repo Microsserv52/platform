@@ -25,6 +25,20 @@ services:
       - "127.0.0.1:9090:9090"
     restart: unless-stopped
 
+  mimir:
+    image: grafana/mimir:3.2.6
+    profiles: ["observability"]
+    hostname: mimir
+    command:
+      - -config.file=/etc/mimir/config.yml
+      - -target=all
+    volumes:
+      - ./observability/mimir/mimir.yaml:/etc/mimir/config.yml:ro
+      - mimir-data:/data
+    ports:
+      - "127.0.0.1:9009:9009"
+    restart: unless-stopped
+
   blackbox-exporter:
     image: prom/blackbox-exporter:v0.29.1
     profiles: ["observability"]
@@ -119,6 +133,7 @@ services:
       GF_SMTP_FROM_ADDRESS: ${GRAFANA_SMTP_FROM_ADDRESS:-}
       GF_SMTP_FROM_NAME: ${GRAFANA_SMTP_FROM_NAME:-Platform alerts}
       PROMETHEUS_URL: http://prometheus:9090
+      MIMIR_URL: http://mimir:9009/prometheus
       LOKI_URL: http://loki:3100
       TEMPO_URL: http://tempo:3200
       PYROSCOPE_URL: http://pyroscope:4040
@@ -131,13 +146,131 @@ services:
       - "127.0.0.1:3000:3000"
     depends_on:
       - prometheus
+      - mimir
       - loki
       - tempo
       - pyroscope
     restart: unless-stopped
 
+  gateway:
+    entrypoint: ["/otel/run-java.sh"]
+    command: ["-jar", "/app.jar"]
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_PROPAGATORS: tracecontext,baggage
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,service.namespace=microsserv52
+      OTEL_TRACES_SAMPLER: parentbased_traceidratio
+      OTEL_TRACES_SAMPLER_ARG: ${OTEL_TRACES_SAMPLER_ARG:-0.2}
+      OTEL_SERVICE_NAME: gateway
+    volumes:
+      - ./.cache/otel/opentelemetry-javaagent.jar:/otel/opentelemetry-javaagent.jar:ro
+      - ./observability/otel/run-java.sh:/otel/run-java.sh:ro
+
+  auth:
+    entrypoint: ["/otel/run-java.sh"]
+    command: ["-jar", "/app.jar"]
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_PROPAGATORS: tracecontext,baggage
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,service.namespace=microsserv52
+      OTEL_TRACES_SAMPLER: parentbased_traceidratio
+      OTEL_TRACES_SAMPLER_ARG: ${OTEL_TRACES_SAMPLER_ARG:-0.2}
+      OTEL_SERVICE_NAME: auth
+    volumes:
+      - ./.cache/otel/opentelemetry-javaagent.jar:/otel/opentelemetry-javaagent.jar:ro
+      - ./observability/otel/run-java.sh:/otel/run-java.sh:ro
+
+  account:
+    entrypoint: ["/otel/run-java.sh"]
+    command: ["-jar", "/app.jar"]
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_PROPAGATORS: tracecontext,baggage
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,service.namespace=microsserv52
+      OTEL_TRACES_SAMPLER: parentbased_traceidratio
+      OTEL_TRACES_SAMPLER_ARG: ${OTEL_TRACES_SAMPLER_ARG:-0.2}
+      OTEL_SERVICE_NAME: account
+    volumes:
+      - ./.cache/otel/opentelemetry-javaagent.jar:/otel/opentelemetry-javaagent.jar:ro
+      - ./observability/otel/run-java.sh:/otel/run-java.sh:ro
+
+  order:
+    entrypoint: ["/otel/run-java.sh"]
+    command: ["-jar", "/app.jar"]
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_PROPAGATORS: tracecontext,baggage
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,service.namespace=microsserv52
+      OTEL_TRACES_SAMPLER: parentbased_traceidratio
+      OTEL_TRACES_SAMPLER_ARG: ${OTEL_TRACES_SAMPLER_ARG:-0.2}
+      OTEL_SERVICE_NAME: order
+    volumes:
+      - ./.cache/otel/opentelemetry-javaagent.jar:/otel/opentelemetry-javaagent.jar:ro
+      - ./observability/otel/run-java.sh:/otel/run-java.sh:ro
+
+  product:
+    entrypoint: ["/otel/run-java.sh"]
+    command: ["-XX:MaxRAMPercentage=75", "-jar", "/app/app.jar"]
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_PROPAGATORS: tracecontext,baggage
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,service.namespace=microsserv52
+      OTEL_TRACES_SAMPLER: parentbased_traceidratio
+      OTEL_TRACES_SAMPLER_ARG: ${OTEL_TRACES_SAMPLER_ARG:-0.2}
+      OTEL_SERVICE_NAME: product
+    volumes:
+      - ./.cache/otel/opentelemetry-javaagent.jar:/otel/opentelemetry-javaagent.jar:ro
+      - ./observability/otel/run-java.sh:/otel/run-java.sh:ro
+
+
+  landing:
+    build:
+      args:
+        NEXT_PUBLIC_ENABLE_TELEMETRY: ${NEXT_PUBLIC_ENABLE_TELEMETRY:-true}
+        NEXT_PUBLIC_FARO_URL: ${NEXT_PUBLIC_FARO_URL:-http://localhost:12347/collect}
+        NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV:-local}
+        NEXT_PUBLIC_GRAFANA_DASHBOARD_URL: ${NEXT_PUBLIC_GRAFANA_DASHBOARD_URL:-http://localhost:3000/d/platform-overview}
+
+  store:
+    build:
+      args:
+        NEXT_PUBLIC_ENABLE_TELEMETRY: ${NEXT_PUBLIC_ENABLE_TELEMETRY:-true}
+        NEXT_PUBLIC_FARO_URL: ${NEXT_PUBLIC_FARO_URL:-http://localhost:12347/collect}
+        NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV:-local}
+        NEXT_PUBLIC_GRAFANA_DASHBOARD_URL: ${NEXT_PUBLIC_GRAFANA_DASHBOARD_URL:-http://localhost:3000/d/platform-overview}
+
+  admin:
+    build:
+      args:
+        NEXT_PUBLIC_ENABLE_TELEMETRY: ${NEXT_PUBLIC_ENABLE_TELEMETRY:-true}
+        NEXT_PUBLIC_FARO_URL: ${NEXT_PUBLIC_FARO_URL:-http://localhost:12347/collect}
+        NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV:-local}
+        NEXT_PUBLIC_GRAFANA_DASHBOARD_URL: ${NEXT_PUBLIC_GRAFANA_DASHBOARD_URL:-http://localhost:3000/d/platform-overview}
+
+
 volumes:
   prometheus-data:
+  mimir-data:
   loki-data:
   tempo-data:
   pyroscope-data:
