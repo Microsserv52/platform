@@ -194,6 +194,12 @@ data services are intentional. Scheduled shutdown of compute does not stop
 storage, backups or public IPv4 billing, and RDS and ElastiCache do not have a
 stopped state that preserves the instance.
 
+The staging overlay removes the public media origin because it has no
+CloudFront distribution. Product stores image objects in the private staging
+bucket, but the catalogue cannot render them until staging gains a media
+distribution or presigned read URLs; the UI shows its unavailable-image
+fallback.
+
 ## Related
 
 - [Deployment](deployment.md)
