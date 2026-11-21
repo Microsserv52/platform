@@ -58,7 +58,8 @@ stacks were created.
 | Budget | AWS Budget `Limit budget 100` (USD 100/month) |
 
 The workload rollout and cost evidence are recorded in
-[delivery evidence](../project/delivery.md).
+[delivery evidence](../project/delivery.md). The public, internal and AWS
+endpoint map is in [Service URLs](service-urls.md).
 
 ## Resource inventory
 

@@ -122,12 +122,38 @@ presentation material and attach the measured evidence there.
 
 | Area | Bottleneck 1 | Bottleneck 2 | Current evidence | Next evidence |
 | --- | --- | --- | --- | --- |
-| Account / Auth | Database connection pool (`pool 10 × 3 DB services` caps replicas) | Login/JWT/session latency | Analysis above; no measurement | k6 login + profile run, pool wait metrics |
-| Order / Product | PostgreSQL locks and single-writer contention | Product image/S3 path and catalogue latency | Analysis above; no measurement | k6 checkout run, `pg_stat_activity`, Product p95 |
-| Gateway / Platform | Ingress and Gateway connection queues | HPA/node capacity (two-node baseline) | HPAs and Cluster Autoscaler installed | k6 at 200+ req/s, node-count timeline |
+| Account / Auth | Database connection pool (pool 8 × DB services caps replicas) | Login/JWT/session latency | Pool tuning measured 2026-11-21 | k6 login + profile run, pool wait metrics |
+| Order / Product | PostgreSQL locks and single-writer contention | Product image/S3 path and catalogue latency | Catalog read path measured 2026-11-21 | k6 checkout run, `pg_stat_activity`, Product p95 |
+| Gateway / Platform | Ingress and Gateway connection queues | HPA/node capacity (three-node observed) | k6 at 300–400 req/s, HPA/node timeline 2026-11-21 | Higher `MAX_VUS` run and ingress test |
 | Exchange / Data | External provider quota and latency | Redis cache stampede / eviction | Provider adapter and metrics exposed | Provider error injection, Redis hit ratio |
 | Cross-cutting | NAT/egress and payload size | Log volume and serialization cost | Cost model only | NAT bytes, log volume, p95 under load |
 
 Status is **planned / partially evidenced**, not fixed. A row is complete only
 after the same workload is run before and after a change with the metrics,
 errors and rollback recorded.
+
+## Measured evidence — 2026-11-21
+
+Read-only catalog test against the AWS deployment (`b8fe3c3`, three nodes).
+
+| Bottleneck | Baseline (50 req/s) | Peak (400 req/s target) | Evidence |
+| --- | --- | --- | --- |
+| Product read path | 2–4 replicas, p95 313 ms | **6/6 replicas**, p95 1.25 s at 300 req/s, 0 errors | k6 + HPA timeline |
+| Gateway | 2 replicas, low CPU | **3 replicas**, ~100% of request at peak | HPA + `kubectl top` |
+| Database connections | 56 | Pool 10: 71 + slot exhaustion; Pool 5: Hikari waiting 62, 107 5xx; **Pool 8: 52/112, 0 errors** | CloudWatch + service logs |
+| Node capacity | 3 nodes | 3 nodes; no autoscaler event | Cluster Autoscaler/monitor log |
+| Load generator | 17 dropped | 4,049 dropped (pool 10) / 11,930 (pool 8) at `MAX_VUS=200` | k6 summaries |
+
+The first high run used pool 10: it returned 0 HTTP errors at 383 req/s but RDS
+rejected new connections and two Product pods crash-looped. Pool 5 removed the
+RDS-slot error but created per-pod Hikari exhaustion (107 real 5xx). **Pool 8 is
+retained**: Product 6/6, 0 errors, 52/112 RDS connections, p95 1.25 s.
+
+The remaining measured ceiling is the Product HPA maximum and node CPU, not the
+database: Product is pinned at 6 replicas and p95 exceeds 1 s at ~300 req/s,
+while RDS has connection and CPU headroom. The next test should raise the
+Product HPA/node maximum, increase k6 `MAX_VUS`, and add an authenticated order
+flow.
+
+Raw evidence and the full 50/400 req/s timeline are in
+[Load testing](load-testing.md#measured-results-2026-11-21).
