@@ -9,3 +9,11 @@ output "irsa_role_arn" { value = try(aws_iam_role.irsa[0].arn, "") }
 output "cluster_autoscaler_role_arn" {
   value = try(aws_iam_role.cluster_autoscaler[0].arn, "")
 }
+
+output "node_group_asg_name" {
+  value = try(aws_eks_node_group.this[0].resources[0].autoscaling_groups[0].name, "")
+}
+
+output "eks_cluster_security_group_id" {
+  value = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+}

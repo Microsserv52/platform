@@ -66,7 +66,7 @@ were applied. No resources were deleted or recreated unnecessarily.
 | ElastiCache | `platform-redis.wkuz0g.0001.use1.cache.amazonaws.com:6379` |
 | CloudFront | `E2HCWED02TM6CL`, `d15ogksm4jp6sl.cloudfront.net` |
 | Budget | AWS Budget `Limit budget 100` (USD 100/month) |
-| Load balancer | Gateway NLB `a1c0373b905d84f4396e183863b684a0-13b4c7888342d782.elb.us-east-1.amazonaws.com` (HTTP 80, CloudFront origin) |
+| Load balancer | Gateway NLB `platform-gateway-ecaafe88209b53bc.elb.us-east-1.amazonaws.com` (HTTP 80, CloudFront origin) |
 
 ### Images
 
@@ -95,7 +95,7 @@ curl -o /dev/null -w '%{http_code}' http://localhost:8080/products
 200
 
 kubectl top nodes
-3 nodes, 2–3% CPU and 37–49% memory during the idle check
+2 nodes at steady state (3 during the load-test rollout), 2–3% CPU and 37–49% memory at idle
 
 kubectl -n kube-system get deploy
 metrics-server 1/1, cluster-autoscaler-aws-cluster-autoscaler 1/1
@@ -128,6 +128,8 @@ pod has restarted.
 - Node count stayed 3; Cluster Autoscaler did not add a node.
 - k6 dropped 11,930 iterations at `MAX_VUS=200`; server throughput is a lower
   bound.
+- S3 CORS preflight from the CloudFront origin returned 200 with
+  `PUT`/`GET`/`HEAD`, `Content-Type`, `If-None-Match` and `ETag` allowed.
 
 The remaining measured ceiling is Product's HPA maximum and node CPU; the
 database has headroom after the pool tune. Authenticated order/write and
@@ -156,10 +158,9 @@ the stack must be destroyed or scheduled after the demo.
 
 These are deliberate gaps, not hidden claims:
 
-- **NLB origin is HTTP.** CloudFront terminates TLS for viewers but reaches the
-  Gateway NLB over HTTP. Restrict the NLB security group to the CloudFront
-  origin-facing prefix list, or terminate TLS at the NLB, before treating the
-  origin as private.
+- **NLB origin is HTTP internally.** CloudFront terminates viewer TLS and
+  reaches the Terraform NLB over HTTP. The NLB security group only allows the
+  AWS CloudFront origin-facing prefix list; direct NLB access times out.
 - **No custom domain.** The public URL is the CloudFront hostname.
 - **No Grafana/Alloy stack.** Product and Exchange expose metrics; Gateway,
   Auth, Account and Order do not yet expose Prometheus metrics, so the SLO

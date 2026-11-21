@@ -215,9 +215,10 @@ The AWS environment creates:
 | Kubernetes | EKS cluster, 2–6 node managed group, OIDC provider, Product IRSA, Cluster Autoscaler IRSA, optional access entry |
 | DNS | Optional ACM certificate and Route 53 alias records |
 
-The AWS overlay creates an internet-facing `gateway-public` NLB for the Gateway;
-CloudFront uses it as the `/api` origin. An Ingress controller is only needed
-for host-based ingress or additional TLS termination. The node group starts at
+Terraform creates the internet-facing Gateway NLB with a CloudFront-only
+security group; the AWS overlay exposes Gateway as NodePort `30080` for that
+target group, and CloudFront uses the NLB as the `/api` origin. An Ingress
+controller is only needed for host-based ingress or additional TLS termination. The node group starts at
 two `t3.medium` nodes and Cluster Autoscaler moves it to six when pods stay
 `Pending`.
 
@@ -336,7 +337,7 @@ versions left behind keep billing until they are deleted explicitly.
 | Exchange crash-loops | provider URL missing or a required key absent | set `DEPLOY_EXCHANGE_PROVIDER_URL`; set the key and `DEPLOY_EXCHANGE_PROVIDER_REQUIRES_API_KEY=true` only if the provider requires auth |
 | Frontend loads but `/api` returns 404 | `/api` is not routed through CloudFront | set `TF_VAR_cloudfront_api_origin_domain` or a reachable `NEXT_PUBLIC_API_BASE_URL` |
 | Browser upload rejected | page origin not in S3 CORS or upload URL origin not in the admin allowlist | CloudFront and aliases are added automatically; add extra origins with `TF_VAR_cors_allowed_origins`, and the exact S3 URL to `NEXT_PUBLIC_IMAGE_UPLOAD_ORIGINS` |
-| Ingress has no address | no ingress controller | use the internet-facing `gateway-public` NLB, or install ingress-nginx/ALB controller |
+| Ingress has no address | no ingress controller | use the Terraform Gateway NLB (CloudFront `/api`), or install ingress-nginx/ALB controller |
 | TLS certificate error | no certificate/secret | use `TF_VAR_create_dns=true` or supply `TF_VAR_acm_certificate_arn` and a TLS secret |
 | HPA shows `<unknown>` | metrics-server not installed or not ready | `kubectl -n kube-system get deploy metrics-server`; re-run without `--skip-addons` |
 | HPA replica stays `Pending` and no node appears | Cluster Autoscaler cannot see the group | check the CA logs, IRSA annotation and the `k8s.io/cluster-autoscaler/*` ASG tags |

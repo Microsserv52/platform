@@ -3,15 +3,12 @@ kind: Service
 metadata:
   name: gateway-public
   namespace: platform
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: nlb
-    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
-    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: gateway
   ports:
     - name: http
       port: 80
       targetPort: 8080
+      nodePort: 30080

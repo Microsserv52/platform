@@ -55,7 +55,7 @@ stacks were created.
 | CloudFront | `E2HCWED02TM6CL`, `d15ogksm4jp6sl.cloudfront.net` (frontend and `/api`) |
 | Public frontend/API | `https://d15ogksm4jp6sl.cloudfront.net/`; `/store/`, `/admin/`, `/api` |
 | NAT gateway | 1 |
-| Load balancer | Gateway NLB `a1c0373b905d84f4396e183863b684a0-13b4c7888342d782.elb.us-east-1.amazonaws.com` (internet-facing, HTTP 80) |
+| Load balancer | Gateway NLB `platform-gateway-ecaafe88209b53bc.elb.us-east-1.amazonaws.com` (internet-facing, HTTP 80, CloudFront-only SG) |
 | Budget | AWS Budget `Limit budget 100` (USD 100/month) |
 
 The workload rollout and cost evidence are recorded in
