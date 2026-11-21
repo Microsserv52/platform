@@ -139,16 +139,95 @@ but is not sufficient evidence for capacity or SLA claims. Delete temporary
 HPAs and load-generator pods after testing; keep the managed HPA manifests when
 they are part of the production deployment.
 
+## Measured results — 2026-11-21
+
+Environment: AWS `730335608828`, `us-east-1`, EKS `platform`, Git `b8fe3c3`,
+images `b8fe3c3`, three `t3.medium` nodes, six Deployments at two replicas.
+The Gateway was reached through `kubectl port-forward svc/gateway 18080:8080`.
+This is a read-only catalog test, not an authenticated order flow.
+
+The first high run used the original pool of 10 connections per pod. Product
+scaled to six replicas, consumed the RDS connection slots, and two Product pods
+crash-looped after the test (`remaining connection slots are reserved`). Two
+follow-up runs tuned the Hikari pool.
+
+| Run | Pool/pod | Target | Requests | Throughput | Errors | p95 | p50 | Dropped |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Baseline | 10 | 50 req/s | 5,984 | 49.8/s | 0% | 313 ms | 192 ms | 17 |
+| High, original | 10 | 400 req/s | 91,951 | 382.7/s | 0% | 602 ms | 155 ms | 4,049 |
+| High, pool 5 | 5 | 400 req/s | 25,282 | 209.8/s | 0.42% (107) | 2.21 s | 588 ms | 22,719 |
+| High, pool 8 | 8 | 400 req/s | 36,071 | 299.6/s | 0% | 1.25 s | 299 ms | 11,930 |
+
+Interpretation:
+
+- The original pool returned zero HTTP errors at 383 req/s but exhausted RDS
+  slots; the success was not stable because two Product pods could not start.
+- Pool 5 removed the RDS-slot failure but moved the bottleneck inside each pod:
+  Hikari reported `total=5, active=5, idle=0, waiting=62` and 3 s timeouts,
+  producing 107 real 5xx responses.
+- Pool 8 is the retained setting: Product ran 6/6 with no restarts, RDS peaked
+  at 52/112 connections, and there were zero HTTP errors. It still exceeds the
+  1 s p95 goal at a 300 req/s measured rate.
+- The k6 generator still dropped 11,930 iterations at `MAX_VUS=200`; the 299.6
+  req/s result is a lower bound on server throughput. p95 1.25 s means the
+  server is saturated before the generator is.
+
+### HPA and node timeline
+
+| Time (UTC) | Nodes | Gateway replicas | Product replicas |
+| --- | ---: | ---: | ---: |
+| 02:54:44 | 3 | 2 | 4 |
+| 02:55:00 | 3 | 2 | 5 |
+| 02:55:45 | 3 | 3 | 6 |
+| 02:57:30 | 3 | 3 | 6 |
+| 03:16:00 | 3 | 3 | 6 |
+
+Product reaches its `maxReplicas: 6`; Gateway reaches 3. Account, Auth, Order
+and Exchange stay at 2. The node count stays at 3, so Cluster Autoscaler does
+not add a node during these tests; the third node was already present from the
+deployment rollout.
+
+### RDS and resource evidence
+
+- Original pool 10: RDS `DatabaseConnections` peaked at 70–71 and then rejected
+  new connections during Product startup.
+- Pool 8: RDS `DatabaseConnections` peaked at 52/112; no connection errors.
+- RDS CPU stayed at roughly 15%.
+- Product/gateway CPU: Product reached about 1.8× its 250m request at the HPA
+  peak; Gateway reached about 100% of its request. After settling, both were
+  under 5%.
+
+### Conclusion
+
+The retained configuration is pool 8 per pod with a 5 s timeout. The measured
+bottleneck at 300+ req/s is the **Product HPA maximum and node CPU**, not the
+database: Product is pinned at 6 replicas, p95 is 1.25 s, RDS has only 52/112
+connections, and no requests fail. The next step is to raise the Product HPA
+maximum (and the node-group maximum) or reduce per-request CPU; a full
+authenticated order test is still required.
+
+Raw artifacts:
+
+- [Baseline log](load-test-results/2026-11-21-baseline.log)
+- [Pool-10 high log](load-test-results/2026-11-21-high.log)
+- [Pool-10 summary JSON](load-test-results/2026-11-21-high-summary.json)
+- [Pool-5 high log](load-test-results/2026-11-21-high-pool5.log)
+- [Pool-5 summary JSON](load-test-results/2026-11-21-high-pool5-summary.json)
+- [Pool-8 high log](load-test-results/2026-11-21-high-pool8.log)
+- [Pool-8 summary JSON](load-test-results/2026-11-21-high-pool8-summary.json)
+- [HPA/node monitor, pool 8](load-test-results/2026-11-21-monitor-pool8.log)
+
 ## Execution plan and status
 
 | Scenario | Workload | Primary evidence | Status |
 | --- | --- | --- | --- |
-| Catalogue baseline | 50–100 req/s, 10 min | p50/p95/p99, errors, pods, nodes | Not run |
-| HPA trigger | 200–250 req/s, 15 min | HPA desired/current replicas, CPU, pending pods | Not run |
-| Node autoscaling | Hold above HPA minimum | node count 2 → 3, pod scheduling time | Not run |
+| Catalogue baseline | 50–400 req/s, 2–4 min | p50/p95, errors, pods, nodes | **Run 2026-11-21** |
+| HPA trigger | 400 req/s, 2–4 min | HPA desired/current replicas, CPU, pending pods | **Run 2026-11-21**; Product 6/6, Gateway 3 |
+| Database pool tuning | Pool 10/5/8 at 400 req/s | errors, Hikari wait, RDS connections | **Run 2026-11-21**; pool 8 retained |
+| Node autoscaling | Hold above HPA minimum | node count 2 → 3, pod scheduling time | Not triggered; 3 nodes held |
 | Order write | 20–50 concurrent users | order p95, DB pool wait, errors | Not run |
 | Provider failure | Exchange timeout/error injection | Exchange error rate, fallback behavior | Not run |
-| Scale-down | Stop load, observe | HPA stabilization, node scale-down time | Not run |
+| Scale-down | Stop load, observe | HPA stabilization, node scale-down time | Not observed; 3 nodes held |
 
 For each run record the Git SHA, image tags, cluster/node count, `RATE`,
 `DURATION`, k6 summary JSON, `kubectl top pods`, HPA and node timelines. Store

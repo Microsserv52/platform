@@ -17,8 +17,8 @@ submission.
 - [x] AWS account, region and resource inventory without secrets.
 - [x] EKS topology and Kubernetes manifests or commands.
 - [ ] CI/CD pipeline runs and rollback procedure.
-- [ ] Load-test scenarios, raw results and interpretation.
-- [ ] Bottleneck investigation and before/after comparison.
+- [x] Load-test scenarios, raw results and interpretation (read-only catalog; write flows pending).
+- [x] Bottleneck investigation and before/after comparison (catalog read path).
 - [ ] Cost estimate, actual spend and PaaS decisions.
 - [ ] SLO/SLA definitions and observability dashboards.
 - [x] Test strategy and final verification.
@@ -32,11 +32,11 @@ delivered.
 | Requirement | Status | Evidence / action |
 | --- | --- | --- |
 | Gateway, Auth, Account, Exchange | Met | Service contracts and tests in the submodules |
-| Bottlenecks | Partial | Analysis table updated; before/after measurements still pending |
+| Bottlenecks | Partial | Catalog read path measured at 50 and 400 req/s; order/auth/provider flows still pending |
 | AWS provisioning | Provisioned | Terraform state, resource inventory and budget in this page |
 | EKS deployment | Provisioned | EKS 1.35, two nodes, metrics-server and Cluster Autoscaler; rollout evidence below |
 | CI/CD | Partial by design | CI tests/CodeQL/GHCR and a manual **Publish EKS images** workflow; deployment remains shell-first; no CI deploy step |
-| Load tests | Not run | k6 procedure and capacity envelope ready; raw results pending |
+| Load tests | Partial | Read-only catalog baseline and HPA run completed 2026-11-21; authenticated/write flows pending |
 | PaaS, costs and SLA | Documented | [Costs, PaaS and SLA](../infrastructure/costs.md); actual spend pending |
 | Documentation | Branch only | LocalStack, runbook and changes pages exist on this branch; merge to `main` republishes Pages |
 | Public application URL | Not available | No ingress controller or frontend publish yet; backend is reachable by port-forward |
@@ -50,6 +50,7 @@ before the SLOs can be measured. That work is planned, not claimed.
 ## Deployment evidence — 2026-11-21
 
 The deployment was run from the root repository with `scripts/deploy-aws.sh`.
+Endpoint names are listed in [Service URLs](../infrastructure/service-urls.md).
 The first apply was interrupted by the operator, so the already-created EKS
 cluster and RDS instance were imported into state and the remaining resources
 were applied. No resources were deleted or recreated unnecessarily.
@@ -104,6 +105,31 @@ The ASG carries `k8s.io/cluster-autoscaler/enabled` and
 `k8s.io/cluster-autoscaler/platform`; min 2, max 6, desired 3 at the time of the
 check. All six HPAs report CPU after the rollout settled (0–3% at idle), and no
 pod has restarted.
+
+### Load-test evidence
+
+- Baseline: 50 req/s, 2 min, 5,984 requests, 0 errors, p95 313 ms.
+- Original pool 10: 382.7 req/s, 0 HTTP errors, p95 602 ms, but Product at 6
+  replicas exhausted RDS slots and two pods crash-looped.
+- Pool 5: 209.8 req/s, 107 HTTP errors (0.42%), p95 2.21 s; Hikari exhausted.
+- **Pool 8 retained**: 299.6 req/s, 36,071 requests, **0 errors**, p95 1.25 s;
+  Product 6/6, RDS 52/112 connections, no restarts.
+- Gateway scaled 2 → 3; Product 2 → 6; account/auth/order/exchange stayed at 2.
+- Node count stayed 3; Cluster Autoscaler did not add a node.
+- k6 dropped 11,930 iterations at `MAX_VUS=200`; server throughput is a lower
+  bound.
+
+The remaining measured ceiling is Product's HPA maximum and node CPU; the
+database has headroom after the pool tune. Authenticated order/write and
+provider-failure flows are still pending.
+
+Raw logs and summaries:
+[baseline](../operations/load-test-results/2026-11-21-baseline.log),
+[pool 10](../operations/load-test-results/2026-11-21-high.log),
+[pool 5](../operations/load-test-results/2026-11-21-high-pool5.log),
+[pool 8](../operations/load-test-results/2026-11-21-high-pool8.log),
+[pool 8 summary](../operations/load-test-results/2026-11-21-high-pool8-summary.json).
+Full analysis: [Load testing](../operations/load-testing.md#measured-results-2026-11-21).
 
 ### Resource and cost audit
 
