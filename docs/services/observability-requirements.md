@@ -49,7 +49,7 @@ deployment-side OpenTelemetry injection.
 
 The Java agent is injected by `compose.observability.yml` and
 `k8s/base/otel-instrumentation.yaml`; metrics stay on the Micrometer endpoint.
-See [OpenTelemetry for services](https://github.com/Microsserv52/platform/blob/main/observability/otel/README.md).
+See [OpenTelemetry for services](https://github.com/Microsserv52/observability/blob/main/otel/README.md).
 
 ## Local verification
 

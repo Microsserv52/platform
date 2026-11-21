@@ -9,7 +9,7 @@ locally. The platform covers logs, metrics, traces and profiles across the
 Gateway and every downstream service.
 
 The stack is implemented as configuration-as-code under
-[`observability/`](https://github.com/Microsserv52/platform/tree/main/observability).
+[`observability/`](https://github.com/Microsserv52/observability).
 It runs on Docker Compose for the daily loop, can be installed into the
 LocalStack EKS rehearsal, and has a prepared EKS deployment path.
 
@@ -169,7 +169,7 @@ same stack with `local-path` storage:
 scripts/install-observability.sh --localstack
 ```
 
-It uses [`values.localstack.yaml`](https://github.com/Microsserv52/platform/blob/main/observability/helm/values.localstack.yaml)
+It uses [`values.localstack.yaml`](https://github.com/Microsserv52/observability/blob/main/helm/values.localstack.yaml)
 and the overlay in
 [`k8s/overlays/localstack/observability`](https://github.com/Microsserv52/platform/tree/main/k8s/overlays/localstack/observability).
 The external `Probe` is omitted there because the rehearsal has no public edge,
@@ -189,7 +189,7 @@ and PVCs use the k3s `local-path` StorageClass.
 | Trace service graph | `trace-service-graph` | Cross-service request rate, failures and p95 latency |
 
 Dashboards are provisioned from
-[`observability/grafana/dashboards`](https://github.com/Microsserv52/platform/tree/main/observability/grafana/dashboards).
+[`observability/grafana/dashboards`](https://github.com/Microsserv52/observability/tree/main/grafana/dashboards).
 Every dashboard uses the provisioned `prometheus` datasource UID, so the same
 JSON works locally and on EKS.
 
@@ -197,7 +197,7 @@ JSON works locally and on EKS.
 
 The 28-day availability SLO is **99.5%** for the service set. The error budget is
 0.5%. Recording rules in
-[`observability/prometheus/rules/sli.yml`](https://github.com/Microsserv52/platform/blob/main/observability/prometheus/rules/sli.yml)
+[`observability/prometheus/rules/sli.yml`](https://github.com/Microsserv52/observability/blob/main/prometheus/rules/sli.yml)
 compute:
 
 - request and error rate by service;
@@ -207,7 +207,7 @@ compute:
 - JVM heap and Hikari utilization.
 
 Grafana unified alerting is provisioned from
-[`observability/grafana/provisioning/alerting/rules.yml`](https://github.com/Microsserv52/platform/blob/main/observability/grafana/provisioning/alerting/rules.yml).
+[`observability/grafana/provisioning/alerting/rules.yml`](https://github.com/Microsserv52/observability/blob/main/grafana/provisioning/alerting/rules.yml).
 Dashboards live in the **Platform** folder; alert rules live in **Platform
 Alerts**. This avoids two folders with the same display name in Grafana. If an
 older Grafana session shows an empty duplicate **Platform** folder, hard-refresh

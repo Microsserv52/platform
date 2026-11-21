@@ -37,3 +37,7 @@
 [submodule "api/exchange-interface"]
 	path = api/exchange-interface
 	url = git@github.com:Microsserv52/exchange-interface.git
+[submodule "observability"]
+	path = observability
+	url = https://github.com/Microsserv52/observability.git
+	branch = main
