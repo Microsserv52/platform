@@ -189,6 +189,8 @@ compute:
 
 Grafana unified alerting is provisioned from
 [`observability/grafana/provisioning/alerting/rules.yml`](https://github.com/Microsserv52/platform/blob/main/observability/grafana/provisioning/alerting/rules.yml).
+Dashboards live in the **Platform** folder; alert rules live in **Platform
+Alerts**. This avoids two folders with the same display name in Grafana.
 
 | Alert | Condition | Severity |
 | --- | --- | --- |
