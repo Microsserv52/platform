@@ -23,9 +23,11 @@ will make the server cart authoritative; offline mutation/replay remains out of 
 ## Grafana Cloud and Faro
 
 Grafana Cloud is the selected destination for Faro. See the
-[complete managed stack plan](../operations/observability.md#selected-grafana-cloud-stack)
+[complete managed stack plan](../operations/observability.md#grafana-cloud-ingestion)
 for Prometheus/Mimir, Loki, Tempo, Pyroscope, OTel/Alloy and Graphite support.
-The stack is selected; collector credentials, region and policy remain pending.
+The local Alloy Faro receiver is available at
+`http://localhost:12347/collect`; Cloud collector credentials, region and policy
+remain deployment values.
 
 The approved SDK and tracing packages initialize once in the browser when
 `NEXT_PUBLIC_ENABLE_TELEMETRY=true`, a Faro URL is configured and the visitor has

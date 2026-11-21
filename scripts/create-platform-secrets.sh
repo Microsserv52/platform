@@ -28,4 +28,12 @@ kubectl -n "$NAMESPACE" create secret generic platform-secrets \
   "${SECRET_ARGS[@]}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
+if [[ -n "${GRAFANA_ADMIN_PASSWORD:-}" ]]; then
+  kubectl -n "$NAMESPACE" create secret generic grafana-admin \
+    --from-literal="admin-user=${GRAFANA_ADMIN_USER:-admin}" \
+    --from-literal="admin-password=${GRAFANA_ADMIN_PASSWORD}" \
+    --dry-run=client -o yaml | kubectl apply -f -
+  echo "grafana-admin applied in namespace $NAMESPACE"
+fi
+
 echo "platform-secrets applied in namespace $NAMESPACE"

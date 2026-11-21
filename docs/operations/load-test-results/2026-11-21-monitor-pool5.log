@@ -1,0 +1,268 @@
+=== 03:05:19 ===
+account    Deployment/account    cpu: 2%/70%          2     6     2     25m
+auth       Deployment/auth       cpu: 1%/70%          2     6     2     25m
+exchange   Deployment/exchange   cpu: 0%/70%          2     6     2     25m
+gateway    Deployment/gateway    cpu: 0%/70%          2     6     2     25m
+order      Deployment/order      cpu: <unknown>/70%   2     6     2     25m
+product    Deployment/product    cpu: <unknown>/70%   2     6     2     25m
+nodes=3
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+=== 03:05:35 ===
+account    Deployment/account    cpu: 3%/70%          2     6     2     25m
+auth       Deployment/auth       cpu: 1%/70%          2     6     2     25m
+exchange   Deployment/exchange   cpu: 1%/70%          2     6     2     25m
+gateway    Deployment/gateway    cpu: 0%/70%          2     6     2     25m
+order      Deployment/order      cpu: 3%/70%          2     6     2     25m
+product    Deployment/product    cpu: <unknown>/70%   2     6     2     25m
+nodes=3
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+=== 03:05:50 ===
+account    Deployment/account    cpu: 2%/70%    2     6     2     26m
+auth       Deployment/auth       cpu: 1%/70%    2     6     2     26m
+exchange   Deployment/exchange   cpu: 0%/70%    2     6     2     26m
+gateway    Deployment/gateway    cpu: 28%/70%   2     6     2     26m
+order      Deployment/order      cpu: 3%/70%    2     6     2     26m
+product    Deployment/product    cpu: 90%/70%   2     6     2     26m
+nodes=3
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+=== 03:06:05 ===
+account    Deployment/account    cpu: 2%/70%     2     6     2     26m
+auth       Deployment/auth       cpu: 0%/70%     2     6     2     26m
+exchange   Deployment/exchange   cpu: 0%/70%     2     6     2     26m
+gateway    Deployment/gateway    cpu: 44%/70%    2     6     2     26m
+order      Deployment/order      cpu: 2%/70%     2     6     2     26m
+product    Deployment/product    cpu: 180%/70%   2     6     2     26m
+nodes=3
+product-65585cd966-2wdwz 0/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 0/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 0/1 Running 0
+product-65585cd966-xtjmr 0/1 Running 0
+=== 03:06:21 ===
+account    Deployment/account    cpu: 2%/70%     2     6     2     26m
+auth       Deployment/auth       cpu: 0%/70%     2     6     2     26m
+exchange   Deployment/exchange   cpu: 0%/70%     2     6     2     26m
+gateway    Deployment/gateway    cpu: 44%/70%    2     6     2     26m
+order      Deployment/order      cpu: 3%/70%     2     6     2     26m
+product    Deployment/product    cpu: 199%/70%   2     6     6     26m
+nodes=3
+product-65585cd966-2wdwz 0/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 0/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 0/1 Running 0
+product-65585cd966-xtjmr 0/1 Running 0
+=== 03:06:35 ===
+account    Deployment/account    cpu: 3%/70%     2     6     2     26m
+auth       Deployment/auth       cpu: 1%/70%     2     6     2     26m
+exchange   Deployment/exchange   cpu: 1%/70%     2     6     2     26m
+gateway    Deployment/gateway    cpu: 48%/70%    2     6     2     26m
+order      Deployment/order      cpu: 2%/70%     2     6     2     26m
+product    Deployment/product    cpu: 199%/70%   2     6     6     26m
+nodes=3
+product-65585cd966-2wdwz 0/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 0/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 0/1 Running 0
+product-65585cd966-xtjmr 0/1 Running 0
+=== 03:06:50 ===
+account    Deployment/account    cpu: 2%/70%     2     6     2     27m
+auth       Deployment/auth       cpu: 0%/70%     2     6     2     27m
+exchange   Deployment/exchange   cpu: 1%/70%     2     6     2     27m
+gateway    Deployment/gateway    cpu: 64%/70%    2     6     2     27m
+order      Deployment/order      cpu: 2%/70%     2     6     2     27m
+product    Deployment/product    cpu: 199%/70%   2     6     6     27m
+nodes=3
+product-65585cd966-2wdwz 0/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 0/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 0/1 Running 0
+product-65585cd966-xtjmr 0/1 Running 0
+=== 03:07:05 ===
+account    Deployment/account    cpu: 2%/70%     2     6     2     27m
+auth       Deployment/auth       cpu: 0%/70%     2     6     2     27m
+exchange   Deployment/exchange   cpu: 1%/70%     2     6     2     27m
+gateway    Deployment/gateway    cpu: 71%/70%    2     6     2     27m
+order      Deployment/order      cpu: 2%/70%     2     6     2     27m
+product    Deployment/product    cpu: 200%/70%   2     6     6     27m
+nodes=3
+product-65585cd966-2wdwz 0/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 0/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 0/1 Running 0
+product-65585cd966-xtjmr 0/1 Running 0
+=== 03:07:19 ===
+account    Deployment/account    cpu: 2%/70%     2     6     2     27m
+auth       Deployment/auth       cpu: 1%/70%     2     6     2     27m
+exchange   Deployment/exchange   cpu: 1%/70%     2     6     2     27m
+gateway    Deployment/gateway    cpu: 70%/70%    2     6     2     27m
+order      Deployment/order      cpu: 2%/70%     2     6     2     27m
+product    Deployment/product    cpu: 198%/70%   2     6     6     27m
+nodes=3
+product-65585cd966-2wdwz 1/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 1/1 Running 0
+product-65585cd966-xtjmr 1/1 Running 0
+=== 03:07:35 ===
+account    Deployment/account    cpu: 2%/70%     2     6     2     27m
+auth       Deployment/auth       cpu: 1%/70%     2     6     2     27m
+exchange   Deployment/exchange   cpu: 0%/70%     2     6     2     27m
+gateway    Deployment/gateway    cpu: 75%/70%    2     6     2     27m
+order      Deployment/order      cpu: 3%/70%     2     6     2     27m
+product    Deployment/product    cpu: 198%/70%   2     6     6     27m
+nodes=3
+product-65585cd966-2wdwz 1/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 1/1 Running 0
+product-65585cd966-xtjmr 1/1 Running 0
+=== 03:07:50 ===
+account    Deployment/account    cpu: 2%/70%     2     6     2     28m
+auth       Deployment/auth       cpu: 1%/70%     2     6     2     28m
+exchange   Deployment/exchange   cpu: 1%/70%     2     6     2     28m
+gateway    Deployment/gateway    cpu: 18%/70%    2     6     2     28m
+order      Deployment/order      cpu: 2%/70%     2     6     2     28m
+product    Deployment/product    cpu: 139%/70%   2     6     6     28m
+nodes=3
+product-65585cd966-2wdwz 1/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 1/1 Running 0
+product-65585cd966-xtjmr 1/1 Running 0
+=== 03:08:06 ===
+account    Deployment/account    cpu: 2%/70%   2     6     2     28m
+auth       Deployment/auth       cpu: 1%/70%   2     6     2     28m
+exchange   Deployment/exchange   cpu: 0%/70%   2     6     2     28m
+gateway    Deployment/gateway    cpu: 0%/70%   2     6     2     28m
+order      Deployment/order      cpu: 2%/70%   2     6     2     28m
+product    Deployment/product    cpu: 2%/70%   2     6     6     28m
+nodes=3
+product-65585cd966-2wdwz 1/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 1/1 Running 0
+product-65585cd966-xtjmr 1/1 Running 0
+=== 03:08:21 ===
+account    Deployment/account    cpu: 2%/70%   2     6     2     28m
+auth       Deployment/auth       cpu: 0%/70%   2     6     2     28m
+exchange   Deployment/exchange   cpu: 0%/70%   2     6     2     28m
+gateway    Deployment/gateway    cpu: 0%/70%   2     6     2     28m
+order      Deployment/order      cpu: 2%/70%   2     6     2     28m
+product    Deployment/product    cpu: 2%/70%   2     6     6     28m
+nodes=3
+product-65585cd966-2wdwz 1/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 1/1 Running 0
+product-65585cd966-xtjmr 1/1 Running 0
+=== 03:08:37 ===
+account    Deployment/account    cpu: 2%/70%   2     6     2     28m
+auth       Deployment/auth       cpu: 1%/70%   2     6     2     28m
+exchange   Deployment/exchange   cpu: 1%/70%   2     6     2     28m
+gateway    Deployment/gateway    cpu: 1%/70%   2     6     2     28m
+order      Deployment/order      cpu: 3%/70%   2     6     2     28m
+product    Deployment/product    cpu: 3%/70%   2     6     6     28m
+nodes=3
+product-65585cd966-2wdwz 1/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 1/1 Running 0
+product-65585cd966-xtjmr 1/1 Running 0
+=== 03:08:52 ===
+account    Deployment/account    cpu: 1%/70%   2     6     2     29m
+auth       Deployment/auth       cpu: 1%/70%   2     6     2     29m
+exchange   Deployment/exchange   cpu: 1%/70%   2     6     2     29m
+gateway    Deployment/gateway    cpu: 1%/70%   2     6     2     29m
+order      Deployment/order      cpu: 3%/70%   2     6     2     29m
+product    Deployment/product    cpu: 5%/70%   2     6     6     29m
+nodes=3
+product-65585cd966-2wdwz 1/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 1/1 Running 0
+product-65585cd966-xtjmr 1/1 Running 0
+=== 03:09:07 ===
+account    Deployment/account    cpu: 2%/70%   2     6     2     29m
+auth       Deployment/auth       cpu: 0%/70%   2     6     2     29m
+exchange   Deployment/exchange   cpu: 0%/70%   2     6     2     29m
+gateway    Deployment/gateway    cpu: 1%/70%   2     6     2     29m
+order      Deployment/order      cpu: 1%/70%   2     6     2     29m
+product    Deployment/product    cpu: 2%/70%   2     6     6     29m
+nodes=3
+product-65585cd966-2wdwz 1/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 1/1 Running 0
+product-65585cd966-xtjmr 1/1 Running 0
+=== 03:09:23 ===
+account    Deployment/account    cpu: 1%/70%   2     6     2     29m
+auth       Deployment/auth       cpu: 0%/70%   2     6     2     29m
+exchange   Deployment/exchange   cpu: 0%/70%   2     6     2     29m
+gateway    Deployment/gateway    cpu: 0%/70%   2     6     2     29m
+order      Deployment/order      cpu: 2%/70%   2     6     2     29m
+product    Deployment/product    cpu: 3%/70%   2     6     6     29m
+nodes=3
+product-65585cd966-2wdwz 1/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 1/1 Running 0
+product-65585cd966-xtjmr 1/1 Running 0
+=== 03:09:39 ===
+account    Deployment/account    cpu: 1%/70%   2     6     2     29m
+auth       Deployment/auth       cpu: 0%/70%   2     6     2     29m
+exchange   Deployment/exchange   cpu: 0%/70%   2     6     2     29m
+gateway    Deployment/gateway    cpu: 1%/70%   2     6     2     29m
+order      Deployment/order      cpu: 2%/70%   2     6     2     29m
+product    Deployment/product    cpu: 2%/70%   2     6     6     29m
+nodes=3
+product-65585cd966-2wdwz 1/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 1/1 Running 0
+product-65585cd966-xtjmr 1/1 Running 0
+=== 03:09:54 ===
+account    Deployment/account    cpu: 2%/70%   2     6     2     30m
+auth       Deployment/auth       cpu: 0%/70%   2     6     2     30m
+exchange   Deployment/exchange   cpu: 0%/70%   2     6     2     30m
+gateway    Deployment/gateway    cpu: 1%/70%   2     6     2     30m
+order      Deployment/order      cpu: 2%/70%   2     6     2     30m
+product    Deployment/product    cpu: 2%/70%   2     6     6     30m
+nodes=3
+product-65585cd966-2wdwz 1/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 1/1 Running 0
+product-65585cd966-xtjmr 1/1 Running 0
+=== 03:10:09 ===
+account    Deployment/account    cpu: 3%/70%   2     6     2     30m
+auth       Deployment/auth       cpu: 0%/70%   2     6     2     30m
+exchange   Deployment/exchange   cpu: 0%/70%   2     6     2     30m
+gateway    Deployment/gateway    cpu: 0%/70%   2     6     2     30m
+order      Deployment/order      cpu: 2%/70%   2     6     2     30m
+product    Deployment/product    cpu: 2%/70%   2     6     6     30m
+nodes=3
+product-65585cd966-2wdwz 1/1 Running 0
+product-65585cd966-bzrkp 1/1 Running 0
+product-65585cd966-hp6j5 1/1 Running 0
+product-65585cd966-mfrcr 1/1 Running 0
+product-65585cd966-qkc5f 1/1 Running 0
+product-65585cd966-xtjmr 1/1 Running 0

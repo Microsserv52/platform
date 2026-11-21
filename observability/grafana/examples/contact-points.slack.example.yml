@@ -1,0 +1,16 @@
+# Optional Slack contact point. Copy this file to contact-points.slack.yml and
+# set ALERT_SLACK_WEBHOOK_URL; Grafana provisions every YAML file in this
+# directory. Keep the webhook in the environment or a secret store, never in Git.
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: platform-slack
+    receivers:
+      - uid: platform-slack
+        type: slack
+        disableResolveMessage: false
+        settings:
+          url: $ALERT_SLACK_WEBHOOK_URL
+          title: '{{ template "slack.default.title" . }}'
+          text: '{{ template "slack.default.text" . }}'

@@ -31,3 +31,18 @@ output "cluster_autoscaler_role_arn" { value = module.eks.cluster_autoscaler_rol
 output "certificate_arn" { value = local.certificate_arn }
 
 output "gateway_nlb_security_group_id" { value = aws_security_group.gateway_nlb.id }
+
+output "grafana_admin_secret_arn" {
+  value       = try(aws_secretsmanager_secret.grafana_admin[0].arn, "")
+  description = "Secrets Manager ARN for the Grafana admin credential."
+}
+
+output "grafana_alerting_secret_arn" {
+  value       = try(aws_secretsmanager_secret.grafana_alerting[0].arn, "")
+  description = "Secrets Manager ARN for Grafana alert recipients."
+}
+
+output "ebs_csi_role_arn" {
+  value       = module.eks.ebs_csi_role_arn
+  description = "IRSA role used by the EBS CSI driver add-on."
+}

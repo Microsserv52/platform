@@ -5,177 +5,277 @@ icon: lucide/activity
 # Observability
 
 Observability makes it possible to understand a request without reproducing it
-locally. The platform should cover logs, metrics and traces across the Gateway
-and every downstream service.
+locally. The platform covers logs, metrics, traces and profiles across the
+Gateway and every downstream service.
+
+The stack is implemented as configuration-as-code under
+[`observability/`](https://github.com/Microsserv52/platform/tree/main/observability).
+It runs on Docker Compose for the daily loop, can be installed into the
+LocalStack EKS rehearsal, and has a prepared EKS deployment path.
+
+> [!NOTE]
+> **Signals are live locally; AWS deployment is prepared, not applied.** The
+> repository contains the Helm values, Kubernetes manifests and Terraform
+> prerequisites. Deploying them changes AWS resources and needs owner
+> authorization.
 
 ## Signals
 
-### Logs
-
-Emit structured JSON logs with:
-
-- UTC timestamp and severity;
-- service and environment;
-- request or trace ID;
-- HTTP method, route template and status;
-- duration in milliseconds;
-- dependency name and outcome when applicable.
-
-Do not log passwords, access tokens, API keys, full authorization headers or
-unredacted personal data.
-
 ### Metrics
 
-At minimum, expose:
+| Service | Endpoint | Instrumentation |
+| --- | --- | --- |
+| Gateway | `/actuator/prometheus` | Micrometer, HTTP server metrics and latency histogram |
+| Auth | `/actuator/prometheus` | Micrometer, HTTP server metrics and latency histogram |
+| Account | `/actuator/prometheus` | Micrometer, Hikari and HTTP server metrics |
+| Order | `/actuator/prometheus` | Micrometer, Hikari and HTTP server metrics |
+| Product | `/actuator/prometheus` | Micrometer, Hikari, cache and HTTP server metrics |
+| Exchange | `/metrics` | `prometheus-client`, provider, cache and HTTP metrics |
 
-| Metric                              | Purpose                         |
-| ----------------------------------- | ------------------------------- |
-| Request count by route and status   | Traffic and error rate          |
-| Request latency percentiles         | User-facing performance         |
-| In-flight requests                  | Saturation                      |
-| Dependency failures and latency     | Locate slow downstream services |
-| Database connection pool usage      | Detect persistence pressure     |
-| Pod CPU and memory                  | Capacity and autoscaling        |
-| Exchange provider rate and failures | Monitor external dependency     |
+All Java services tag metrics with `application`, and Prometheus adds a
+`service` label. Dashboards and alerts use the `service` label, not pod names.
+Latency histograms are enabled with:
 
-Use low-cardinality labels. Never use user IDs, order IDs or unrestricted URLs
-as metric labels.
+```properties
+management.metrics.distribution.percentiles-histogram.http.server.requests=true
+management.metrics.distribution.slo.http.server.requests=50ms,100ms,250ms,500ms,1s,2s,5s
+```
 
-The service-level objectives and planned burn-rate alerts are defined in
-[Costs, PaaS and SLA](../infrastructure/costs.md#sla-and-slo). Product exposes
-`/actuator/prometheus` and Exchange exposes `/metrics`; Gateway, Auth, Account
-and Order need Prometheus instrumentation before the SLIs can be measured.
-Grafana and the collection stack are not implemented in this change.
+### Logs
+
+Services emit structured JSON with UTC timestamps, service, request ID, route
+and status. Alloy reads Docker container logs locally and writes them to Loki.
+In Grafana Cloud, the same Alloy pipeline writes to the Cloud Loki endpoint.
+Secrets, JWTs and provider credentials are never logged.
 
 ### Traces
 
-Propagate a trace context from Gateway through Product, Order, Account, Auth and
-Exchange. A trace for `POST /orders` should show product lookup, persistence
-and any exchange call as separate spans.
+Tempo is part of the local stack and Alloy accepts OTLP on `4317`/`4318`.
+Browser traces travel through Alloy's Faro receiver. Java and Python services
+need an OpenTelemetry agent or SDK before backend spans are exported; the
+collector path and Tempo/Grafana Cloud endpoints are ready.
 
-## Health endpoints
+### Profiles
 
-Every service should provide:
+Pyroscope is part of the local stack. The Cloud write path is configured in
+Alloy. CPU/allocation profiling still needs a language agent and an overhead
+decision; no profiler is claimed as enabled.
 
-- **liveness**: the process is running;
-- **readiness**: the service can receive traffic and required dependencies are
-  available;
-- **info/version**: build version and commit identifier without secrets.
-
-Readiness should be used by load balancers and Kubernetes; liveness must not
-restart a service merely because an optional external provider is temporarily
-unavailable.
-
-## Dashboards and alerts
-
-Create dashboards for traffic, errors, latency, saturation and dependency
-health. Alert on symptoms such as elevated 5xx rate, failed readiness checks,
-high latency, pod restarts and database exhaustion. Every alert must link to a
-runbook and identify an owner.
-
-Grafana Cloud is selected. Stack region/endpoints, retention, sampling, access
-and budget values remain deployment decisions. There is no self-hosted LGTM
-backend in this checkout.
-
-## Selected Grafana Cloud stack
-
-The owner selected Grafana Cloud as the managed observability destination.
-Its [managed telemetry backends](https://grafana.com/docs/learning-paths/grafana-cloud-tour/explore-send-data/)
-map signals as follows; this is the target, not a claim that ingestion is live.
-
-| Technology                | Role and planned usage                                                                        | Current status                                                                                      |
-| ------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Grafana Cloud / Grafana   | Managed dashboards, exploration and alerting                                                  | Selected; stack/region/access/alerts not configured.                                                |
-| Prometheus / Mimir        | Prometheus-compatible application and infrastructure metrics                                  | Selected; application metrics exporter/scrapes/remote write not configured.                         |
-| Loki                      | Structured service, edge and infrastructure logs                                              | Selected; ingestion and redaction pipeline not configured.                                          |
-| Tempo                     | Distributed traces across Gateway, services and later Kafka consumers                         | Selected; backend propagation/export not implemented.                                               |
-| Pyroscope                 | Continuous CPU/allocation profiling where supported                                           | Selected capability; language integration, sampling and overhead budget pending.                    |
-| Faro                      | Browser errors, performance and tracing into Grafana Cloud Frontend Observability             | SDK already integrated; collection disabled pending deployment values/policy.                       |
-| OpenTelemetry (OTel/OTLP) | Vendor-neutral instrumentation, trace propagation and export                                  | Planned backend integration; no new agent/SDK installed by this decision.                           |
-| Alloy                     | Collector with OpenTelemetry and Prometheus pipelines, routing telemetry to the managed stack | Planned collector, not deployed.                                                                    |
-| Graphite                  | Graphite metric ingestion/query support for Graphite-format producers                         | Supported capability; no current producer. Prometheus/OTel is the proposed default for new metrics. |
-| Umami                     | Separate privacy-conscious demo usage analytics                                               | Existing gated script integration; not a Grafana backend or tracing replacement.                    |
-| k6                        | Controlled load testing and optional Grafana Cloud test integration                           | Local script exists; no hosted test or capacity claim.                                              |
-
-[Alloy](https://grafana.com/docs/grafana-cloud/send-data/alloy/introduction/) can
-collect multiple telemetry signals. [Graphite support](https://grafana.com/docs/grafana-cloud/send-data/metrics/metrics-graphite/)
-is available, but Grafana recommends Prometheus for new metrics. We do not need
-to emit the same metric into both systems or operate standalone Graphite/Loki/
-Tempo/Mimir servers to use their managed Cloud services.
-
-### Proposed signal flow
+## Local stack
 
 ```mermaid
 flowchart LR
-    browser[Browser Faro SDK] --> faro[Grafana Cloud frontend collector]
-    apps[Spring services: OTel / Actuator] --> alloy[Alloy collector]
-    infra[Infrastructure / Redis / future Kafka] --> alloy
-    edge[Cloudflare logs if export supported] --> alloy
-    alloy --> metrics[Cloud metrics: Prometheus / Mimir]
-    alloy --> logs[Cloud logs: Loki]
-    alloy --> traces[Cloud traces: Tempo]
-    profiles[Profiling integration when accepted] --> pyro[Cloud profiles: Pyroscope]
-    graphite[Graphite producer if introduced] --> graphiteCloud[Cloud Graphite endpoint]
-    browser --> umami[Separate Umami service]
+    browser[Browser Faro SDK] --> alloy[Alloy]
+    services[Gateway / Auth / Account / Order / Product / Exchange] --> prom[Prometheus]
+    services --> alloy
+    alloy --> loki[Loki]
+    alloy --> tempo[Tempo]
+    prom --> grafana[Grafana]
+    loki --> grafana
+    tempo --> grafana
+    pyroscope[Pyroscope] --> grafana
+    blackbox[Blackbox exporter] --> prom
 ```
 
-Use one owned collection path per signal to avoid duplicate ingestion. The
-proposed baseline is structured application logs collected by Alloy,
-Prometheus-compatible metrics, and OTel backend traces exported through Alloy.
-Evaluate an official Java agent/framework integration and the required metrics
-registry before implementation; ask for dependency/agent approval first. The
-existing health endpoint alone is not a Prometheus exporter.
+Start the application and observability profile:
 
-Browser ingestion uses the public Faro collector configuration, not private
-Grafana Cloud access tokens. Backend OTLP/remote-write/log credentials stay in
-the collector's secret store. Preserve existing redaction, Do Not Track and
-opt-out behavior. Trace continuity from private browser routes is currently
-restricted; extending propagation requires privacy/CORS review rather than
-claiming end-to-end traces already work.
+```bash
+docker compose -f compose.yml -f compose.observability.yml \
+  --profile observability up -d
+```
 
-Start with service/environment/release/route-template labels. Do not put user,
-cart, order, product IDs, raw URLs or search text into metric labels. Strip
-cookies, credentials, authorization headers, signed upload query strings and
-personal data before telemetry leaves the application/collector. Use bounded
-sampling, retention and ingestion budgets; set alerts for errors, latency,
-cart Redis saturation/failed writes, outbox backlog and Kafka consumer lag.
-Cloudflare log export depends on plan and log availability.
+Or use the wrapper:
 
-### Rollout and verification
+```bash
+scripts/observability-up.sh
+```
 
-1. Choose Grafana Cloud stack/region, endpoint scopes, data retention, budget,
-   dashboard roles, alert destinations and collection policy. Umami hosting and
-   values are separate decisions.
-2. Approve and initialize the official collector/agent/framework integrations.
-   Keep development, staging and future production identities distinct.
-3. Verify a controlled request across Gateway and a downstream service, then
-   inspect correlated logs, trace spans and metrics without sensitive data.
-4. Verify browser payload redaction, opt-out, allowed origins, edge WAF behavior,
-   collector failure isolation, bounded buffering and telemetry cost/overhead.
-5. Add Redis/Cart and Kafka/outbox dashboards when those services exist.
-   Do not run load tests against production without explicit authorization.
+| Component | Local URL | Purpose |
+| --- | --- | --- |
+| Grafana | <http://localhost:3000> | Dashboards, unified alerting |
+| Prometheus | <http://localhost:9090> | Metrics, recording rules |
+| Loki | <http://localhost:3100> | Logs |
+| Tempo | <http://localhost:3200> | Traces |
+| Pyroscope | <http://localhost:4040> | Profiles |
+| Alloy | <http://localhost:12345> | Collection, Faro receiver |
+| Blackbox | <http://localhost:9115> | Synthetic HTTP probes |
 
-## Staging isolation — TODO
+All ports bind to `127.0.0.1`. Stop without deleting data:
 
-The [staging plan](../infrastructure/staging.md) requires a separate Grafana
-Cloud stack, ingestion/Faro values, dashboards, credentials and developer alert
-routes. Environment labels alone are insufficient isolation. Keep Faro enabled
-for sanitized errors and approved technical diagnostics; disable Umami and every
-product-usage tracking path. Separate frontend feature controls must be
-implemented before this is possible reliably with the current shared telemetry
-flag. Suppress expected scheduled-downtime availability alerts, while external
-start/stop and budget monitors stay active. This environment is not implemented.
+```bash
+scripts/observability-down.sh
+```
 
-## Browser observability integration
+Enable browser telemetry before rebuilding the frontends:
 
-The three web applications integrate **Grafana Faro** for browser errors,
-performance and tracing, and **Umami** for demo product-usage analytics. The
-[frontend PWA and observability plan](../frontend/pwa-observability.md) defines
-application identities, sanitized events, environment variables, deployment
-choices and verification. Collection is disabled by default. Grafana Cloud collector values, Umami hosting and retention remain to be
-confirmed at deployment; admin usage
-analytics are excluded.
+```bash
+NEXT_PUBLIC_ENABLE_TELEMETRY=true
+NEXT_PUBLIC_FARO_URL=http://localhost:12347/collect
+```
 
-The store is a simulation. Analytics must describe **demo orders**, never real
-payments or revenue, and must exclude credentials, personal identifiers and
-raw search/order/account URLs.
+The admin app also links to `NEXT_PUBLIC_GRAFANA_DASHBOARD_URL` when set.
+
+### LocalStack rehearsal
+
+LocalStack EKS uses k3s with a single tainted control-plane node and no dynamic
+`gp3` provisioner. Install the same stack with emptyDir storage:
+
+```bash
+scripts/install-observability.sh --localstack
+```
+
+It uses [`values.localstack.yaml`](https://github.com/Microsserv52/platform/blob/main/observability/helm/values.localstack.yaml)
+and the overlay in
+[`k8s/overlays/localstack/observability`](https://github.com/Microsserv52/platform/tree/main/k8s/overlays/localstack/observability).
+The external `Probe` is omitted there because the rehearsal has no public edge.
+
+## Dashboards
+
+| Dashboard | UID | Main questions |
+| --- | --- | --- |
+| Platform overview | `platform-overview` | Is traffic healthy? Which service is burning? |
+| Service RED | `service-red` | Rate, errors and duration for one service |
+| SLO and error budget | `slo-error-budget` | 28-day availability, burn rate, remaining budget |
+| Synthetic health | `synthetic-health` | Are edge pages and API probes succeeding? |
+| Dependencies | `dependencies` | Hikari, Redis/cache and Exchange provider health |
+
+Dashboards are provisioned from
+[`observability/grafana/dashboards`](https://github.com/Microsserv52/platform/tree/main/observability/grafana/dashboards).
+Every dashboard uses the provisioned `prometheus` datasource UID, so the same
+JSON works locally and on EKS.
+
+## SLIs, SLOs and alerts
+
+The 28-day availability SLO is **99.5%** for the service set. The error budget is
+0.5%. Recording rules in
+[`observability/prometheus/rules/sli.yml`](https://github.com/Microsserv52/platform/blob/main/observability/prometheus/rules/sli.yml)
+compute:
+
+- request and error rate by service;
+- availability at 5 minutes and 28 days;
+- p95 and p99 latency;
+- burn rate and remaining error budget;
+- JVM heap and Hikari utilization.
+
+Grafana unified alerting is provisioned from
+[`observability/grafana/provisioning/alerting/rules.yml`](https://github.com/Microsserv52/platform/blob/main/observability/grafana/provisioning/alerting/rules.yml).
+
+| Alert | Condition | Severity |
+| --- | --- | --- |
+| Platform availability fast burn | availability < 99% for 5m | page |
+| Platform availability slow burn | availability < 99.5% for 30m | ticket |
+| Platform p95 latency above 1s | p95 > 1s for 10m | ticket |
+| Platform scrape target down | `up == 0` for 2m | page |
+| Synthetic edge probe failing | `probe_success == 0` for 2m | page |
+| Database connection pool saturation | Hikari > 90% for 5m | ticket |
+| Exchange provider errors | error rate > 0.1/s for 5m | page |
+| Product cache errors | cache error rate > 0 for 10m | ticket |
+
+Email is the default contact point (`ALERT_EMAIL_TO`). A Slack example is kept
+as `observability/grafana/examples/contact-points.slack.example.yml`; copy it into the alerting provisioning directory as `.yml` and set
+`ALERT_SLACK_WEBHOOK_URL` to enable it.
+
+### Alert runbook
+
+<div id="alert-runbook"></div>
+
+1. Open **Platform overview** and identify the affected `service`.
+2. Open **Service RED** and compare request rate, 5xx ratio and p95.
+3. Check **Dependencies** for Hikari saturation, Exchange provider errors and
+   cache errors.
+4. Check **Synthetic health** to separate an edge/CloudFront problem from a
+   service problem.
+5. For availability or latency incidents, inspect `kubectl -n platform logs`
+   and the Grafana Loki explorer with the `service` label.
+6. For Hikari saturation, compare `hikaricp_connections_active` with
+   `hikaricp_connections_max`; the retained pool is 8 per pod.
+7. Record the incident and link the dashboard time range in the delivery notes.
+
+## Grafana Cloud ingestion
+
+Grafana Cloud remains the managed destination for signals that should outlive
+the cluster. All credentials are environment variables; no token is committed.
+
+| Grafana Cloud product | Role | Repository status |
+| --- | --- | --- |
+| Prometheus / Mimir | Metrics remote write | Configured in `observability/alloy/config.cloud.alloy` |
+| Loki | Logs | Configured through Alloy Docker log collection |
+| Tempo | Traces | OTLP receiver and Cloud exporter configured |
+| Pyroscope | Profiles | Cloud write endpoint configured; agent pending |
+| Faro / Frontend Observability | Browser errors, Web Vitals, traces | Frontend SDK present; URL remains a deployment value |
+| Synthetic Monitoring | External checks | Terraform in `terraform/environments/grafana-cloud` |
+| Grafana Alerting | Unified alerting | Provisioned locally; Cloud contact points are Terraform-managed |
+| k6 | Load tests | Local k6 scenarios; remote-write output is optional |
+
+Required environment for the Cloud collector:
+
+```bash
+GRAFANA_CLOUD_PROMETHEUS_URL=
+GRAFANA_CLOUD_PROMETHEUS_USER=
+GRAFANA_CLOUD_LOKI_URL=
+GRAFANA_CLOUD_LOKI_USER=
+GRAFANA_CLOUD_OTLP_ENDPOINT=
+GRAFANA_CLOUD_PYROSCOPE_URL=
+GRAFANA_CLOUD_PYROSCOPE_USER=
+GRAFANA_CLOUD_API_KEY=
+```
+
+Cloud dashboards and synthetic checks are created from
+[`terraform/environments/grafana-cloud`](https://github.com/Microsserv52/platform/tree/main/terraform/environments/grafana-cloud).
+The environment validates without credentials; applying it needs a Grafana
+Cloud stack URL, service-account token and Synthetic Monitoring access token.
+
+## AWS deployment
+
+The prepared EKS deployment runs Prometheus Operator and self-hosted Grafana;
+Grafana stays `ClusterIP` and is published behind **Amazon Cognito** at an ALB,
+or behind **Cloudflare Access/Tunnel**. The cluster installer provisions the
+in-cluster Prometheus datasource; logs, traces and profiles stay in Grafana
+Cloud and are queried from the Cloud UI, so there are no broken in-cluster
+Loki/Tempo/Pyroscope datasources on EKS. See
+[Grafana on AWS](grafana-aws.md) for the topology, prerequisites, secret flow
+and exact commands.
+
+## Cloudflare edge
+
+Cloudflare is the security edge, not the metrics backend. Edge logs can be
+exported with Logpush when the plan allows it; the optional path is documented
+in [Cloudflare edge telemetry](observability-cloudflare.md). It does not replace
+the Grafana Cloud signal pipeline.
+
+## Verification
+
+```bash
+scripts/validate-observability.sh
+
+curl -fsS http://localhost:9090/-/ready
+curl -fsS 'http://localhost:9090/api/v1/targets?state=active'
+curl -fsS 'http://localhost:9090/api/v1/query?query=probe_success'
+curl -fsS http://localhost:3000/api/health
+curl -fsS -u admin:admin http://localhost:3000/api/search?type=dash-db
+```
+
+The validation script checks Prometheus configuration and rules with
+`promtool`, the blackbox configuration, dashboard JSON and provisioning YAML.
+
+## Cost
+
+| Item | Local | AWS estimate |
+| --- | ---: | ---: |
+| Prometheus + Grafana + blackbox requests | $0 | ~0.8–1.2 vCPU, ~2–3 GiB |
+| EBS for Prometheus (20 GiB) + Grafana (10 GiB) | $0 | ≈ $2.5/month |
+| Extra node if the two-node baseline cannot fit | $0 | ≈ +$31/month |
+| Grafana Cloud | Free tier possible | Plan-dependent |
+
+The observability stack likely pushes the current two-node baseline to three
+nodes. See [Costs, PaaS and SLA](../infrastructure/costs.md).
+
+## Known limits
+
+- Backend traces and profiles need an OpenTelemetry/profiling agent; only the
+  collector and storage paths are configured.
+- AWS deployment is prepared and validated, not applied.
+- Grafana Cloud Terraform cannot be applied without a real stack and tokens.
+- LocalStack stores Prometheus/Grafana data in emptyDir; it is a rehearsal, not
+  durable storage.
+- Cloudflare Logpush availability depends on the selected plan.

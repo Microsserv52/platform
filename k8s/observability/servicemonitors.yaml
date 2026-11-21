@@ -1,0 +1,119 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: gateway
+  namespace: platform
+  labels:
+    app.kubernetes.io/part-of: platform-observability
+spec:
+  selector:
+    matchLabels:
+      app: gateway
+  endpoints:
+    - port: 8080
+      path: /actuator/prometheus
+      interval: 15s
+      scrapeTimeout: 10s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_name]
+          targetLabel: service
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: auth
+  namespace: platform
+  labels:
+    app.kubernetes.io/part-of: platform-observability
+spec:
+  selector:
+    matchLabels:
+      app: auth
+  endpoints:
+    - port: 8080
+      path: /actuator/prometheus
+      interval: 15s
+      scrapeTimeout: 10s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_name]
+          targetLabel: service
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: account
+  namespace: platform
+  labels:
+    app.kubernetes.io/part-of: platform-observability
+spec:
+  selector:
+    matchLabels:
+      app: account
+  endpoints:
+    - port: 8080
+      path: /actuator/prometheus
+      interval: 15s
+      scrapeTimeout: 10s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_name]
+          targetLabel: service
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: order
+  namespace: platform
+  labels:
+    app.kubernetes.io/part-of: platform-observability
+spec:
+  selector:
+    matchLabels:
+      app: order
+  endpoints:
+    - port: 8080
+      path: /actuator/prometheus
+      interval: 15s
+      scrapeTimeout: 10s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_name]
+          targetLabel: service
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: product
+  namespace: platform
+  labels:
+    app.kubernetes.io/part-of: platform-observability
+spec:
+  selector:
+    matchLabels:
+      app: product
+  endpoints:
+    - port: 8080
+      path: /actuator/prometheus
+      interval: 15s
+      scrapeTimeout: 10s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_name]
+          targetLabel: service
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: exchange
+  namespace: platform
+  labels:
+    app.kubernetes.io/part-of: platform-observability
+spec:
+  selector:
+    matchLabels:
+      app: exchange
+  endpoints:
+    - port: 8080
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_name]
+          targetLabel: service

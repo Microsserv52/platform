@@ -15,6 +15,7 @@ k8s/
     microk8s/           # local PostgreSQL and Redis, nginx ingress
     localstack/         # LocalStack EKS, Traefik ingress, exchange mock
     aws/                # EKS, nginx ingress, IRSA service account
+  observability/        # Grafana, blackbox, ServiceMonitors, Probe
 ```
 
 ## Apply an overlay
@@ -53,6 +54,22 @@ scripts/create-platform-secrets.sh
 `SPRING_DATASOURCE_PASSWORD` and `CACHE_REDIS_URL`.
 `EXCHANGE_PROVIDER_API_KEY` is included only when the provider requires it;
 the Exchange Deployment treats that secret key as optional.
+
+## Observability
+
+`k8s/observability` deploys Grafana, blackbox and the ServiceMonitors. It is
+installed after `kube-prometheus-stack`:
+
+```bash
+scripts/install-observability.sh
+# LocalStack EKS rehearsal:
+scripts/install-observability.sh --localstack
+```
+
+Grafana is ClusterIP only. The ALB + Cognito and Cloudflare Access options are
+documented in [Grafana on AWS](../docs/operations/grafana-aws.md). See
+[Observability](../docs/operations/observability.md) for the dashboards, alerts
+and local Compose profile.
 
 ## Workloads
 

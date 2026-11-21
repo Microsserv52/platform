@@ -66,8 +66,9 @@ before CPU does.
 a cache of PostgreSQL orders. The dedicated Cart service and seven-day TTL are
 selected but not implemented. [Kafka post-order work](../project/asynchronous-events.md)
 is proposed to decouple side effects after the order commit; it does not remove
-Product lookup or database limits from checkout. [Grafana Cloud](observability.md)
-is selected to measure these paths. [Cloudflare security](../infrastructure/cloudflare.md)
+Product lookup or database limits from checkout. The [observability
+stack](observability.md) measures these paths locally; Grafana Cloud ingestion
+is prepared for sustained retention. [Cloudflare security](../infrastructure/cloudflare.md)
 is selected for edge protection; capacity and DDoS behavior still require
 configuration and verification. Domain and static CDN remain open.
 

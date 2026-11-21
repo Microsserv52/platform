@@ -332,7 +332,7 @@ on the staging TODO checklist.
 | DNS and certificates | Route 53 + ACM (optional) | DNS validation and free public certificates | Domain approval is external to this repository |
 | Secrets | Kubernetes `platform-secrets` | Minimal moving parts for the course deployment | Not a managed secret store; rotation and audit are manual |
 | CI | GitHub Actions | Tests, CodeQL, image publishing | Deployment is deliberately shell-first; there is no CI deploy workflow |
-| Observability | Grafana Cloud selected; local Grafana plan | Prometheus-compatible metrics, Loki/Tempo/Pyroscope/Faro | **Not implemented in this change**; no Grafana, Alloy or dashboards were added |
+| Observability | Self-hosted Prometheus + Grafana locally; Grafana Cloud ingestion prepared | Prometheus-compatible metrics, Loki/Tempo/Pyroscope/Faro, five dashboards, unified alerting | Local stack implemented; EKS deployment and Cloud Terraform prepared but not applied; backend trace/profile agents pending |
 | Documentation | Zensical + GitHub Pages | Versioned docs built from `docs/` | Public site only after merge to `main` |
 
 The Terraform boundary is explicit: EKS, ECR, RDS, ElastiCache, S3, CloudFront,
@@ -343,29 +343,31 @@ Terraform outputs beyond the generated RDS password.
 
 ## SLA and SLO
 
-!!! info "Targets, not measured claims"
+!!! info "Targets and local measurements"
 
-    The repository has no production traffic or Grafana dashboards yet. Product
-    exposes `/actuator/prometheus` and Exchange exposes `/metrics`; Gateway,
-    Auth, Account and Order still expose only `health,info`. The table below is
-    the target contract and instrumentation plan, not measured evidence.
+    The local stack now measures every service. All six services expose
+    Prometheus metrics, and the five dashboards plus unified alert rules are
+    provisioned from `observability/`. The live AWS stack has not had the
+    observability overlay applied, so the table remains a target contract rather
+    than a claim about production traffic.
 
 ### Service-level objectives
 
 | Service / flow | SLI | SLO (28 days) | Error budget | Measurement source |
 | --- | --- | --- | --- | --- |
-| Public API availability | successful responses / all responses | **99.5%** | 3 h 22 min | ingress/gateway RED metric (planned instrumentation) |
-| Product reads | fraction of `GET /products*` under 300 ms | **p95 < 300 ms** | 5% of requests | Product `/actuator/prometheus` |
-| Order writes | fraction of successful order requests under 800 ms | **p95 < 800 ms** | 5% of requests | Order Prometheus metric (planned) |
-| API error rate | 5xx responses / all responses | **< 1%** | 5% of the 28-day window | gateway RED metric (planned) |
+| Public API availability | successful responses / all responses | **99.5%** | 3 h 22 min | Gateway/Service RED metrics (implemented) |
+| Product reads | fraction of `GET /products*` under 300 ms | **p95 < 300 ms** | 5% of requests | Product `/actuator/prometheus` (implemented) |
+| Order writes | fraction of successful order requests under 800 ms | **p95 < 800 ms** | 5% of requests | Order Prometheus metric (implemented) |
+| API error rate | 5xx responses / all responses | **< 1%** | 5% of the 28-day window | Gateway/Service RED metrics (implemented) |
 | Exchange provider | successful provider calls / all calls | **99%** | 1% | Exchange `/metrics` |
-| Readiness | ready pods / desired pods per service | **≥ 99%** | 1% | kube-state-metrics (planned) |
+| Readiness | ready pods / desired pods per service | **≥ 99%** | 1% | kube-state-metrics (AWS values prepared) |
 | Recovery | RDS point-in-time restore | **RTO 1 h, RPO ≤ 5 min** | — | RDS automated backups (7-day retention) |
 
 ### Alert plan
 
-These are implementation plans; no Grafana rules or contact points are added by
-this change.
+The local stack implements these rules in Grafana unified alerting. The AWS
+deployment reuses them; contact points and SMTP values remain deployment
+secrets.
 
 | Signal | Condition | Route | Owner |
 | --- | --- | --- | --- |
@@ -379,8 +381,9 @@ this change.
 | Database saturation | pool wait time or connection errors for 10 m | page | data owner |
 | Exchange provider | provider error rate > 1% for 10 m | page | exchange owner |
 
-Every page alert should carry a `runbook_url` and the service owner; inhibit
-page alerts when the dependency alert is already active. Planned dashboards are
-RED per service, SLO/error-budget, HPA/node capacity, dependency health and the
-k6 run overlay. The full local Grafana plan remains in the observability
-roadmap; it is intentionally not implemented here.
+Every page alert carries a `runbook_url` and the platform owner; inhibit page
+alerts when the dependency alert is already active. The implemented dashboards
+are Platform overview, Service RED, SLO/error budget, Synthetic health and
+Dependencies. HPA/node capacity is available from kube-state-metrics and
+node-exporter in the AWS values. See [Observability](../operations/observability.md)
+and [Grafana on AWS](../operations/grafana-aws.md).

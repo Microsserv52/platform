@@ -1,0 +1,440 @@
+=== 02:54:44 ===
+account    Deployment/account    cpu: 2%/70%     2     6     2     15m
+auth       Deployment/auth       cpu: 1%/70%     2     6     2     15m
+exchange   Deployment/exchange   cpu: 1%/70%     2     6     2     15m
+gateway    Deployment/gateway    cpu: 29%/70%    2     6     2     15m
+order      Deployment/order      cpu: 1%/70%     2     6     2     15m
+product    Deployment/product    cpu: 107%/70%   2     6     4     14m
+nodes=3
+gateway-5f975fb844-l587c    2m     174Mi   
+gateway-5f975fb844-sr2mx    315m   215Mi   
+order-7b7c8d46b8-d6ztc      5m     244Mi   
+order-7b7c8d46b8-jrlk7      4m     247Mi   
+product-7b65d7ddcd-47v7k    140m   320Mi   
+product-7b65d7ddcd-8rjsj    111m   268Mi   
+product-7b65d7ddcd-mnvwh    77m    323Mi   
+product-7b65d7ddcd-wdpkr    251m   302Mi   
+=== 02:55:00 ===
+account    Deployment/account    cpu: 1%/70%    2     6     2     15m
+auth       Deployment/auth       cpu: 1%/70%    2     6     2     15m
+exchange   Deployment/exchange   cpu: 1%/70%    2     6     2     15m
+gateway    Deployment/gateway    cpu: 63%/70%   2     6     2     15m
+order      Deployment/order      cpu: 1%/70%    2     6     2     15m
+product    Deployment/product    cpu: 62%/70%   2     6     5     15m
+nodes=3
+gateway-5f975fb844-l587c    4m     174Mi   
+gateway-5f975fb844-sr2mx    3m     214Mi   
+order-7b7c8d46b8-d6ztc      3m     244Mi   
+order-7b7c8d46b8-jrlk7      4m     247Mi   
+product-7b65d7ddcd-47v7k    13m    320Mi   
+product-7b65d7ddcd-8rjsj    8m     268Mi   
+product-7b65d7ddcd-mnvwh    3m     323Mi   
+product-7b65d7ddcd-rhgbf    499m   77Mi    
+product-7b65d7ddcd-wdpkr    19m    302Mi   
+=== 02:55:15 ===
+account    Deployment/account    cpu: 2%/70%   2     6     2     15m
+auth       Deployment/auth       cpu: 2%/70%   2     6     2     15m
+exchange   Deployment/exchange   cpu: 0%/70%   2     6     2     15m
+gateway    Deployment/gateway    cpu: 1%/70%   2     6     2     15m
+order      Deployment/order      cpu: 1%/70%   2     6     2     15m
+product    Deployment/product    cpu: 4%/70%   2     6     5     15m
+nodes=3
+gateway-5f975fb844-l587c    4m     174Mi   
+gateway-5f975fb844-sr2mx    426m   287Mi   
+order-7b7c8d46b8-d6ztc      3m     244Mi   
+order-7b7c8d46b8-jrlk7      3m     247Mi   
+product-7b65d7ddcd-47v7k    382m   336Mi   
+product-7b65d7ddcd-8rjsj    302m   303Mi   
+product-7b65d7ddcd-mnvwh    363m   334Mi   
+product-7b65d7ddcd-rhgbf    492m   131Mi   
+product-7b65d7ddcd-wdpkr    405m   316Mi   
+=== 02:55:30 ===
+account    Deployment/account    cpu: 1%/70%     2     6     2     15m
+auth       Deployment/auth       cpu: 1%/70%     2     6     2     15m
+exchange   Deployment/exchange   cpu: 1%/70%     2     6     2     15m
+gateway    Deployment/gateway    cpu: 86%/70%    2     6     2     15m
+order      Deployment/order      cpu: 1%/70%     2     6     2     15m
+product    Deployment/product    cpu: 145%/70%   2     6     5     15m
+nodes=3
+gateway-5f975fb844-l587c    5m     174Mi   
+gateway-5f975fb844-sr2mx    492m   317Mi   
+order-7b7c8d46b8-d6ztc      4m     244Mi   
+order-7b7c8d46b8-jrlk7      3m     247Mi   
+product-7b65d7ddcd-47v7k    382m   339Mi   
+product-7b65d7ddcd-8rjsj    492m   311Mi   
+product-7b65d7ddcd-mnvwh    493m   347Mi   
+product-7b65d7ddcd-wdpkr    494m   321Mi   
+=== 02:55:45 ===
+account    Deployment/account    cpu: 2%/70%     2     6     2     16m
+auth       Deployment/auth       cpu: 1%/70%     2     6     2     16m
+exchange   Deployment/exchange   cpu: 1%/70%     2     6     2     16m
+gateway    Deployment/gateway    cpu: 99%/70%    2     6     3     16m
+order      Deployment/order      cpu: 1%/70%     2     6     2     16m
+product    Deployment/product    cpu: 186%/70%   2     6     6     15m
+nodes=3
+gateway-5f975fb844-hzvbs    479m   83Mi    
+gateway-5f975fb844-l587c    2m     174Mi   
+gateway-5f975fb844-sr2mx    485m   318Mi   
+order-7b7c8d46b8-d6ztc      3m     244Mi   
+order-7b7c8d46b8-jrlk7      3m     247Mi   
+product-7b65d7ddcd-47v7k    356m   332Mi   
+product-7b65d7ddcd-8rjsj    490m   321Mi   
+product-7b65d7ddcd-gshw6    482m   74Mi    
+product-7b65d7ddcd-mnvwh    493m   347Mi   
+product-7b65d7ddcd-rhgbf    500m   77Mi    
+product-7b65d7ddcd-wdpkr    499m   338Mi   
+=== 02:55:59 ===
+account    Deployment/account    cpu: 2%/70%     2     6     2     16m
+auth       Deployment/auth       cpu: 1%/70%     2     6     2     16m
+exchange   Deployment/exchange   cpu: 1%/70%     2     6     2     16m
+gateway    Deployment/gateway    cpu: 97%/70%    2     6     3     16m
+order      Deployment/order      cpu: 1%/70%     2     6     2     16m
+product    Deployment/product    cpu: 183%/70%   2     6     6     16m
+nodes=3
+gateway-5f975fb844-hzvbs    451m   84Mi    
+gateway-5f975fb844-l587c    3m     174Mi   
+gateway-5f975fb844-sr2mx    498m   318Mi   
+order-7b7c8d46b8-d6ztc      3m     244Mi   
+order-7b7c8d46b8-jrlk7      3m     247Mi   
+product-7b65d7ddcd-47v7k    392m   333Mi   
+product-7b65d7ddcd-8rjsj    495m   328Mi   
+product-7b65d7ddcd-gshw6    503m   76Mi    
+product-7b65d7ddcd-mnvwh    412m   347Mi   
+product-7b65d7ddcd-rhgbf    500m   130Mi   
+product-7b65d7ddcd-wdpkr    501m   350Mi   
+=== 02:56:14 ===
+account    Deployment/account    cpu: 1%/70%     2     6     2     16m
+auth       Deployment/auth       cpu: 1%/70%     2     6     2     16m
+exchange   Deployment/exchange   cpu: 1%/70%     2     6     2     16m
+gateway    Deployment/gateway    cpu: 100%/70%   2     6     3     16m
+order      Deployment/order      cpu: 1%/70%     2     6     2     16m
+product    Deployment/product    cpu: 180%/70%   2     6     6     16m
+nodes=3
+gateway-5f975fb844-hzvbs    499m   145Mi   
+gateway-5f975fb844-l587c    4m     174Mi   
+gateway-5f975fb844-sr2mx    489m   319Mi   
+order-7b7c8d46b8-d6ztc      4m     244Mi   
+order-7b7c8d46b8-jrlk7      3m     247Mi   
+product-7b65d7ddcd-47v7k    226m   333Mi   
+product-7b65d7ddcd-8rjsj    499m   338Mi   
+product-7b65d7ddcd-mnvwh    264m   349Mi   
+product-7b65d7ddcd-wdpkr    495m   347Mi   
+=== 02:56:29 ===
+account    Deployment/account    cpu: 1%/70%     2     6     2     16m
+auth       Deployment/auth       cpu: 2%/70%     2     6     2     16m
+exchange   Deployment/exchange   cpu: 0%/70%     2     6     2     16m
+gateway    Deployment/gateway    cpu: 98%/70%    2     6     3     16m
+order      Deployment/order      cpu: 1%/70%     2     6     2     16m
+product    Deployment/product    cpu: 148%/70%   2     6     6     16m
+nodes=3
+gateway-5f975fb844-hzvbs    192m   163Mi   
+gateway-5f975fb844-l587c    6m     174Mi   
+gateway-5f975fb844-sr2mx    450m   319Mi   
+order-7b7c8d46b8-d6ztc      3m     244Mi   
+order-7b7c8d46b8-jrlk7      3m     247Mi   
+product-7b65d7ddcd-47v7k    162m   333Mi   
+product-7b65d7ddcd-8rjsj    493m   341Mi   
+product-7b65d7ddcd-gshw6    499m   75Mi    
+product-7b65d7ddcd-mnvwh    161m   349Mi   
+product-7b65d7ddcd-rhgbf    498m   62Mi    
+product-7b65d7ddcd-wdpkr    373m   348Mi   
+=== 02:56:45 ===
+account    Deployment/account    cpu: 1%/70%     2     6     2     17m
+auth       Deployment/auth       cpu: 1%/70%     2     6     2     17m
+exchange   Deployment/exchange   cpu: 1%/70%     2     6     2     17m
+gateway    Deployment/gateway    cpu: 91%/70%    2     6     3     17m
+order      Deployment/order      cpu: 1%/70%     2     6     2     17m
+product    Deployment/product    cpu: 118%/70%   2     6     6     16m
+nodes=3
+gateway-5f975fb844-hzvbs    9m     163Mi   
+gateway-5f975fb844-l587c    3m     174Mi   
+gateway-5f975fb844-sr2mx    436m   319Mi   
+order-7b7c8d46b8-d6ztc      3m     244Mi   
+order-7b7c8d46b8-jrlk7      4m     248Mi   
+product-7b65d7ddcd-47v7k    127m   334Mi   
+product-7b65d7ddcd-8rjsj    499m   357Mi   
+product-7b65d7ddcd-mnvwh    131m   349Mi   
+product-7b65d7ddcd-rhgbf    500m   156Mi   
+product-7b65d7ddcd-wdpkr    258m   349Mi   
+=== 02:57:00 ===
+account    Deployment/account    cpu: 1%/70%     2     6     2     17m
+auth       Deployment/auth       cpu: 1%/70%     2     6     2     17m
+exchange   Deployment/exchange   cpu: 1%/70%     2     6     2     17m
+gateway    Deployment/gateway    cpu: 60%/70%    2     6     3     17m
+order      Deployment/order      cpu: 2%/70%     2     6     2     17m
+product    Deployment/product    cpu: 101%/70%   2     6     6     17m
+nodes=3
+gateway-5f975fb844-hzvbs    9m     163Mi   
+gateway-5f975fb844-l587c    3m     174Mi   
+gateway-5f975fb844-sr2mx    436m   319Mi   
+order-7b7c8d46b8-d6ztc      3m     244Mi   
+order-7b7c8d46b8-jrlk7      4m     248Mi   
+product-7b65d7ddcd-47v7k    127m   334Mi   
+product-7b65d7ddcd-8rjsj    499m   357Mi   
+product-7b65d7ddcd-mnvwh    131m   349Mi   
+product-7b65d7ddcd-rhgbf    500m   156Mi   
+product-7b65d7ddcd-wdpkr    258m   349Mi   
+=== 02:57:15 ===
+account    Deployment/account    cpu: 1%/70%     2     6     2     17m
+auth       Deployment/auth       cpu: 1%/70%     2     6     2     17m
+exchange   Deployment/exchange   cpu: 1%/70%     2     6     2     17m
+gateway    Deployment/gateway    cpu: 59%/70%    2     6     3     17m
+order      Deployment/order      cpu: 1%/70%     2     6     2     17m
+product    Deployment/product    cpu: 101%/70%   2     6     6     17m
+nodes=3
+gateway-5f975fb844-hzvbs    6m     164Mi   
+gateway-5f975fb844-l587c    6m     174Mi   
+gateway-5f975fb844-sr2mx    430m   321Mi   
+order-7b7c8d46b8-d6ztc      3m     244Mi   
+order-7b7c8d46b8-jrlk7      6m     248Mi   
+product-7b65d7ddcd-47v7k    134m   334Mi   
+product-7b65d7ddcd-8rjsj    499m   364Mi   
+product-7b65d7ddcd-gshw6    496m   65Mi    
+product-7b65d7ddcd-mnvwh    133m   349Mi   
+product-7b65d7ddcd-rhgbf    490m   68Mi    
+product-7b65d7ddcd-wdpkr    156m   349Mi   
+=== 02:57:30 ===
+account    Deployment/account    cpu: 1%/70%    2     6     2     17m
+auth       Deployment/auth       cpu: 1%/70%    2     6     2     17m
+exchange   Deployment/exchange   cpu: 1%/70%    2     6     2     17m
+gateway    Deployment/gateway    cpu: 58%/70%   2     6     3     17m
+order      Deployment/order      cpu: 1%/70%    2     6     2     17m
+product    Deployment/product    cpu: 92%/70%   2     6     6     17m
+nodes=3
+gateway-5f975fb844-hzvbs    6m     164Mi   
+gateway-5f975fb844-l587c    2m     174Mi   
+gateway-5f975fb844-sr2mx    436m   320Mi   
+order-7b7c8d46b8-d6ztc      3m     244Mi   
+order-7b7c8d46b8-jrlk7      4m     248Mi   
+product-7b65d7ddcd-47v7k    133m   334Mi   
+product-7b65d7ddcd-8rjsj    498m   361Mi   
+product-7b65d7ddcd-mnvwh    124m   349Mi   
+product-7b65d7ddcd-wdpkr    151m   349Mi   
+=== 02:57:46 ===
+account    Deployment/account    cpu: 1%/70%    2     6     2     18m
+auth       Deployment/auth       cpu: 1%/70%    2     6     2     18m
+exchange   Deployment/exchange   cpu: 1%/70%    2     6     2     18m
+gateway    Deployment/gateway    cpu: 59%/70%   2     6     3     18m
+order      Deployment/order      cpu: 1%/70%    2     6     2     18m
+product    Deployment/product    cpu: 89%/70%   2     6     6     18m
+nodes=3
+gateway-5f975fb844-hzvbs    6m     164Mi   
+gateway-5f975fb844-l587c    2m     174Mi   
+gateway-5f975fb844-sr2mx    420m   320Mi   
+order-7b7c8d46b8-d6ztc      4m     244Mi   
+order-7b7c8d46b8-jrlk7      4m     248Mi   
+product-7b65d7ddcd-47v7k    91m    334Mi   
+product-7b65d7ddcd-8rjsj    493m   365Mi   
+product-7b65d7ddcd-gshw6    499m   79Mi    
+product-7b65d7ddcd-mnvwh    117m   349Mi   
+product-7b65d7ddcd-wdpkr    171m   349Mi   
+=== 02:58:01 ===
+account    Deployment/account    cpu: 1%/70%    2     6     2     18m
+auth       Deployment/auth       cpu: 1%/70%    2     6     2     18m
+exchange   Deployment/exchange   cpu: 1%/70%    2     6     2     18m
+gateway    Deployment/gateway    cpu: 57%/70%   2     6     3     18m
+order      Deployment/order      cpu: 1%/70%    2     6     2     18m
+product    Deployment/product    cpu: 87%/70%   2     6     6     18m
+nodes=3
+gateway-5f975fb844-hzvbs    4m     164Mi   
+gateway-5f975fb844-l587c    2m     174Mi   
+gateway-5f975fb844-sr2mx    421m   320Mi   
+order-7b7c8d46b8-d6ztc      4m     244Mi   
+order-7b7c8d46b8-jrlk7      5m     248Mi   
+product-7b65d7ddcd-47v7k    127m   334Mi   
+product-7b65d7ddcd-8rjsj    306m   366Mi   
+product-7b65d7ddcd-gshw6    496m   135Mi   
+product-7b65d7ddcd-mnvwh    121m   349Mi   
+product-7b65d7ddcd-wdpkr    128m   350Mi   
+=== 02:58:25 ===
+account    Deployment/account    cpu: 1%/70%    2     6     2     18m
+auth       Deployment/auth       cpu: 1%/70%    2     6     2     18m
+exchange   Deployment/exchange   cpu: 0%/70%    2     6     2     18m
+gateway    Deployment/gateway    cpu: 56%/70%   2     6     3     18m
+order      Deployment/order      cpu: 1%/70%    2     6     2     18m
+product    Deployment/product    cpu: 68%/70%   2     6     6     18m
+nodes=3
+gateway-5f975fb844-hzvbs    5m     164Mi   
+gateway-5f975fb844-l587c    3m     174Mi   
+gateway-5f975fb844-sr2mx    419m   321Mi   
+order-7b7c8d46b8-d6ztc      5m     245Mi   
+order-7b7c8d46b8-jrlk7      3m     248Mi   
+product-7b65d7ddcd-47v7k    133m   334Mi   
+product-7b65d7ddcd-8rjsj    219m   366Mi   
+product-7b65d7ddcd-mnvwh    119m   349Mi   
+product-7b65d7ddcd-wdpkr    128m   350Mi   
+=== 02:58:40 ===
+account    Deployment/account    cpu: 0%/70%    2     6     2     18m
+auth       Deployment/auth       cpu: 1%/70%    2     6     2     18m
+exchange   Deployment/exchange   cpu: 0%/70%    2     6     2     18m
+gateway    Deployment/gateway    cpu: 56%/70%   2     6     3     18m
+order      Deployment/order      cpu: 1%/70%    2     6     2     18m
+product    Deployment/product    cpu: 59%/70%   2     6     6     18m
+nodes=3
+gateway-5f975fb844-hzvbs    5m     164Mi   
+gateway-5f975fb844-l587c    6m     174Mi   
+gateway-5f975fb844-sr2mx    422m   320Mi   
+order-7b7c8d46b8-d6ztc      4m     245Mi   
+order-7b7c8d46b8-jrlk7      3m     248Mi   
+product-7b65d7ddcd-47v7k    108m   334Mi   
+product-7b65d7ddcd-8rjsj    131m   366Mi   
+product-7b65d7ddcd-mnvwh    123m   349Mi   
+product-7b65d7ddcd-wdpkr    135m   350Mi   
+=== 02:58:56 ===
+account    Deployment/account    cpu: 1%/70%    2     6     2     19m
+auth       Deployment/auth       cpu: 1%/70%    2     6     2     19m
+exchange   Deployment/exchange   cpu: 1%/70%    2     6     2     19m
+gateway    Deployment/gateway    cpu: 57%/70%   2     6     3     19m
+order      Deployment/order      cpu: 1%/70%    2     6     2     19m
+product    Deployment/product    cpu: 49%/70%   2     6     6     19m
+nodes=3
+gateway-5f975fb844-hzvbs    6m     164Mi   
+gateway-5f975fb844-l587c    3m     174Mi   
+gateway-5f975fb844-sr2mx    400m   320Mi   
+order-7b7c8d46b8-d6ztc      2m     245Mi   
+order-7b7c8d46b8-jrlk7      3m     248Mi   
+product-7b65d7ddcd-47v7k    108m   334Mi   
+product-7b65d7ddcd-8rjsj    142m   366Mi   
+product-7b65d7ddcd-mnvwh    97m    349Mi   
+product-7b65d7ddcd-rhgbf    500m   77Mi    
+product-7b65d7ddcd-wdpkr    148m   350Mi   
+=== 02:59:13 ===
+account    Deployment/account    cpu: 1%/70%    2     6     2     19m
+auth       Deployment/auth       cpu: 1%/70%    2     6     2     19m
+exchange   Deployment/exchange   cpu: 1%/70%    2     6     2     19m
+gateway    Deployment/gateway    cpu: 54%/70%   2     6     3     19m
+order      Deployment/order      cpu: 1%/70%    2     6     2     19m
+product    Deployment/product    cpu: 49%/70%   2     6     6     19m
+nodes=3
+gateway-5f975fb844-hzvbs    4m     164Mi   
+gateway-5f975fb844-l587c    4m     174Mi   
+gateway-5f975fb844-sr2mx    3m     319Mi   
+order-7b7c8d46b8-d6ztc      3m     245Mi   
+order-7b7c8d46b8-jrlk7      2m     248Mi   
+product-7b65d7ddcd-47v7k    78m    334Mi   
+product-7b65d7ddcd-8rjsj    6m     366Mi   
+product-7b65d7ddcd-mnvwh    2m     349Mi   
+product-7b65d7ddcd-rhgbf    500m   132Mi   
+product-7b65d7ddcd-wdpkr    93m    350Mi   
+=== 02:59:29 ===
+account    Deployment/account    cpu: 1%/70%    2     6     2     19m
+auth       Deployment/auth       cpu: 0%/70%    2     6     2     19m
+exchange   Deployment/exchange   cpu: 1%/70%    2     6     2     19m
+gateway    Deployment/gateway    cpu: 1%/70%    2     6     3     19m
+order      Deployment/order      cpu: 1%/70%    2     6     2     19m
+product    Deployment/product    cpu: 17%/70%   2     6     6     19m
+nodes=3
+gateway-5f975fb844-hzvbs    7m     165Mi   
+gateway-5f975fb844-l587c    2m     174Mi   
+gateway-5f975fb844-sr2mx    2m     319Mi   
+order-7b7c8d46b8-d6ztc      5m     245Mi   
+order-7b7c8d46b8-jrlk7      5m     248Mi   
+product-7b65d7ddcd-47v7k    4m     334Mi   
+product-7b65d7ddcd-8rjsj    3m     366Mi   
+product-7b65d7ddcd-gshw6    500m   80Mi    
+product-7b65d7ddcd-mnvwh    2m     349Mi   
+product-7b65d7ddcd-wdpkr    3m     350Mi   
+=== 02:59:46 ===
+account    Deployment/account    cpu: 1%/70%   2     6     2     20m
+auth       Deployment/auth       cpu: 1%/70%   2     6     2     20m
+exchange   Deployment/exchange   cpu: 0%/70%   2     6     2     20m
+gateway    Deployment/gateway    cpu: 1%/70%   2     6     3     20m
+order      Deployment/order      cpu: 1%/70%   2     6     2     20m
+product    Deployment/product    cpu: 1%/70%   2     6     6     20m
+nodes=3
+gateway-5f975fb844-hzvbs    6m    165Mi   
+gateway-5f975fb844-l587c    2m    174Mi   
+gateway-5f975fb844-sr2mx    3m    318Mi   
+order-7b7c8d46b8-d6ztc      3m    245Mi   
+order-7b7c8d46b8-jrlk7      3m    248Mi   
+product-7b65d7ddcd-47v7k    2m    334Mi   
+product-7b65d7ddcd-8rjsj    7m    358Mi   
+product-7b65d7ddcd-mnvwh    3m    348Mi   
+product-7b65d7ddcd-wdpkr    3m    347Mi   
+=== 03:00:01 ===
+account    Deployment/account    cpu: 0%/70%   2     6     2     20m
+auth       Deployment/auth       cpu: 1%/70%   2     6     2     20m
+exchange   Deployment/exchange   cpu: 1%/70%   2     6     2     20m
+gateway    Deployment/gateway    cpu: 1%/70%   2     6     3     20m
+order      Deployment/order      cpu: 2%/70%   2     6     2     20m
+product    Deployment/product    cpu: 1%/70%   2     6     6     20m
+nodes=3
+gateway-5f975fb844-hzvbs    4m    166Mi   
+gateway-5f975fb844-l587c    3m    174Mi   
+gateway-5f975fb844-sr2mx    6m    296Mi   
+order-7b7c8d46b8-d6ztc      2m    245Mi   
+order-7b7c8d46b8-jrlk7      3m    248Mi   
+product-7b65d7ddcd-47v7k    3m    333Mi   
+product-7b65d7ddcd-8rjsj    3m    358Mi   
+product-7b65d7ddcd-mnvwh    3m    348Mi   
+product-7b65d7ddcd-wdpkr    3m    347Mi   
+=== 03:00:16 ===
+account    Deployment/account    cpu: 1%/70%   2     6     2     20m
+auth       Deployment/auth       cpu: 1%/70%   2     6     2     20m
+exchange   Deployment/exchange   cpu: 0%/70%   2     6     2     20m
+gateway    Deployment/gateway    cpu: 1%/70%   2     6     3     20m
+order      Deployment/order      cpu: 1%/70%   2     6     2     20m
+product    Deployment/product    cpu: 1%/70%   2     6     6     20m
+nodes=3
+gateway-5f975fb844-hzvbs    7m    166Mi   
+gateway-5f975fb844-l587c    2m    174Mi   
+gateway-5f975fb844-sr2mx    2m    296Mi   
+order-7b7c8d46b8-d6ztc      4m    245Mi   
+order-7b7c8d46b8-jrlk7      3m    248Mi   
+product-7b65d7ddcd-47v7k    2m    333Mi   
+product-7b65d7ddcd-8rjsj    4m    358Mi   
+product-7b65d7ddcd-mnvwh    2m    348Mi   
+product-7b65d7ddcd-wdpkr    3m    347Mi   
+=== 03:00:32 ===
+account    Deployment/account    cpu: 1%/70%   2     6     2     20m
+auth       Deployment/auth       cpu: 0%/70%   2     6     2     20m
+exchange   Deployment/exchange   cpu: 1%/70%   2     6     2     20m
+gateway    Deployment/gateway    cpu: 1%/70%   2     6     3     20m
+order      Deployment/order      cpu: 1%/70%   2     6     2     20m
+product    Deployment/product    cpu: 1%/70%   2     6     6     20m
+nodes=3
+gateway-5f975fb844-hzvbs    4m    166Mi   
+gateway-5f975fb844-l587c    3m    175Mi   
+gateway-5f975fb844-sr2mx    2m    295Mi   
+order-7b7c8d46b8-d6ztc      2m    245Mi   
+order-7b7c8d46b8-jrlk7      2m    248Mi   
+product-7b65d7ddcd-47v7k    3m    333Mi   
+product-7b65d7ddcd-8rjsj    3m    358Mi   
+product-7b65d7ddcd-mnvwh    2m    348Mi   
+product-7b65d7ddcd-wdpkr    3m    347Mi   
+=== 03:00:48 ===
+account    Deployment/account    cpu: 1%/70%   2     6     2     21m
+auth       Deployment/auth       cpu: 1%/70%   2     6     2     21m
+exchange   Deployment/exchange   cpu: 0%/70%   2     6     2     21m
+gateway    Deployment/gateway    cpu: 1%/70%   2     6     3     21m
+order      Deployment/order      cpu: 0%/70%   2     6     2     21m
+product    Deployment/product    cpu: 1%/70%   2     6     6     21m
+nodes=3
+gateway-5f975fb844-hzvbs    8m     166Mi   
+gateway-5f975fb844-l587c    3m     175Mi   
+gateway-5f975fb844-sr2mx    2m     295Mi   
+order-7b7c8d46b8-d6ztc      4m     245Mi   
+order-7b7c8d46b8-jrlk7      3m     248Mi   
+product-7b65d7ddcd-47v7k    2m     333Mi   
+product-7b65d7ddcd-8rjsj    3m     358Mi   
+product-7b65d7ddcd-mnvwh    2m     348Mi   
+product-7b65d7ddcd-rhgbf    500m   85Mi    
+product-7b65d7ddcd-wdpkr    3m     347Mi   
+=== 03:01:03 ===
+account    Deployment/account    cpu: 1%/70%   2     6     2     21m
+auth       Deployment/auth       cpu: 0%/70%   2     6     2     21m
+exchange   Deployment/exchange   cpu: 1%/70%   2     6     2     21m
+gateway    Deployment/gateway    cpu: 1%/70%   2     6     3     21m
+order      Deployment/order      cpu: 1%/70%   2     6     2     21m
+product    Deployment/product    cpu: 1%/70%   2     6     6     21m
+nodes=3
+gateway-5f975fb844-hzvbs    10m    166Mi   
+gateway-5f975fb844-l587c    3m     175Mi   
+gateway-5f975fb844-sr2mx    2m     295Mi   
+order-7b7c8d46b8-d6ztc      2m     245Mi   
+order-7b7c8d46b8-jrlk7      3m     248Mi   
+product-7b65d7ddcd-47v7k    2m     333Mi   
+product-7b65d7ddcd-8rjsj    3m     358Mi   
+product-7b65d7ddcd-mnvwh    2m     348Mi   
+product-7b65d7ddcd-rhgbf    515m   94Mi    
+product-7b65d7ddcd-wdpkr    3m     347Mi   
