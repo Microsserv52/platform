@@ -282,8 +282,8 @@ flowchart LR
 3. CI publishes an immutable image tag based on the commit or release.
 4. The integration repository updates the submodule pointer and the image
    version used by the target environment.
-5. A deployment pipeline applies the image to Compose, Kubernetes or the
-   selected managed runtime.
+5. A deployment operator runs Terraform and the deployment scripts against the
+   target environment.
 6. Readiness checks, migrations, smoke tests and representative user flows are
    verified.
 7. The release records service versions, image digests, test results and a
@@ -292,7 +292,9 @@ flowchart LR
 The platform repository also publishes documentation through
 [`.github/workflows/docs.yml`](../../.github/workflows/docs.yml). Application
 CI/CD is owned by each runnable service repository, while this integration
-repository performs cross-service validation and deployment coordination.
+repository performs cross-service validation and owns the Terraform and
+Kubernetes definitions. AWS deployment itself runs from a logged-in shell, not
+from a CI/CD workflow.
 
 ## External systems
 

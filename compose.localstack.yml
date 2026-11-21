@@ -1,0 +1,29 @@
+name: platform-localstack
+
+services:
+  localstack:
+    image: ${LOCALSTACK_IMAGE:-localstack/localstack:2026.10.8}
+    hostname: localstack
+    environment:
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:-}
+      - SERVICES=${LOCALSTACK_SERVICES:-s3,cloudfront,rds,elasticache,eks,ecr,iam,sts,ec2}
+      - PERSISTENCE=${LOCALSTACK_PERSISTENCE:-1}
+      - LOCALSTACK_HOST=${LOCALSTACK_HOST:-localhost.localstack.cloud:4566}
+      - EAGER_SERVICE_LOADING=0
+      - AWS_DEFAULT_REGION=${AWS_REGION:-us-east-1}
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    ports:
+      - "4566:4566"
+      - "8081:8081"
+      - "4510-4559:4510-4559"
+    volumes:
+      - localstack-data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:4566/_localstack/health >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  localstack-data:

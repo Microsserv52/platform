@@ -63,9 +63,9 @@ The default script is intentionally read-only and does not create test data.
 
 ## Kubernetes HPA exercise
 
-The manifests in `k8s/70-hpa.yaml` configure HPA for Gateway, Order, Account and
-Auth with three minimum replicas, ten maximum replicas and a 60% CPU target.
-The manifests in `k8s/71-pdb.yaml` preserve two available replicas during
+The manifests in `k8s/base/hpa.yaml` configure HPA for Gateway, Order, Account,
+Auth, Product and Exchange with two minimum replicas, six maximum replicas and a
+70% CPU target. `k8s/base/pdb.yaml` preserves one available replica during
 voluntary disruption. MicroK8s supports these manifests, but HPA requires the
 cluster to be running and Metrics Server to be enabled:
 
@@ -81,16 +81,7 @@ Load the application images into MicroK8s or configure registry references
 first. Then deploy the local test environment and HPA:
 
 ```bash
-microk8s kubectl apply -f k8s/00-namespace-config.yaml
-microk8s kubectl apply -f k8s/05-redis.yaml
-microk8s kubectl apply -f k8s/10-database.yaml
-microk8s kubectl apply -f k8s/20-account.yaml
-microk8s kubectl apply -f k8s/30-auth.yaml
-microk8s kubectl apply -f k8s/40-order.yaml
-microk8s kubectl apply -f k8s/50-gateway.yaml
-microk8s kubectl apply -f k8s/60-ingress.yaml
-microk8s kubectl apply -f k8s/70-hpa.yaml
-microk8s kubectl apply -f k8s/71-pdb.yaml
+microk8s kubectl apply -k k8s/overlays/microk8s
 microk8s kubectl get hpa -n platform --watch
 ```
 

@@ -21,7 +21,11 @@ course](https://insper.github.io/platform/2026.2/exercises/project/).
 | [Rules](project/rules.md) | API, domain, security and reliability rules |
 | [Testing](development/testing.md) | Layered verification strategy |
 | [Delivery](project/delivery.md) | Final evidence and AI disclosure checklist |
-| [Deployment](infrastructure/deployment.md) | Container and GitHub Pages deployment |
+| [Deployment](infrastructure/deployment.md) | Container, LocalStack and AWS deployment modes |
+| [Deployment runbook](infrastructure/runbook.md) | Step-by-step AWS login, Terraform, deploy, verify, update and teardown |
+| [LocalStack rehearsal](infrastructure/localstack.md) | AWS-like local rehearsal with Terraform, EKS, ECR, RDS, ElastiCache, S3 and CloudFront |
+| [Infrastructure changes](infrastructure/changes.md) | Manifest moves, secret rename, workflow removal and migration checklist |
+| [Infrastructure as code](https://github.com/Microsserv52/platform/blob/main/terraform/README.md) | Terraform modules, state, cost and provider caveats |
 | [Operations](operations/observability.md) | Logs, metrics, traces, health and alerts |
 | [Performance](operations/bottlenecks.md) | Bottleneck investigation and evidence |
 | [Cloud](infrastructure/aws.md) | AWS account and resource setup |

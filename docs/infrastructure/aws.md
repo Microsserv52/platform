@@ -4,9 +4,9 @@ icon: lucide/cloud
 
 # AWS setup
 
-The course exercise expects the project to use AWS, EKS, CI/CD, load testing
-and cost analysis. This page is a checklist for the project environment, not a
-replacement for the official AWS documentation.
+For the operational commands, see the [deployment runbook](runbook.md). This
+page is a checklist for the project environment, not a replacement for the
+official AWS documentation.
 
 ## Account and access
 
@@ -24,6 +24,14 @@ aws configure --profile platform
 aws configure list --profile platform
 aws sts get-caller-identity --profile platform
 ```
+
+## Provisioning
+
+AWS infrastructure is declared in [`terraform/`](https://github.com/Microsserv52/platform/blob/main/terraform/README.md):
+VPC/subnets, EKS, ECR, RDS, ElastiCache, S3, CloudFront, IAM/IRSA and optional
+Route 53/ACM. Apply it against LocalStack for the rehearsal or against a real
+account for production. Kubernetes workloads live in [`k8s/`](https://github.com/Microsserv52/platform/blob/main/k8s/README.md)
+and are applied by the deployment scripts; there is no CI/CD deploy workflow.
 
 ## Resource inventory
 

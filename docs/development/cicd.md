@@ -27,9 +27,11 @@ coverage quality gates, CodeQL, and publish an immutable GHCR image tagged
 with the source commit. The `order` contract runs the same checks except image
 publishing because it is a library.
 
-The platform repository owns cross-service validation and deployment
-coordination. Its integration job pulls `sha-<submodule-commit>` images from
-GHCR and builds only when the matching image is unavailable.
+The platform repository owns cross-service validation and the infrastructure
+definitions. Its integration job pulls `sha-<submodule-commit>` images from
+GHCR and builds only when the matching image is unavailable. Deployment is
+shell-first: `scripts/deploy-aws.sh` runs Terraform and applies the Kubernetes
+overlay from an authenticated workstation; no CI/CD workflow deploys to AWS.
 
 ## Pipeline rules
 

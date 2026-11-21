@@ -1,0 +1,36 @@
+aws_region         = "us-east-1"
+project            = "platform"
+vpc_cidr           = "10.0.0.0/16"
+az_count           = 2
+kubernetes_version = "1.35"
+
+node_instance_types = ["t3.small"]
+node_desired_size   = 2
+node_min_size       = 1
+node_max_size       = 4
+
+rds_instance_class    = "db.t4g.micro"
+rds_allocated_storage = 20
+redis_node_type       = "cache.t4g.micro"
+
+# Leave empty to serve the CloudFront default certificate only.
+domain_name      = ""
+api_domain_name  = ""
+hosted_zone_id   = ""
+create_dns       = false
+
+# Public hostname of the ingress/load balancer for CloudFront /api/*.
+# Required only when api_domain_name is set. Do not point it at the CloudFront
+# alias itself, or the origin will loop back into the distribution.
+cloudfront_api_origin_domain          = ""
+cloudfront_api_origin_protocol_policy = "https-only"
+
+# Used when create_dns = false.
+acm_certificate_arn = ""
+
+# Optional: IAM role/user ARN to grant EKS cluster admin. The principal that
+# creates the cluster already receives admin access.
+admin_principal_arn = ""
+
+cors_allowed_origins = ["https://app.example.com"]
+enable_cloudfront    = true

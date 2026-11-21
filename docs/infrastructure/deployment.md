@@ -4,6 +4,11 @@ icon: lucide/server
 
 # Deployment
 
+Use the [deployment runbook](runbook.md) for the exact AWS and LocalStack
+commands, verification and troubleshooting. See [infrastructure changes](changes.md)
+for the manifest moves and migration steps introduced by the current
+implementation.
+
 ## Documentation deployment
 
 `.github/workflows/docs.yml` builds the Zensical site on pushes to `main` and
@@ -28,14 +33,16 @@ implement that environment and must not be applied as an assumed staging setup.
 
 ## Application deployment
 
-The repository supports three distinct runtime modes:
+The repository supports four distinct runtime modes:
 
-1. **Docker Compose** — local development and integration testing. It
+1. **Docker Compose** — daily development and integration testing. It
    provisions PostgreSQL and uses the local Exchange provider mock.
-2. **MicroK8s** — local Kubernetes validation. It uses the Kubernetes
-   manifests and can deploy the local PostgreSQL manifest.
-3. **AWS EKS** — production. It uses external PostgreSQL/RDS, production
-   secrets, external Product/Exchange URLs, and the manual deployment workflow.
+2. **LocalStack rehearsal** — deployment rehearsal with Terraform, EKS, ECR,
+   RDS, ElastiCache, S3 and CloudFront emulated locally. Start it with
+   `scripts/localstack-up.sh`; see [LocalStack rehearsal](localstack.md).
+3. **MicroK8s** — local Kubernetes validation through the `microk8s` overlay.
+4. **AWS EKS** — production. Terraform provisions the infrastructure and shell
+   scripts deploy from an authenticated workstation.
 
 The local application topology is declared in [`compose.yml`](../../compose.yml).
 Nginx listens on port `8080` and forwards traffic to the gateway. Run it with:
@@ -74,29 +81,44 @@ The compose file is not a production orchestration manifest. Production uses
 the Kubernetes manifests and must additionally define persistent storage, TLS,
 backups, observability, network policies and a rollback strategy.
 
-The repository includes a manual `Deploy to AWS EKS` workflow. Configure
-`AWS_REGION`, `AWS_DEPLOY_ROLE_ARN`, `EKS_CLUSTER_NAME`, `JWT_SECRET`,
-`INTERNAL_SERVICE_SECRET`, `SPRING_DATASOURCE_URL`,
-`SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` as GitHub
-Actions secrets. Product also validates `JWT_SECRET` and needs its datasource
-values; Exchange additionally needs `EXCHANGE_PROVIDER_URL` and
-`EXCHANGE_PROVIDER_API_KEY` for the real provider (the local mock refuses to
-start in a production environment). Also set `CACHE_REDIS_URL` as a secret and `PRODUCT_URL`/
-`EXCHANGE_URL` as repository variables. The AWS role should use OIDC and least-privilege ECR/EKS
-permissions; no long-lived AWS access key is required.
+Deployment is shell-first and has no CI/CD deploy workflow. Infrastructure is
+declared in [`terraform/`](https://github.com/Microsserv52/platform/blob/main/terraform/README.md); workloads live in
+[`k8s/`](https://github.com/Microsserv52/platform/blob/main/k8s/README.md). Log in with short-lived credentials, then run:
+
+```bash
+aws sso login --profile platform
+export AWS_PROFILE=platform
+export TF_STATE_BUCKET=my-platform-tf-state   # optional remote state
+scripts/deploy-aws.sh --frontends
+```
+
+The script provisions VPC, EKS, ECR, RDS, ElastiCache, S3, CloudFront and the
+Product IRSA role, pushes images, creates `platform-secrets`, applies the
+`aws` overlay, annotates the Product service account, rolls out the services
+and optionally syncs the frontends and invalidates CloudFront. It does not
+create long-lived AWS access keys; use IAM Identity Center or a role profile.
+Product needs `JWT_SECRET` and its datasource values, and Exchange needs
+`DEPLOY_EXCHANGE_PROVIDER_URL` and `DEPLOY_EXCHANGE_PROVIDER_API_KEY` for the
+real provider. Use `--skip-terraform`, `--skip-images` or `--no-auto-approve`
+for partial deployments. The demo seeder is never deployed; run
+`scripts/seed_demo.py` manually against the deployed URL.
+
+The Kubernetes resources must additionally define persistent storage, TLS,
+backups, observability, network policies and a rollback strategy before the
+deployment is treated as production-grade.
 
 ## Infrastructure review scope and verification
 
 The infrastructure review preserves the five earlier Compose, MicroK8s, Redis,
 Exchange mock and load-testing commits without republishing the merged frontend
-or product-image changes. The split Kubernetes files replace `k8s/platform.yaml`;
-the manual EKS workflow applies only backend resources. Frontends remain static
+or product-image changes. The Kustomize base and overlays replace `k8s/platform.yaml`;
+the AWS deployment path applies only backend resources. Frontends remain static
 CDN exports, with hosting and environment values to be agreed before deployment.
 
 Compose builds the checked-out Account, Auth, Gateway and Order sources under
-explicit `:local` image tags. Product and Exchange sources are still absent;
-provide those images under the configured tags, or use immutable registry image
-references in `.env`. The PostgreSQL baseline is explicitly version 17 to match
+explicit `:local` image tags. Product and Exchange are submodule services built
+from their own Dockerfiles; use immutable registry image references for
+deployments. The PostgreSQL baseline is explicitly version 17 to match
 the local Kubernetes manifest; Redis is constrained to 7.4. Existing database
 volumes from another PostgreSQL major require a separate backup/migration plan.
 The MicroK8s database and Redis manifests have no persistent volumes and are
@@ -106,7 +128,7 @@ The provider mock uses deterministic USD reference rates and rebases them for
 supported base currencies. Unsupported currencies return HTTP 400. Its date is
 the current UTC date; the rates are fixtures, not live financial data. The mock
 refuses to start when `ENV` or `APP_ENV` is `prod` or `production`, and no
-Kubernetes manifest or EKS workflow builds or starts it. Validate
+Kubernetes manifest or deployment script builds or starts it. Validate
 its HTTP behavior without starting the full platform:
 
 ```bash
@@ -119,6 +141,6 @@ uv run zensical build --clean
 The k6 catalog baseline requires HTTP 200 and fails on missing routes or denied
 requests. It is not evidence of authenticated checkout capacity. Redis endpoint
 wiring does not implement caching; service-owned cache behavior remains future
-work. Kubernetes resources and the manual EKS workflow must be validated in the
+work. Kubernetes resources and the AWS deployment path must be validated in the
 target cluster before deployment; no cluster or cloud deployment is performed
 as part of this review.

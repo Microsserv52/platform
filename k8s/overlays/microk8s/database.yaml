@@ -47,6 +47,6 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: platform-secrets
-                  key: POSTGRES_PASSWORD
+                  key: SPRING_DATASOURCE_PASSWORD
             - name: POSTGRES_DB
               value: platform
