@@ -4,6 +4,8 @@ icon: lucide/lock-keyhole
 
 # Auth
 
+![Tech Stack](https://skillicons.dev/icons?i=java,spring,postgres,redis,docker,kubernetes,grafana,prometheus)
+
 Auth authenticates users and manages the tokens used by protected platform
 requests.
 

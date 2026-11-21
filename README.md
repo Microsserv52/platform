@@ -1,5 +1,7 @@
 # Platform
 
+![Tech Stack](https://skillicons.dev/icons?i=java,spring,python,nextjs,typescript,postgres,redis,docker,kubernetes,terraform,aws,grafana,prometheus)
+
 **Backend and persistence**
 
 [![Java](https://img.shields.io/badge/Java-ED8B00?style=flat)](https://dev.java/)

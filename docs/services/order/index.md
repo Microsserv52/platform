@@ -4,6 +4,8 @@ icon: lucide/shopping-cart
 
 # Order
 
+![Tech Stack](https://skillicons.dev/icons?i=java,spring,postgres,docker,kubernetes,grafana,prometheus)
+
 Orders are tied to authenticated users and reference existing products
 
 Order stores monetary values in USD. It calls Product to validate items and

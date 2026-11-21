@@ -4,6 +4,8 @@ icon: lucide/user-round
 
 # Account
 
+![Tech Stack](https://skillicons.dev/icons?i=java,spring,postgres,docker,kubernetes,grafana,prometheus)
+
 Account owns registration and user profile data. It is the source of identity
 data consumed by Auth and must not expose password hashes to clients.
 

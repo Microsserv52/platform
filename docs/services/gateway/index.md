@@ -4,6 +4,8 @@ icon: lucide/route
 
 # Gateway
 
+![Tech Stack](https://skillicons.dev/icons?i=java,spring,postgres,docker,kubernetes,grafana,prometheus)
+
 The Gateway is the platform's single public entry point. It routes requests to
 internal services and prevents clients from depending on internal hostnames or
 ports.

@@ -4,6 +4,8 @@ icon: lucide/package
 
 # Product
 
+![Tech Stack](https://skillicons.dev/icons?i=java,spring,postgres,redis,aws,docker,kubernetes,grafana,prometheus)
+
 Product owns the product catalogue: product identity, display name, price, unit
 and an optional image.
 

@@ -4,6 +4,8 @@ icon: lucide/dollar-sign
 
 # Exchange
 
+![Tech Stack](https://skillicons.dev/icons?i=python,fastapi,redis,docker,kubernetes,grafana,prometheus)
+
 API that allows users to convert between currencies. The API must use a third-party service to fetch exchange rates.
 
 ## Implementation
