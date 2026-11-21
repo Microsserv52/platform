@@ -66,9 +66,9 @@ This is a deliberate trade-off, not an unstated gap:
 - the same script is used for the recorded deployment and for recovery;
 - the operator sees the Terraform plan and rollout failures directly.
 
-If the course requires an automated deploy job, add a `workflow_dispatch`
-workflow that assumes an OIDC role and calls the same script. The script must
-remain the single deployment path so local and CI runs cannot drift.
+Staging is applied manually from `terraform/environments/staging` and
+`k8s/overlays/staging`. No workflow provisions or deploys it, and the staging
+job does not run in CI.
 
 ## EKS image publishing workflow
 
