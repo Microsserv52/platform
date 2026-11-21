@@ -225,10 +225,11 @@ the [owner-requested core guide](https://raw.githubusercontent.com/miqdadbadjube
 
 - Real Product/Exchange contract and authorization testing, plus full-stack order
   persistence/ownership checks. The fixture server does not prove these.
-- Owner-selected CDN provider, same-domain path origins, TLS/API cookie rules,
-  per-app build variables and rollback policy. Ask before deploying.
-- Faro/Umami hosting, collection policy and actual payload inspection against
-  configured collectors. Collection is disabled by default today.
+- Custom domain, ACM certificate, same-domain path origins, TLS/API cookie rules,
+  per-app build variables and rollback policy. The CloudFront hostname is current.
+- Faro/Umami production hosting, collection policy and actual payload inspection
+  against the configured collectors. The local `observability` profile enables
+  Faro and the Alloy receiver; production values remain deployment decisions.
 - Device-specific PWA installation acceptance. The store manifest and icon export
   exist; the app is online-only and private/API data is not cached offline.
 - Lighthouse, field Web Vitals, exhaustive assistive-technology audit and load

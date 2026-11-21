@@ -23,7 +23,7 @@ provides key expiration.
 
 ```mermaid
 flowchart LR
-    store[Store static frontend] --> edge[Cloudflare security edge]
+    store[Store static frontend] --> edge[AWS Shield / CloudFront / optional WAF]
     edge --> gateway[Gateway /api]
     gateway --> cart[Future Cart service]
     cart --> redis[(Cart Redis)]

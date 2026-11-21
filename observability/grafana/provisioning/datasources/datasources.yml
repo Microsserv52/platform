@@ -16,6 +16,17 @@ datasources:
       manageAlerts: true
       prometheusType: Prometheus
 
+  - name: Mimir
+    uid: mimir
+    type: prometheus
+    access: proxy
+    url: ${MIMIR_URL}
+    editable: false
+    jsonData:
+      timeInterval: 15s
+      prometheusType: Mimir
+      httpMethod: POST
+
   - name: Loki
     uid: loki
     type: loki

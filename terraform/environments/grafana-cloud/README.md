@@ -43,4 +43,4 @@ The Prometheus datasource UID in Grafana Cloud may not be `prometheus`; set
 
 - [Observability](../../../docs/operations/observability.md)
 - [Grafana on AWS](../../../docs/operations/grafana-aws.md)
-- [Cloudflare edge telemetry](../../../docs/operations/observability-cloudflare.md)
+- [AWS observability and edge security](../../../docs/operations/observability-aws-security.md)

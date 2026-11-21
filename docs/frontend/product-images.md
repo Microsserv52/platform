@@ -5,9 +5,8 @@ icon: lucide/image
 # Product image storage options
 
 Selected storage: **Amazon S3**, with the AWS SDK approved by the owner.
-CloudFront is the current image-delivery baseline. A potential move to Cloudflare
-CDN remains open, independently of the selected Cloudflare security layer; R2
-storage has not been selected. Frontend rendering and admin image management are
+CloudFront is the image-delivery baseline. No alternate CDN or object store is
+selected. Frontend rendering and admin image management are
 implemented against the [Product image contract](../services/product/images.md),
 with a disposable local fixture for testing. The Product service now implements
 that contract in [`api/product`](../../../api/product/) (S3 in production, a
@@ -19,7 +18,6 @@ provisioned, and no AWS dependency has been installed in a frontend or Gateway.
 | Option                           | Fit                                                                                                                                            | Tradeoff                                                                                                              |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | Amazon S3 + CloudFront           | Recommended for alignment with the existing AWS backend; short-lived authorized upload URLs and private bucket delivery through CloudFront OAC | Requires AWS storage/CDN configuration and approval of the backend SDK                                                |
-| Cloudflare R2 + Cloudflare cache | Alternative if Cloudflare will own image delivery; S3-compatible upload interface and cached custom-domain delivery                            | R2 presigned uploads use its S3 endpoint, separately from the public custom-domain delivery URL                       |
 | Vercel Blob                      | Managed browser uploads if the owner chooses the Vercel ecosystem                                                                              | Needs an authenticated token-issuing backend and approval of its SDK; static Next.js exports cannot host this handler |
 | Azure Blob Storage               | Managed object storage if Azure is preferred; supports HTTP image delivery                                                                     | Adds Azure configuration and a provider SDK; CDN/edge delivery must be configured separately                          |
 | PostgreSQL bytea + API + CDN     | Viable for a small mock catalog without a separate object store                                                                                | Images increase database/backup traffic; cache misses read through the API and database; CDN needs an HTTP endpoint   |
@@ -82,8 +80,6 @@ does not copy its contents into owned blob storage.
 
 - [S3 authorized uploads](https://docs.aws.amazon.com/AmazonS3/latest/userguide/PresignedUrlUploadObject.html)
 - [CloudFront S3 origin access control](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html)
-- [R2 presigned URLs](https://developers.cloudflare.com/r2/api/s3/presigned-urls/)
-- [R2 CDN caching](https://developers.cloudflare.com/cache/interaction-cloudflare-products/r2/)
 - [Vercel Blob browser uploads](https://vercel.com/docs/vercel-blob/client-upload)
 - [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction)
 - [PostgreSQL binary storage](https://www.postgresql.org/docs/current/datatype-binary.html)

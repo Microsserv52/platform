@@ -53,7 +53,7 @@ if ! kubectl -n observability get secret grafana-alerting >/dev/null 2>&1; then
 fi
 
 echo "creating Grafana ConfigMaps"
-DATASOURCE_FILE="$ROOT_DIR/observability/grafana/aws/datasources.prometheus.yml"
+DATASOURCE_FILE="$ROOT_DIR/observability/grafana/provisioning/datasources/datasources.yml"
 kubectl -n observability create configmap grafana-datasources \
   --from-file=datasources.yml="$DATASOURCE_FILE" \
   --dry-run=client -o yaml | kubectl apply -f -
@@ -68,7 +68,22 @@ kubectl -n observability create configmap grafana-dashboards \
   --from-file="$ROOT_DIR/observability/grafana/dashboards" \
   --dry-run=client -o yaml | kubectl apply -f -
 kubectl -n observability create configmap blackbox-config \
-  --from-file=blackbox.yml="$ROOT_DIR/observability/blackbox/blackbox.yml" \
+  --from-file=config.yml="$ROOT_DIR/observability/blackbox/blackbox.yml" \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n observability create configmap mimir-config \
+  --from-file=config.yml="$ROOT_DIR/observability/mimir/mimir.yaml" \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n observability create configmap loki-config \
+  --from-file=config.yml="$ROOT_DIR/observability/loki/loki.yaml" \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n observability create configmap tempo-config \
+  --from-file=config.yml="$ROOT_DIR/observability/tempo/tempo.yaml" \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n observability create configmap pyroscope-config \
+  --from-file=config.yml="$ROOT_DIR/observability/pyroscope/pyroscope.yaml" \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n observability create configmap alloy-config \
+  --from-file=config.alloy="$ROOT_DIR/observability/alloy/config.k8s.alloy" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo "creating PrometheusRule from the recording rules"
@@ -106,8 +121,9 @@ helm upgrade --install observability prometheus-community/kube-prometheus-stack 
 
 kubectl apply -k "$KUSTOMIZE_PATH"
 
-kubectl -n observability rollout status deployment/grafana --timeout=180s
-kubectl -n observability rollout status deployment/blackbox-exporter --timeout=120s
+for deployment in mimir loki tempo pyroscope alloy grafana blackbox-exporter; do
+  kubectl -n observability rollout status "deployment/$deployment" --timeout=300s
+done
 
 cat <<'EOF'
 Observability is deployed.
@@ -117,5 +133,5 @@ Observability is deployed.
 
 Grafana is ClusterIP only. To publish it behind an AWS account, apply
 k8s/observability/grafana-ingress-cognito.example.yaml after setting the real
-domain, ACM certificate and Cognito values, or use Cloudflare Access/Tunnel.
+domain, ACM certificate and Cognito values. Without a domain, use kubectl port-forward.
 EOF

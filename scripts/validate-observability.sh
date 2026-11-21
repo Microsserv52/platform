@@ -33,6 +33,26 @@ docker run --rm \
 docker run --rm \
   -v "$ROOT/observability/alloy:/etc/alloy:ro" \
   grafana/alloy:v1.22.0 validate /etc/alloy/config.cloud.alloy
+docker run --rm \
+  -v "$ROOT/observability/alloy:/etc/alloy:ro" \
+  grafana/alloy:v1.22.0 validate /etc/alloy/config.k8s.alloy
+
+echo "checking Mimir configuration"
+python3 - <<'PY'
+import pathlib, sys, yaml
+
+path = pathlib.Path("observability/mimir/mimir.yaml")
+try:
+    data = yaml.safe_load(path.read_text())
+except yaml.YAMLError as error:
+    print(f"{path}: {error}", file=sys.stderr)
+    sys.exit(1)
+for key in ("target", "server", "common", "blocks_storage"):
+    if key not in data:
+        print(f"{path}: missing {key}", file=sys.stderr)
+        sys.exit(1)
+print("Mimir configuration is valid")
+PY
 
 echo "checking dashboard JSON"
 python3 - <<'PY'

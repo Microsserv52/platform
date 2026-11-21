@@ -70,7 +70,7 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-FAB040?style=flat&logo=precommit&logoColor=white)](https://pre-commit.com/)
 [![k6](https://img.shields.io/badge/k6-7D64FF?style=flat&logo=k6&logoColor=white)](https://grafana.com/oss/k6/)
 
-**Observability and analytics; local stack implemented, Grafana Cloud prepared**
+**Observability and analytics; self-hosted LGTM implemented, EKS prepared**
 
 [![Grafana Cloud](https://img.shields.io/badge/Grafana_Cloud-F46800?style=flat&logo=grafana&logoColor=white)](https://grafana.com/products/cloud/)
 [![Grafana Mimir](https://img.shields.io/badge/Grafana_Mimir-F46800?style=flat&logo=grafana&logoColor=white)](https://grafana.com/oss/mimir/)
@@ -103,25 +103,24 @@
 [![Cluster Autoscaler](https://img.shields.io/badge/Cluster_Autoscaler-326CE5?style=flat&logo=kubernetes&logoColor=white)](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler)
 [![metrics-server](https://img.shields.io/badge/metrics--server-326CE5?style=flat&logo=kubernetes&logoColor=white)](https://github.com/kubernetes-sigs/metrics-server)
 
-**Cloudflare security; selected, configuration pending**
+**AWS edge security; WAF optional**
 
-[![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=flat&logo=cloudflare&logoColor=white)](https://www.cloudflare.com/)
-[![Cloudflare WAF](https://img.shields.io/badge/Cloudflare_WAF-F38020?style=flat&logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/waf/)
-[![Cloudflare Tunnel](https://img.shields.io/badge/Cloudflare_Tunnel-F38020?style=flat&logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/)
-[![DDoS Protection](https://img.shields.io/badge/DDoS_Protection-F38020?style=flat&logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/ddos-protection/)
+[![AWS Shield](https://img.shields.io/badge/AWS_Shield-FF9900?style=flat&logo=amazonwebservices&logoColor=white)](https://aws.amazon.com/shield/)
+[![AWS WAF](https://img.shields.io/badge/AWS_WAF-FF9900?style=flat&logo=amazonwebservices&logoColor=white)](https://aws.amazon.com/waf/)
+[![Amazon CloudFront](https://img.shields.io/badge/Amazon_CloudFront-FF9900?style=flat&logo=amazoncloudfront&logoColor=white)](https://aws.amazon.com/cloudfront/)
+[![Amazon Cognito](https://img.shields.io/badge/Amazon_Cognito-FF9900?style=flat&logo=amazonwebservices&logoColor=white)](https://aws.amazon.com/cognito/)
 
-**Kafka proposal and optional storage alternative; not implemented**
+**Kafka proposal; not implemented**
 
-[![Cloudflare R2](https://img.shields.io/badge/Cloudflare_R2-F38020?style=flat&logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/r2/)
 [![Apache Kafka](https://img.shields.io/badge/Apache_Kafka-231F20?style=flat&logo=apachekafka&logoColor=white)](https://kafka.apache.org/)
 
 Redis is selected for a dedicated Cart service: carts expire seven days after the last change; reads do not renew TTL. The service is not implemented yet; the current Store still uses browser storage. Existing Redis endpoint wiring does not provide carts or service-level caching. The Store PWA remains online-only.
 
-Terraform provisions the AWS environment: VPC, EKS with 2–6 `t3.medium` nodes, ECR, RDS PostgreSQL, ElastiCache Redis, private S3 buckets and CloudFront. Product implements image persistence with the AWS SDK for Java v2; Compose still uses the local blob-storage mock. CloudFront is the current image-delivery design baseline; a possible CDN move to Cloudflare remains open. The deployed inventory is recorded in [delivery evidence](docs/project/delivery.md).
+Terraform provisions the AWS environment: VPC, EKS with 2–6 `t3.medium` nodes, ECR, RDS PostgreSQL, ElastiCache Redis, private S3 buckets and CloudFront. Product implements image persistence with the AWS SDK for Java v2; Compose still uses the local blob-storage mock. CloudFront is the image-delivery baseline; no alternate CDN is selected. The deployed inventory is recorded in [delivery evidence](docs/project/delivery.md).
 
-Observability is implemented locally with Prometheus, Grafana, Loki, Tempo, Pyroscope, Alloy and blackbox, with five dashboards and unified alerts. Grafana Cloud remains the managed destination; its Terraform, Alloy remote-write and synthetic checks are prepared but not applied. New metrics use Prometheus/OTel; Graphite is available for Graphite-format producers. Umami stays a separate analytics integration. Cloudflare is selected for DDoS protection, WAF and Tunnel; its security role does not choose the frontend CDN, a CloudFront-to-Cloudflare delivery migration or the domain; those decisions remain open. Cloudflare R2 is still only an alternative, not a replacement for approved S3 storage. Kafka placement is proposed for post-order events and later Product background work; no broker or client is implemented.
+Observability is self-hosted with Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy and blackbox, with five dashboards and unified alerts. Services use OpenTelemetry and the frontends use Faro. The same stack is prepared for EKS; Grafana Cloud is optional and not required. Edge protection uses AWS Shield Standard, CloudFront, security groups and an optional AWS WAF. Kafka placement is proposed for post-order events and later Product background work; no broker or client is implemented.
 
-Architecture details: [Observability](docs/operations/observability.md), [Grafana on AWS](docs/operations/grafana-aws.md), [Cart service](docs/services/cart/index.md), [Kafka proposals](docs/project/asynchronous-events.md) and [Cloudflare security](docs/infrastructure/cloudflare.md). Domain and frontend CDN remain undecided.
+Architecture details: [Observability](docs/operations/observability.md), [Grafana on AWS](docs/operations/grafana-aws.md), [Cart service](docs/services/cart/index.md), [Kafka proposals](docs/project/asynchronous-events.md) and [AWS edge security](docs/infrastructure/aws-edge-security.md). There is no custom domain; see [custom domains](docs/infrastructure/custom-domains.md).
 
 Web application that allows authenticated users to buy and sell products
 through a set of microservices.
@@ -171,10 +170,10 @@ for fixture inputs, real-service mode and verification limits.
 
 The [staging plan](docs/infrastructure/staging.md) specifies a smaller, fixed-capacity
 copy of every production application service, scheduled developer availability,
-synthetic data and Cloudflare Zero Trust Access. Observability is isolated in a
-separate Grafana Cloud stack; Faro errors remain enabled and Umami/usage analytics
-are disabled. It is not implemented. Budget, operating hours/timezone, hosting,
-domain and CDN decisions remain open.
+synthetic data and AWS WAF + Cognito (or SSM until a domain exists). Observability
+is isolated in a separate self-hosted stack; Faro errors remain enabled and
+Umami/usage analytics are disabled. It is not implemented. Budget, operating
+hours/timezone, hosting, domain and CDN decisions remain open.
 
 ## Which environment should I run?
 

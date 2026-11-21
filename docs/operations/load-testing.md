@@ -241,7 +241,8 @@ and latency thresholds.
 - [Scenario](../../tests/k6/authenticated-orders.js)
 
 The live AWS write path and the Exchange provider-failure scenario are still
-pending.
+pending. The local stack now injects the OpenTelemetry Java agent for tracing;
+agent startup adds several seconds, and trace sampling is 20% locally.
 
 ## Execution plan and status
 

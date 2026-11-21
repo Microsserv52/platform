@@ -19,6 +19,8 @@ prometheus:
     type: ClusterIP
   prometheusSpec:
     retention: 15d
+    remoteWrite:
+      - url: http://mimir.observability.svc.cluster.local:9009/api/v1/push
     scrapeInterval: 15s
     evaluationInterval: 15s
     serviceMonitorSelectorNilUsesHelmValues: false

@@ -83,7 +83,7 @@ design; do not add a second authoritative cart store merely to emit events.
   TLS/SASL, schema compatibility and payload limits before deployment. Hosting
   (managed Kafka/MSK or self-operated), cost and dependencies remain undecided.
 - Monitor outbox age/backlog, publish failures, consumer lag, redelivery,
-  dead-letter counts and processing latency in Grafana Cloud. A Kafka outage
+  dead-letter counts and processing latency in the self-hosted Grafana stack. A Kafka outage
   must retain pending outbox rows; prolonged backlog/storage pressure needs a
   defined degraded-service policy and alerts.
 

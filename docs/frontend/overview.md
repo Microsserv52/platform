@@ -23,7 +23,7 @@ occur, and no goods are shipped.** Demo orders are API records, not purchases.
 - Next.js, TypeScript, MUI/Emotion, Tailwind and the approved TanStack/form/test tools.
 - antislop applied during implementation; reference research and defaults authorized.
 - Each app has a Dockerfile for local testing; no frontend Kubernetes manifests.
-- Grafana Cloud is selected for observability; Cloudflare for DDoS/WAF/Tunnel security.
+- Observability is self-hosted (Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy) with OpenTelemetry and Faro; edge security uses AWS Shield, CloudFront, security groups and optional AWS WAF. No custom domain is configured.
 - A dedicated Redis Cart service is selected with seven-day expiry after writes; implementation is pending.
 - Domain name and static CDN provider remain open.
 - Production will use CDN hosting with separate per-app environment values.
@@ -61,4 +61,4 @@ upload controls remain fixture-only until the future Product backend is accepted
 | [Verification](verification.md)               | Actual checks, browser evidence and limits                                            |
 
 The initial implementation is merged and all ten source repositories are public.
-No CDN deployment or production telemetry endpoint has been configured.
+No custom domain or production Faro endpoint has been configured; the local stack uses the Alloy receiver.

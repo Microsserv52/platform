@@ -110,9 +110,10 @@ renew TTL. Preserve guest and account carts, ownership, CSRF, revision checks
 and explicit migration from browser storage. No Cart API or Redis-backed store
 behavior is implemented yet.
 
-[Grafana Cloud](../operations/observability.md) is selected for telemetry and
-[Cloudflare](../infrastructure/cloudflare.md) for DDoS/WAF/Tunnel security.
-The static CDN provider and domain name remain undecided.
+Observability is self-hosted on AWS with Prometheus, Mimir, Loki, Tempo,
+Pyroscope, Grafana and Alloy; the frontend uses Faro. Edge security uses AWS
+Shield Standard, CloudFront, security groups and an optional AWS WAF. No custom
+domain is configured.
 
 ## Remaining service prerequisites
 

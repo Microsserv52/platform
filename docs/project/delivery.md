@@ -40,14 +40,15 @@ delivered.
 | PaaS, costs and SLA | Documented | [Costs, PaaS and SLA](../infrastructure/costs.md); actual spend pending |
 | Documentation | Published | `https://microsserv52.github.io/platform/`; LocalStack, runbook, observability and Grafana AWS pages are on `main` |
 | Public application URL | Available | `https://d15ogksm4jp6sl.cloudfront.net/` (landing), `/store/`, `/admin/`, `/api` |
-| Grafana / SLI dashboard | Implemented locally; AWS prepared | Prometheus, Grafana, Loki, Tempo, Pyroscope, Alloy, blackbox, five dashboards and unified alerts; see [Observability](../operations/observability.md) and [Grafana on AWS](../operations/grafana-aws.md) |
+| Grafana / SLI dashboard | Implemented locally; AWS prepared | Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy, blackbox, five dashboards and unified alerts; see [Observability](../operations/observability.md) and [Grafana on AWS](../operations/grafana-aws.md) |
 | Team names, AI disclosure, presentation | Out of repository scope | Intentionally excluded by the project owner |
 
 The observability gap is closed in the repository: all six services expose
-metrics, the local stack provisions dashboards and alerts, and the AWS path is
-prepared with EBS CSI, Secrets Manager, Helm values and a Cognito/ALB example.
-The AWS stack is not applied by this change, and backend traces/profiles still
-need language agents.
+metrics, Java services export OpenTelemetry traces, the frontends use Faro, and
+the local stack hosts Prometheus, Mimir, Loki, Tempo, Pyroscope and Grafana. The
+AWS path is prepared with EBS CSI, Secrets Manager, Helm values, LGTM manifests
+and a Cognito/ALB example. The AWS stack is not applied; Exchange traces and
+Pyroscope language agents remain pending.
 
 ## Deployment evidence — 2026-11-21
 
@@ -160,8 +161,9 @@ CloudFront distribution exist. There are four application S3 buckets, one
 Terraform state bucket, six ECR repositories and no duplicate stacks.
 
 At the observed two-node steady state the run-rate is approximately
-**$240/month** (EKS $73, nodes $61 + EBS, NLB, RDS, ElastiCache, NAT, storage);
-a three-node rollout is about **$270/month**. The internet-facing Gateway NLB is included in the estimate; CloudFront serves the public frontend and `/api`. The account budget is USD 100, so
+**$240/month** (EKS $73, nodes $61 + EBS, NLB, RDS, ElastiCache, NAT, storage).
+The full observability stack adds about 70 GiB of EBS and likely a third node,
+so budget approximately **$280/month**. The internet-facing Gateway NLB is included in the estimate; CloudFront serves the public frontend and `/api`. The account budget is USD 100, so
 the stack must be destroyed or scheduled after the demo.
 
 ### Observability evidence — 2026-11-21
@@ -171,13 +173,16 @@ verified end to end:
 
 ```text
 Prometheus targets: 12 up, 0 unhealthy
-Grafana: 13.3.1, database ok
+Grafana: 13.3.1, database ok; datasources: Prometheus, Mimir, Loki, Tempo, Pyroscope
+Mimir: /ready and remote-write query return series
 Dashboards: Platform overview, Service RED, SLO and error budget,
             Synthetic health, Dependencies
 Alert rules: 8 provisioned; notification policy -> platform-email
 Recording rules: 13 healthy
 Synthetic probes: 5/5 successful (landing, store, admin, catalog, health)
-Loki: container logs received; Tempo: OTLP trace ingested; Pyroscope: ready
+Loki: container logs received; Tempo: OTel spans from gateway, auth, account, order and product
+Pyroscope: ready; Alloy: OTLP, Faro and log pipelines ready
+Faro: landing, store and admin builds contain the local /collect URL
 ```
 
 - [Observability verification log](../operations/verification/2026-11-21-observability.log)
@@ -191,21 +196,25 @@ These are deliberate gaps, not hidden claims:
 - **NLB origin is HTTP internally.** CloudFront terminates viewer TLS and
   reaches the Terraform NLB over HTTP. The NLB security group only allows the
   AWS CloudFront origin-facing prefix list; direct NLB access times out.
-- **No custom domain.** The public URL is the CloudFront hostname.
+- **No custom domain.** The public URL is the CloudFront hostname. Adding one
+  needs a domain, Route 53 hosted zone, ACM certificate, CloudFront alias and
+  updates to CORS, cookies, Cognito and Faro origins. See
+  [Custom domains](../infrastructure/custom-domains.md).
 - **Grafana AWS stack is prepared, not applied.** The repository has the Helm
   values, manifests, EBS CSI flag, Secrets Manager containers and Cognito ingress
   example. Applying them changes AWS resources and still needs an owner decision.
-- **Backend traces and profiles need agents.** Alloy, Tempo and Pyroscope are
-  configured, but the Java/Python services do not yet export spans or profiles.
+- **Exchange traces and profiles need agents.** The Java services load the
+  OpenTelemetry agent; Exchange (Python) still exports metrics/logs only, and
+  Pyroscope needs language agents and an overhead decision.
 - **Provider-failure and authenticated AWS write load tests are pending.** The
   read and authenticated order paths were measured locally; the live AWS write
   path and Exchange failure mode were not.
 - **Image upload is verified locally, not in AWS.** The local ticket → signed
   PUT → attach → download flow passed. The AWS S3/CloudFront browser flow still
   needs an admin account and an acceptance run.
-- **No tracing and no NetworkPolicy enforcement.** The observability manifests
-  include a scrape NetworkPolicy, but platform services are still reachable
-  inside the cluster and are not fully isolated.
+- **NetworkPolicy is limited.** The observability manifests allow scrape traffic,
+  but platform services are still reachable inside the cluster and are not fully
+  isolated.
 - **EBS CSI is optional.** It is wired behind `enable_observability` and has not
   been applied to the live cluster.
 - **No CI deploy step.** The **Publish EKS images** workflow builds and pushes
@@ -220,7 +229,7 @@ These are deliberate gaps, not hidden claims:
 
 - [ ] Implement and accept the [developer-only staging plan](../infrastructure/staging.md):
       fixed small copies of all production business services, scheduled availability,
-      synthetic seed data, Cloudflare Access, separate Grafana Cloud observability,
+      synthetic seed data, AWS WAF + Cognito, separate observability stack,
       Faro errors enabled and Umami/usage analytics disabled.
 - [ ] Record the approved budget/schedule, hosting/parity tradeoffs, isolation
       tests, independent telemetry gates, recovery/rollback and operating evidence.

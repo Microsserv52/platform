@@ -1,0 +1,65 @@
+- op: add
+  path: /spec/template/spec/initContainers
+  value:
+    - name: otel-agent
+      image: curlimages/curl:8.12.1
+      imagePullPolicy: IfNotPresent
+      command:
+        - sh
+        - -c
+        - curl -fsSL "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/${OTEL_JAVAAGENT_VERSION:-v2.34.0}/opentelemetry-javaagent.jar" -o /otel/opentelemetry-javaagent.jar
+      env:
+        - name: OTEL_JAVAAGENT_VERSION
+          value: v2.34.0
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      volumeMounts:
+        - name: otel-agent
+          mountPath: /otel
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+- op: add
+  path: /spec/template/spec/volumes
+  value:
+    - name: otel-agent
+      emptyDir: {}
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts
+  value:
+    - name: otel-agent
+      mountPath: /otel
+      readOnly: true
+- op: add
+  path: /spec/template/spec/containers/0/env
+  value:
+    - name: JAVA_TOOL_OPTIONS
+      value: -javaagent:/otel/opentelemetry-javaagent.jar
+    - name: OTEL_SERVICE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['app']
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT
+      value: http://alloy.observability.svc.cluster.local:4317
+    - name: OTEL_EXPORTER_OTLP_PROTOCOL
+      value: grpc
+    - name: OTEL_TRACES_EXPORTER
+      value: otlp
+    - name: OTEL_METRICS_EXPORTER
+      value: none
+    - name: OTEL_LOGS_EXPORTER
+      value: none
+    - name: OTEL_PROPAGATORS
+      value: tracecontext,baggage
+    - name: OTEL_RESOURCE_ATTRIBUTES
+      value: deployment.environment=cluster,service.namespace=microsserv52
+    - name: OTEL_TRACES_SAMPLER
+      value: parentbased_traceidratio
+    - name: OTEL_TRACES_SAMPLER_ARG
+      value: "0.2"

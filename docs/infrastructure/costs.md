@@ -303,7 +303,7 @@ points from this estimate:
 
 | Option                                                | Indicative cost                                                        |
 | ----------------------------------------------------- | ---------------------------------------------------------------------- |
-| Dedicated small EKS, 10 h × 5 d                       | ≈ $80/month for this stack, plus separate Grafana Cloud / Cloudflare charges |
+| Dedicated small EKS, 10 h × 5 d                       | ≈ $80/month for this stack, plus observability and AWS edge charges |
 | Single VM for MicroK8s, 4 vCPU / 16 GiB, same schedule | ≈ $45–60/month, plus EBS, snapshots and separate observability charges  |
 
 The single-VM option avoids the $73 cluster fee and the managed database/cache
@@ -312,8 +312,8 @@ EKS/IRSA parity. Scheduled EKS is closer in price than a 24/7 comparison
 suggests because the cluster fee also stops when the cluster is destroyed.
 
 Estimate compute/database running hours separately from full-month storage,
-backups, networking, security plans, static hosting and isolated Grafana Cloud
-charges. An external scheduler must reconcile RDS stop/start behavior; shutdown
+backups, networking, security plans, static hosting and self-hosted
+observability storage. An external scheduler must reconcile RDS stop/start behavior; shutdown
 is not zero-cost. Set budget alerts and manual resizing approval rather than
 autoscaling the database or application resources. All implementation remains
 on the staging TODO checklist.
@@ -327,13 +327,20 @@ on the staging TODO checklist.
 | Relational database | Amazon RDS PostgreSQL | Managed backups, patching, PITR and Multi-AZ option | No superuser; connection ceiling on `db.t4g.micro`; storage and backup cost |
 | Cache | Amazon ElastiCache Redis | Managed Redis endpoint shared by the services | Single node has no failover; no stop state |
 | Object storage | Amazon S3 | Versioning, lifecycle, presigned uploads, private buckets | Egress through CloudFront; bucket policies and CORS must be managed |
-| CDN and TLS | Amazon CloudFront | OAC for private buckets, one distribution, default certificate | Edge invalidation and cache behaviour must be tested; custom domain needs ACM |
+| CDN and TLS | Amazon CloudFront | OAC for private buckets, one distribution, default certificate | Edge invalidation and cache behaviour must be tested; no custom domain/ACM yet |
 | Network | Terraform VPC, NAT gateway, private subnets | Private workloads with controlled egress | NAT is a fixed hourly cost; AWS Load Balancer Controller is not installed |
 | DNS and certificates | Route 53 + ACM (optional) | DNS validation and free public certificates | Domain approval is external to this repository |
-| Secrets | Kubernetes `platform-secrets` | Minimal moving parts for the course deployment | Not a managed secret store; rotation and audit are manual |
+| Secrets | Kubernetes `platform-secrets` + AWS Secrets Manager for Grafana | Managed Grafana credentials and runtime application secrets | Application secret rotation/audit is still manual |
 | CI | GitHub Actions | Tests, CodeQL, image publishing | Deployment is deliberately shell-first; there is no CI deploy workflow |
-| Observability | Self-hosted Prometheus + Grafana locally; Grafana Cloud ingestion prepared | Prometheus-compatible metrics, Loki/Tempo/Pyroscope/Faro, five dashboards, unified alerting | Local stack implemented; EKS deployment and Cloud Terraform prepared but not applied; backend trace/profile agents pending |
+| Observability | Self-hosted Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy and blackbox | Prometheus-compatible metrics, long-term Mimir, logs, traces, profiles, Faro, five dashboards, unified alerting | Local stack implemented; EKS manifests prepared but not applied; Java OTel traces and Faro active, Exchange traces and Pyroscope agents pending |
 | Documentation | Zensical + GitHub Pages | Versioned docs built from `docs/` | Public site only after merge to `main` |
+
+The full observability stack adds roughly 70 GiB of `gp3` storage (Prometheus,
+Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy), about 1.5–2 vCPU and 3–4 GiB of
+requests, and is expected to add a third `t3.medium` node. Budget approximately
+**$280/month** at the two-node application baseline plus observability, before
+optional AWS WAF or an ALB for Grafana. There is no custom domain; Route 53 and
+ACM are not currently billed. See [Custom domains](custom-domains.md).
 
 The Terraform boundary is explicit: EKS, ECR, RDS, ElastiCache, S3, CloudFront,
 VPC/NAT and IAM are provisioned by Terraform. Kubernetes workloads, HPAs,

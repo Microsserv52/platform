@@ -18,7 +18,8 @@ Keep it open until implementation is separately authorized and verified.
 
 Staging must run the same application services, API contracts, engine/protocol
 versions, schema migrations and security boundaries as production, at smaller
-fixed capacity. It is developer-only behind Cloudflare Zero Trust Access, with
+fixed capacity. It is developer-only behind AWS WAF + ALB + Amazon Cognito when a domain and
+certificate exist; until then, access is limited to SSM/port-forward. It uses
 separate resources, credentials and observability. Umami and all product-usage
 analytics are disabled. **Faro remains enabled for technical error reporting.**
 
@@ -63,17 +64,16 @@ the origin public to avoid those costs.
 
 ```mermaid
 flowchart LR
-    developer[Approved developer + MFA] --> access[Cloudflare Access: staging host TBD]
+    developer[Approved developer + MFA] --> access[AWS WAF + ALB + Cognito: host TBD]
     access --> web[Private staging static frontend origin / CDN TBD]
-    access --> tunnel[Staging Tunnel]
-    tunnel --> gateway[Staging Gateway]
+    access --> gateway[Staging Gateway]
     gateway --> services[Auth / Account / Order / Product / Exchange / Cart]
     services --> db[(Small fixed staging PostgreSQL)]
     services --> redis[(Staging Cart Redis)]
     services --> kafka[Staging Kafka / outbox consumers]
     services --> media[Private staging S3 media]
     services --> alloy[Staging Alloy]
-    alloy --> grafana[Separate Grafana Cloud staging stack]
+    alloy --> grafana[Separate self-hosted staging observability stack]
     web -. Faro errors only .-> grafana
 ```
 
@@ -89,10 +89,10 @@ Choose exact classes after a cold-start/steady-state fit test and budget review.
 | PostgreSQL                                             | One separate small provisioned Single-AZ instance, same production engine major/extensions; evaluate a 1–2 GiB class first, fixed storage at the supported minimum plus measured headroom.    | No serverless scaling, storage autoscaling, read replicas or Multi-AZ in this baseline. Restrict connections and use small per-service pools; pool totals must fit the DB. Synthetic seed only.  |
 | Redis Cart                                             | One separate fixed instance/process with persistence/volume policy and bounded memory; a 128–256 MiB **data** budget is a starting estimate, not total process RAM.                           | Same protocol/data model and seven-day write-based cart TTL. Dedicated cart memory/eviction policy; do not share production or disposable cache resources. No automatic failover capacity claim. |
 | Kafka and implemented relay/consumers                  | One small staging broker/controller and one consumer replica per implemented group; fixed disk/retention/partition limits.                                                                    | Same Kafka version and event schemas. Single-node KRaft is a development compromise, not production quorum validation. Stage-only replication/ISR/internal-topic settings must match one broker. |
-| Product media                                          | Separate private S3 bucket and IAM policy; small synthetic image dataset and explicit lifecycle.                                                                                              | Same upload/validation flow. Staging media delivery is private behind Access; no public bucket or unprotected CDN-origin URL. CDN migration remains open.                                        |
+| Product media                                          | Separate private S3 bucket and IAM policy; small synthetic image dataset and explicit lifecycle.                                                                                              | Same upload/validation flow. Staging media delivery is private behind Cognito/WAF; no public bucket or unprotected CDN-origin URL. CDN migration remains open.                                        |
 | Exchange provider / other external dependencies        | Real Exchange service with separate sandbox/read-only test credentials or a documented deterministic provider behind its adapter.                                                             | Never replace a business service with the frontend fixture or share production provider credentials. External limitations must be visible in release evidence.                                   |
-| Cloudflare                                             | Separate staging Access application, Tunnel credentials, policies and connector configuration.                                                                                                | Whole-host protection and no direct origin ingress; same WAF/application authorization principles.                                                                                               |
-| Grafana Cloud / Alloy / Faro                           | Separate staging stack/collector credentials; one small Alloy collector and the same signal integrations, with lower approved ingestion budgets.                                              | Production telemetry, dashboards and alerts must not ingest staging data. Faro errors enabled.                                                                                                   |
+| AWS WAF + ALB + Cognito                                | Separate staging web ACL, ALB, Cognito user pool/client and certificates after a domain exists. Until then, SSM/port-forward only.                                                            | Whole-host protection and no direct origin ingress; same WAF/application authorization principles.                                                                                               |
+| Self-hosted observability / Alloy / Faro              | Separate staging Prometheus/Mimir/Loki/Tempo/Pyroscope/Grafana and one Alloy collector, with lower retention and CPU/memory budgets.                                                         | Production telemetry, dashboards and alerts must not ingest staging data. Faro errors enabled.                                                                                                   |
 | Umami / usage analytics                                | No staging tracker, pageviews, demo funnel events or analytics ingestion; no staging Umami deployment required.                                                                               | Intentional exception to service parity, explicitly requested by the owner. Technical error/health telemetry remains active.                                                                     |
 
 Do not apply production overlays unchanged. Current `k8s/base/hpa.yaml` scales
@@ -111,39 +111,39 @@ must still be real and tested for retries, duplicates and recovery.
 
 ## Developer-only access
 
-1. Protect the entire staging hostname and all paths with Cloudflare Access,
-   including `/`, `/store/`, `/admin/`, `/api/*`, media and diagnostics. Require
-   an explicit developer identity-provider group with MFA; default deny. Use
-   limited session duration and remove access when group membership changes.
-2. Use a separate `cloudflared` connector and staging-only origin mapping. Keep
-   backend, database, Redis and Kafka off direct Internet ingress. Protect the
-   Kubernetes control plane and administration path with approved private access.
-3. Preserve application login, roles and CSRF after Access succeeds. A developer
-   may test an ordinary demo account; Access must not silently grant ROLE_ADMIN.
+1. Protect the entire staging hostname and all paths with AWS WAF + ALB +
+   Cognito, including `/`, `/store/`, `/admin/`, `/api/*`, media and diagnostics.
+   Require an explicit developer identity-provider group with MFA; default deny.
+   Use limited session duration and remove access when group membership changes.
+   Without a custom domain, use SSM/port-forward instead of a public ALB.
+2. Keep backend, database, Redis and Kafka off direct Internet ingress. Protect
+   the Kubernetes control plane and administration path with approved private
+   access. A public ALB is only a front door, never a direct origin bypass.
+3. Preserve application login, roles and CSRF after Cognito succeeds. A developer
+   may test an ordinary demo account; Cognito must not silently grant ROLE_ADMIN.
 4. Restrict static hosting preview URLs, bucket URLs and media origin bypasses.
    An obscure URL, `robots.txt` or `noindex` is not authorization. No staging
    release is accepted until every content origin has an enforceable private path.
    Presigned upload capabilities, if used, must be short-lived, staging-bucket-only
-   and issued after Access plus application authorization; uploaded objects and
+   and issued after Cognito plus application authorization; uploaded objects and
    media reads remain private. Never expose production signing credentials.
-5. If CI must reach staging, use a separately approved, narrowly scoped Access
-   service identity. Store credentials only in CI secrets, rotate them, and send
-   headers only to the staging origin—not to Faro, S3 or other third parties.
+5. If CI must reach staging, use a separately approved, narrowly scoped Cognito
+   client or IAM/SSM path. Store credentials only in CI secrets, rotate them, and
+   send headers only to the staging origin—not to Faro, S3 or other third parties.
    Public PR builds must not receive staging credentials.
 
-Cloudflare documents [Access applications](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/)
-and [machine service tokens](https://developers.cloudflare.com/cloudflare-one/access-controls/service-credentials/service-tokens/).
-Select the plan/IdP/policies later; no application, identity group or token has
-been created. Do not broadly bypass Access to make tests or telemetry work.
+Cognito and ALB authentication need a domain and ACM certificate; see
+[Custom domains](custom-domains.md). Until then, no public staging hostname is
+created. Do not broadly bypass authentication to make tests or telemetry work.
 
 ## Separate observability, Faro on, analytics off
 
-Use a **separate Grafana Cloud staging stack**, with separate ingestion scopes,
-Faro application/collector values, dashboards, alert routing and access roles.
-An `environment=staging` label remains useful but is not isolation by itself.
-[Multiple stacks depend on the Grafana Cloud plan](https://grafana.com/docs/grafana-cloud/platform/security-and-account-management/account-management/cloud-stacks/create-update-stacks/);
-if the chosen plan cannot provide the required isolation, resolve account/plan
-and cost before deployment instead of mixing staging into production.
+Use a **separate self-hosted staging observability stack**, with separate
+Prometheus/Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy credentials/volumes,
+dashboards, alert routing and access roles. An `environment=staging` label
+remains useful but is not isolation by itself. If the staging budget cannot
+provide the required storage and isolation, resolve it before deployment
+instead of mixing staging into production.
 
 Keep Prometheus/Mimir, Loki, Tempo, Pyroscope, OTel/Alloy and Graphite support
 consistent with implemented production signals. Limit sampling/retention to
@@ -228,7 +228,7 @@ seven-day cart expiry when staging sleeps.
 Estimate cost with operating hours, not an assumed 24/7 month, while pricing
 persistent resources for the full billing period. Include compute, DB/storage,
 backups, Redis/Kafka disk, network egress/NAT/endpoints, S3 requests, private
-frontend hosting, Cloudflare and separate Grafana Cloud ingestion. Choose the
+frontend hosting, self-hosted observability storage and optional AWS WAF/ALB. Choose the
 exact region/classes and dated price estimate through the
 [AWS Pricing Calculator](https://calculator.aws/) before authorizing resources.
 No free tier, subscription entitlement or monetary total is assumed here.
@@ -239,7 +239,7 @@ No free tier, subscription entitlement or monetary total is assumed here.
       cost-first MicroK8s versus dedicated EKS; record the accepted parity exceptions.
 - [ ] **Platform:** inventory production services and lock staging engine/image
       versions, resource limits, single-replica overlays, HPA/PDB behavior and private egress.
-- [ ] **Security:** choose IdP/developer group/MFA, Access policies, protected
+- [ ] **Security:** choose IdP/developer group/MFA, Cognito/WAF policies, protected
       origins, Tunnel/admin paths and optional CI identity; test direct-origin denial.
 - [ ] **Data:** create separate fixed-size DB, cart Redis, broker/volumes and S3
       resources with quotas, secrets, restore/reset and lifecycle policies.
@@ -249,8 +249,8 @@ No free tier, subscription entitlement or monetary total is assumed here.
       tests; prevent staging credentials or data paths from reaching production.
 - [ ] **Frontend owners:** implement independent Faro/analytics controls in all
       three repositories and update build arguments, examples, privacy copy and tests.
-- [ ] **Observability:** provision the separate staging Grafana Cloud stack and
-      Faro collector; set scopes, retention/sampling, dashboards and developer alerts.
+- [ ] **Observability:** provision the separate staging self-hosted stack and
+      Faro collector; set retention/sampling, dashboards and developer alerts.
 - [ ] **Delivery:** design staging-only CI environments, immutable artifact/source
       promotion, approvals, rollback and test identities; obtain dependency approvals.
 - [ ] **Operations:** implement external start/stop scheduling, readiness gates,

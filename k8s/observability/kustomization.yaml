@@ -2,6 +2,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - namespace.yaml
+  - storageclass.yaml
+  - mimir.yaml
+  - loki.yaml
+  - tempo.yaml
+  - pyroscope.yaml
+  - alloy.yaml
   - grafana.yaml
   - blackbox.yaml
   - probe.yaml

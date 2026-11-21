@@ -6,9 +6,12 @@ alerts. The same files run on Docker Compose, LocalStack EKS and AWS EKS.
 ## Quick start
 
 ```bash
-docker compose -f compose.yml -f compose.observability.yml \
-  --profile observability up -d
+scripts/observability-up.sh
 ```
+
+The wrapper downloads the pinned OpenTelemetry Java agent, starts Prometheus,
+Mimir, Loki, Tempo, Pyroscope, Alloy, blackbox and Grafana, and waits for each
+readiness endpoint.
 
 Or:
 
@@ -21,6 +24,7 @@ scripts/validate-observability.sh
 | --- | --- |
 | Grafana | <http://localhost:3000> |
 | Prometheus | <http://localhost:9090> |
+| Mimir | <http://localhost:9009> |
 | Loki | <http://localhost:3100> |
 | Tempo | <http://localhost:3200> |
 | Pyroscope | <http://localhost:4040> |
@@ -31,14 +35,17 @@ scripts/validate-observability.sh
 ```text
 observability/
   alloy/config.alloy          # local logs, OTLP and Faro
-  alloy/config.cloud.alloy    # Grafana Cloud remote write
+  alloy/config.alloy          # local logs, OTLP and Faro
+  alloy/config.k8s.alloy      # EKS pod logs, OTLP and Faro
+  alloy/config.cloud.alloy    # optional Grafana Cloud remote write
   blackbox/blackbox.yml       # synthetic HTTP modules
   grafana/dashboards/         # five provisioned dashboards
-  grafana/aws/                # Prometheus-only datasource for EKS
   grafana/provisioning/       # local datasources, dashboards, alerting
   helm/values.yaml            # kube-prometheus-stack, AWS
-  helm/values.localstack.yaml # emptyDir and control-plane toleration
+  helm/values.localstack.yaml # local-path storage and toleration
   loki/loki.yaml
+  mimir/mimir.yaml
+  otel/run-java.sh            # optional Java agent entrypoint
   prometheus/prometheus.yml
   prometheus/rules/sli.yml
   pyroscope/pyroscope.yaml
@@ -55,14 +62,24 @@ scripts/install-observability.sh
 scripts/install-observability.sh --localstack
 ```
 
-Grafana stays ClusterIP. Publishing it behind Cognito or Cloudflare Access is
-documented in [Grafana on AWS](../docs/operations/grafana-aws.md).
+The EKS path installs Prometheus, Mimir, Loki, Tempo, Pyroscope, Alloy,
+blackbox and Grafana. Prometheus remote-writes to Mimir; Alloy handles OTLP
+traces, Faro and pod logs. Grafana stays ClusterIP. Publishing it behind Cognito
+requires a custom domain and ACM certificate; see
+[Grafana on AWS](../docs/operations/grafana-aws.md).
 
-## Grafana Cloud
+## OpenTelemetry
+
+`scripts/fetch-otel-agent.sh` downloads the Java agent and verifies the release
+checksum. Compose mounts it through `observability/otel/run-java.sh`; Kubernetes
+uses an init container and `JAVA_TOOL_OPTIONS`. Metrics remain on Micrometer;
+the agent exports traces to Alloy/Tempo.
+
+## Optional Grafana Cloud
 
 `alloy/config.cloud.alloy` reads endpoints and the access token from
 `GRAFANA_CLOUD_*` environment variables. `terraform/environments/grafana-cloud`
 provisions the folder, dashboards, contact point, alert rules and synthetic
-checks. No token is committed.
+checks. No token is committed. The self-hosted stack does not depend on it.
 
 See [Observability](../docs/operations/observability.md).

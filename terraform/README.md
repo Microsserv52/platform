@@ -94,10 +94,13 @@ terraform -chdir=terraform/environments/aws apply
 
 This creates the `aws-ebs-csi-driver` add-on with its IRSA role and the Secrets
 Manager containers `platform/grafana/admin` and `platform/grafana/alerting`. It
-does not write secret values or deploy Grafana. See
+does not write secret values or deploy the observability stack. After the apply,
+`scripts/install-observability.sh` deploys Prometheus, Mimir, Loki, Tempo,
+Pyroscope, Grafana, Alloy, blackbox and the OTel Java agent. See
 [Grafana on AWS](../docs/operations/grafana-aws.md).
 
-The Grafana Cloud environment is separate because it needs Cloud tokens:
+The Grafana Cloud environment is optional and separate because it needs Cloud
+tokens:
 
 ```bash
 terraform -chdir=terraform/environments/grafana-cloud init
@@ -109,7 +112,7 @@ terraform -chdir=terraform/environments/grafana-cloud validate
 A real deployment is not free-tier-only. EKS control plane, worker nodes, NAT
 gateway, RDS, ElastiCache, Route 53 and the ingress load balancer are billed
 while they exist. The account has a USD 100/month budget, but the full stack is
-≈ $270/month if left running, so use the smallest instance classes that fit the
+≈ $280/month if the full self-hosted observability stack is running, so use the smallest instance classes that fit the
 workloads and `terraform -chdir=terraform/environments/aws destroy` after the
 demo. LocalStack is the zero-cost rehearsal path. See the
 [dated resource-by-resource estimate](../docs/infrastructure/costs.md),

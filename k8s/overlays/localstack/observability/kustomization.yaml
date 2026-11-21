@@ -38,3 +38,20 @@ patches:
       metadata:
         name: platform-edge
         namespace: observability
+  - target:
+      kind: PersistentVolumeClaim
+      name: "mimir-data|loki-data|tempo-data|pyroscope-data|alloy-data"
+    patch: |-
+      - op: replace
+        path: /spec/storageClassName
+        value: local-path
+  - target:
+      kind: Deployment
+      name: "mimir|loki|tempo|pyroscope|alloy"
+    patch: |-
+      - op: add
+        path: /spec/template/spec/tolerations
+        value:
+          - key: node-role.kubernetes.io/control-plane
+            operator: Exists
+            effect: NoSchedule

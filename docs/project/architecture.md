@@ -17,13 +17,13 @@ identify technologies, not proof of deployment.
 
 Redis is selected for a dedicated Cart service: carts expire seven days after the last change; reads do not renew TTL. The service is not implemented yet; the current Store still uses browser storage. Existing Redis endpoint wiring does not provide carts or service-level caching. The Store PWA remains online-only.
 
-AWS/EKS/ECR deployment configuration and the VPC/RDS architecture are implemented in Terraform. The provisioned inventory is recorded in [delivery evidence](../project/delivery.md). Product implements image persistence with the AWS SDK for Java v2: S3 is the production backend, and a local blob-storage mock backs Compose. Terraform provisions private media and frontend buckets behind CloudFront; public frontend publishing is not yet performed. A possible CDN move to Cloudflare remains open.
+AWS/EKS/ECR deployment configuration and the VPC/RDS architecture are implemented in Terraform. The provisioned inventory is recorded in [delivery evidence](../project/delivery.md). Product implements image persistence with the AWS SDK for Java v2: S3 is the production backend, and a local blob-storage mock backs Compose. Terraform provisions private media and frontend buckets behind CloudFront, and the three static frontends are published there. No alternate CDN is selected.
 
-Grafana Cloud is selected for observability: Prometheus-compatible/Mimir metrics, Loki logs, Tempo traces, Pyroscope profiles, Faro, OpenTelemetry/Alloy and Graphite support. New metrics should use Prometheus/OTel; Graphite is available for Graphite-format producers. The local collection stack (Prometheus, Grafana, Loki, Tempo, Pyroscope, Alloy and blackbox) is implemented; Grafana Cloud provisioning is prepared as Terraform and has not been applied. Umami stays a separate analytics integration. Cloudflare is selected for DDoS protection, WAF and Tunnel; its security role does not choose the frontend CDN, a CloudFront-to-Cloudflare delivery migration or the domain; those decisions remain open. Cloudflare R2 is still only an alternative, not a replacement for approved S3 storage. Kafka placement is proposed for post-order events and later Product background work; no broker or client is implemented.
+Observability is self-hosted with Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy and blackbox. Services use OpenTelemetry; the frontends use Faro. Grafana Cloud is optional, not required. Umami stays a separate analytics integration. Edge protection uses AWS Shield Standard, CloudFront, security groups and an optional AWS WAF. No custom domain is configured. Kafka placement is proposed for post-order events and later Product background work; no broker or client is implemented.
 
 See the [Cart service](../services/cart/index.md), [Kafka proposals](asynchronous-events.md),
-[Grafana Cloud plan](../operations/observability.md) and
-[Cloudflare edge](../infrastructure/cloudflare.md) for boundaries and rollout.
+[Observability](../operations/observability.md) and
+[AWS edge security](../infrastructure/aws-edge-security.md) for boundaries and rollout.
 
 ## System context
 
@@ -31,7 +31,7 @@ See the [Cart service](../services/cart/index.md), [Kafka proposals](asynchronou
 flowchart LR
     user[Web or API client]
     internet[Internet]
-    edge[Cloudflare security / origin entry]
+    edge[AWS Shield / CloudFront / optional WAF]
     gateway[Gateway]
     auth[Auth]
     account[Account]
@@ -40,7 +40,7 @@ flowchart LR
     exchange[Exchange]
     database[(PostgreSQL)]
     provider[External exchange provider]
-    observability[Grafana Cloud: metrics / logs / traces / profiles]
+    observability[Self-hosted observability: Prometheus / Mimir / Loki / Tempo / Pyroscope / Grafana]
 
     user --> internet --> edge --> gateway
     gateway --> auth
@@ -66,8 +66,8 @@ flowchart LR
 
 ### Request workflow
 
-1. A client sends an HTTPS request to the public load balancer or edge proxy.
-2. The edge proxy forwards the request to Gateway; internal services are not
+1. A client sends an HTTPS request to CloudFront.
+2. CloudFront forwards `/api/*` to the Gateway NLB; internal services are not
    public client entry points.
 3. Gateway routes the request and applies cross-cutting policies such as
    request limits, CORS and access logging.

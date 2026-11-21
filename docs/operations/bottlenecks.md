@@ -67,10 +67,10 @@ a cache of PostgreSQL orders. The dedicated Cart service and seven-day TTL are
 selected but not implemented. [Kafka post-order work](../project/asynchronous-events.md)
 is proposed to decouple side effects after the order commit; it does not remove
 Product lookup or database limits from checkout. The [observability
-stack](observability.md) measures these paths locally; Grafana Cloud ingestion
-is prepared for sustained retention. [Cloudflare security](../infrastructure/cloudflare.md)
-is selected for edge protection; capacity and DDoS behavior still require
-configuration and verification. Domain and static CDN remain open.
+stack](observability.md) measures these paths locally; the same stack is prepared
+for EKS with Mimir for sustained retention. [AWS edge security](../infrastructure/aws-edge-security.md) covers Shield,
+CloudFront, security groups and the optional WAF; capacity and DDoS behavior
+still require configuration and verification. No custom domain is configured.
 
 ## Required mitigation backlog
 
