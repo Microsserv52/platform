@@ -74,7 +74,7 @@ variable "cloudfront_api_origin_domain" {
 
 variable "cloudfront_api_origin_protocol_policy" {
   type    = string
-  default = "https-only"
+  default = "http-only"
 }
 
 variable "create_dns" {

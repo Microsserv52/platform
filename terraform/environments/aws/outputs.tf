@@ -29,3 +29,5 @@ output "eks_cluster_endpoint" { value = module.eks.cluster_endpoint }
 output "product_irsa_role_arn" { value = module.eks.irsa_role_arn }
 output "cluster_autoscaler_role_arn" { value = module.eks.cluster_autoscaler_role_arn }
 output "certificate_arn" { value = local.certificate_arn }
+
+output "gateway_nlb_security_group_id" { value = aws_security_group.gateway_nlb.id }

@@ -234,8 +234,9 @@ CI still runs tests, CodeQL and documentation. `.github/workflows/publish-eks-im
 adds a manual ECR image publish step; it deliberately does not touch Terraform,
 add-ons or the cluster. Deployment remains shell-first.
 
-Frontend publication adds an internet-facing Gateway NLB and a CloudFront
-`/api/*` behavior. The CloudFront function stamps an `x-site` header
+Frontend publication adds a Terraform-managed internet-facing Gateway NLB with
+a CloudFront-only security group, a fixed NodePort and a CloudFront `/api/*`
+behavior. The CloudFront function stamps an `x-site` header
 (`landing`/`store`/`admin`) and the site cache policy includes it in the cache
 key; without that, all static sites shared the same `/index.html` cache entry.
 

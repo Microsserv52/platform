@@ -16,7 +16,7 @@ Environment: AWS account `730335608828`, region `us-east-1`, EKS cluster
 | Admin | `https://d15ogksm4jp6sl.cloudfront.net/admin/` | Verified 200, CloudFront static S3 export |
 | API | `https://d15ogksm4jp6sl.cloudfront.net/api` | Verified 200, CloudFront `/api/*` → Gateway NLB |
 | API health | `https://d15ogksm4jp6sl.cloudfront.net/api/actuator/health` | Verified 200; prefix stripped |
-| Gateway NLB origin | `http://a1c0373b905d84f4396e183863b684a0-13b4c7888342d782.elb.us-east-1.amazonaws.com` | CloudFront origin; HTTP only |
+| Gateway NLB origin | `http://platform-gateway-ecaafe88209b53bc.elb.us-east-1.amazonaws.com` | CloudFront-only security group; direct access times out |
 | Documentation | `https://microsserv52.github.io/platform/` | Published from `main` |
 
 CloudFront terminates TLS for viewers and forwards `/api/*` to the NLB over
@@ -73,11 +73,12 @@ These names resolve only inside the `platform` namespace:
 | RDS PostgreSQL | `platform-postgres.cf0a6omck937.us-east-1.rds.amazonaws.com:5432` |
 | ElastiCache Redis | `platform-redis.wkuz0g.0001.use1.cache.amazonaws.com:6379` |
 | CloudFront | `E2HCWED02TM6CL` / `d15ogksm4jp6sl.cloudfront.net` |
-| Gateway NLB | `a1c0373b905d84f4396e183863b684a0-13b4c7888342d782.elb.us-east-1.amazonaws.com` |
+| Gateway NLB | `platform-gateway-ecaafe88209b53bc.elb.us-east-1.amazonaws.com` |
 
 RDS and ElastiCache are in private subnets and are not publicly accessible. The
-NLB is internet-facing on HTTP port 80; restrict its security group to the AWS
-CloudFront origin-facing prefix list before treating the origin as private.
+NLB is internet-facing on HTTP port 80, but its security group allows only the
+AWS CloudFront origin-facing prefix list; direct NLB access is blocked. The
+Kubernetes Service is a fixed NodePort (`30080`) behind that NLB.
 
 ## Frontend delivery
 

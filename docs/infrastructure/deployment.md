@@ -95,9 +95,9 @@ scripts/deploy-aws.sh --frontends
 The script provisions VPC, EKS, ECR, RDS, ElastiCache, S3, CloudFront, the
 Product IRSA role and the Cluster Autoscaler IRSA role, pushes images, installs
 `metrics-server` and Cluster Autoscaler, creates the internet-facing Gateway
-NLB, creates `platform-secrets`, applies the `aws` overlay, annotates the
-Product service account, rolls out the services and optionally syncs the
-frontends and invalidates CloudFront. It does not
+NLB in Terraform, creates `platform-secrets`, applies the `aws` overlay (with
+the Gateway NodePort), annotates the Product service account, rolls out the
+services and optionally syncs the frontends and invalidates CloudFront. It does not
 create long-lived AWS access keys; use IAM Identity Center or a role profile.
 Product needs `JWT_SECRET` and its datasource values, and Exchange needs
 `DEPLOY_EXCHANGE_PROVIDER_URL`. The provider API key is optional; set

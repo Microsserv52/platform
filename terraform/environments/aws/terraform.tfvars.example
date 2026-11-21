@@ -28,7 +28,7 @@ create_dns       = false
 # Required only when api_domain_name is set. Do not point it at the CloudFront
 # alias itself, or the origin will loop back into the distribution.
 cloudfront_api_origin_domain          = ""
-cloudfront_api_origin_protocol_policy = "https-only"
+cloudfront_api_origin_protocol_policy = "http-only"
 
 # Used when create_dns = false.
 acm_certificate_arn = ""
