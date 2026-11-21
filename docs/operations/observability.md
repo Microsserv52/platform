@@ -64,6 +64,23 @@ OpenTelemetry Python package or trace exporter.
 Pyroscope is hosted locally and on EKS. No service loads a profiling agent, so
 no profiles are collected.
 
+### Container and pod resources
+
+Telegraf collects Docker container metrics locally and kubelet summary metrics
+on EKS, then writes them to Graphite. Graphite is provisioned as the `graphite`
+datasource and feeds the **Pod resources** dashboard plus the pod CPU and memory
+alerts. Locally, Carbon listens on `2003` and the Graphite UI on `8082`; on EKS
+the service is `graphite.observability.svc.cluster.local:2003`. The EKS
+DaemonSet reads the kubelet summary API for the `platform` namespace.
+
+### Cross-service traces
+
+Tempo runs the service-graph and span-metric processors and remote-writes them
+to Prometheus. The **Trace service graph** dashboard joins client and server
+spans across Gateway, Auth, Account, Order, Product and Exchange; the
+**Frontend and Faro** dashboard covers browser spans, Faro exceptions and
+frontend trace search.
+
 ## Local stack
 
 ```mermaid
@@ -167,6 +184,9 @@ and PVCs use the k3s `local-path` StorageClass.
 | SLO and error budget | `slo-error-budget` | 28-day availability, burn rate, remaining budget |
 | Synthetic health | `synthetic-health` | Are edge pages and API probes succeeding? |
 | Dependencies | `dependencies` | Hikari, Redis/cache and Exchange provider health |
+| Pod resources (Graphite) | `pod-resources` | Container CPU, memory, network, block I/O and restarts |
+| Frontend and Faro | `faro-frontend` | Browser spans, Faro exceptions and frontend trace search |
+| Trace service graph | `trace-service-graph` | Cross-service request rate, failures and p95 latency |
 
 Dashboards are provisioned from
 [`observability/grafana/dashboards`](https://github.com/Microsserv52/platform/tree/main/observability/grafana/dashboards).
@@ -203,6 +223,8 @@ or sign in again; the current provisioning creates one dashboard folder.
 | Database connection pool saturation | Hikari > 90% for 5m | ticket |
 | Exchange provider errors | error rate > 0.1/s for 5m | page |
 | Product cache errors | cache error rate > 0 for 10m | ticket |
+| Cross-service trace failures | failed calls between two services > 0 for 10m | ticket |
+| Cross-service trace p95 above 1s | span p95 > 1s for 10m | ticket |
 
 Email is the default contact point (`ALERT_EMAIL_TO`). A Slack example is kept
 as `observability/grafana/examples/contact-points.slack.example.yml`; copy it into the alerting provisioning directory as `.yml` and set
@@ -313,8 +335,8 @@ nodes. See [Costs, PaaS and SLA](../infrastructure/costs.md).
 
 ## Known limits
 
-- Backend traces and profiles need an OpenTelemetry/profiling agent; only the
-  collector and storage paths are configured.
+- Java services load the OpenTelemetry agent; Exchange exports metrics and logs
+  only, and no service loads a profiling agent.
 - AWS deployment is prepared and validated, not applied.
 - Grafana Cloud Terraform cannot be applied without a real stack and tokens.
 - LocalStack uses emptyDir for Prometheus/Grafana and `local-path` for the

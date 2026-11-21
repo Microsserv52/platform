@@ -19,7 +19,7 @@ There is no Cart service. The Store keeps its cart in browser storage, Redis is 
 
 AWS/EKS/ECR deployment configuration and the VPC/RDS architecture are implemented in Terraform. The provisioned inventory is recorded in [delivery evidence](../project/delivery.md). Product implements image persistence with the AWS SDK for Java v2: S3 is the production backend, and a local blob-storage mock backs Compose. Terraform provisions private media and frontend buckets behind CloudFront; `scripts/sync-frontends.sh` publishes static builds to them. CloudFront is the only CDN.
 
-Observability is self-hosted with Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy and blackbox. Services use OpenTelemetry; the frontends use Faro. Grafana Cloud is optional, not required. Umami stays a separate analytics integration. Edge protection uses AWS Shield Standard, CloudFront, security groups and an optional AWS WAF. No custom domain is configured. There is no Kafka broker or client; post-order events are not implemented.
+Observability is self-hosted with Prometheus, Mimir, Loki, Tempo, Pyroscope, Graphite, Telegraf, Grafana, Alloy and blackbox. Services use OpenTelemetry; the frontends use Faro. Grafana Cloud is optional, not required. Umami stays a separate analytics integration. Edge protection uses AWS Shield Standard, CloudFront, security groups and an optional AWS WAF. No custom domain is configured. There is no Kafka broker or client; post-order events are not implemented.
 
 See the [Cart service](../services/cart/index.md), [asynchronous events](asynchronous-events.md),
 [Observability](../operations/observability.md) and

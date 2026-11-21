@@ -335,8 +335,8 @@ the environment.
 | Network | Terraform VPC, NAT gateway, private subnets | Private workloads with controlled egress | NAT is a fixed hourly cost; AWS Load Balancer Controller is not installed |
 | DNS and certificates | Route 53 + ACM (optional) | DNS validation and free public certificates | Domain approval is external to this repository |
 | Secrets | Kubernetes `platform-secrets` + AWS Secrets Manager for Grafana | Managed Grafana credentials and runtime application secrets | Application secret rotation/audit is still manual |
-| CI | GitHub Actions | Tests, CodeQL, image publishing | Deployment is deliberately shell-first; there is no CI deploy workflow |
-| Observability | Self-hosted Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy and blackbox | Prometheus-compatible metrics, long-term Mimir, logs, traces, profiles, Faro, five dashboards, unified alerting | Local stack implemented; EKS manifests prepared but not applied; Java OTel traces and Faro active, Exchange traces and Pyroscope agents pending |
+| CI | GitHub Actions | Tests, CodeQL, image publishing | Deployment is shell-first; a manual workflow calls the deploy script |
+| Observability | Self-hosted Prometheus, Mimir, Loki, Tempo, Pyroscope, Graphite, Telegraf, Grafana, Alloy and blackbox | Prometheus-compatible metrics, long-term Mimir, logs, traces, profiles, Faro, eight dashboards, unified alerting | Local stack implemented; EKS manifests prepared but not applied; Java OTel traces and Faro active, Exchange traces and Pyroscope agents pending |
 | Documentation | Zensical + GitHub Pages | Versioned docs built from `docs/` | Public site only after merge to `main` |
 
 The full observability stack adds roughly 70 GiB of `gp3` storage (Prometheus,
@@ -369,7 +369,7 @@ Terraform outputs beyond the generated RDS password.
 !!! info "Targets and local measurements"
 
     The local stack now measures every service. All six services expose
-    Prometheus metrics, and the five dashboards plus unified alert rules are
+    Prometheus metrics, and the eight dashboards plus unified alert rules are
     provisioned from `observability/`. The live AWS stack has not had the
     observability overlay applied, so the table remains a target contract rather
     than a claim about production traffic.

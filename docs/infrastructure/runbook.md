@@ -15,11 +15,12 @@ For the design rationale see [Deployment](deployment.md), [AWS setup](aws.md),
 [EKS and Kubernetes](eks.md), [LocalStack rehearsal](localstack.md) and the
 [staging environment](staging.md).
 
-!!! info "No CI/CD deploy"
+!!! info "Manual deploy workflow"
 
-    AWS deployment is shell-first. CI runs tests, CodeQL and documentation; it
-    does not provision or deploy AWS resources. The same applies to staging:
-    its Terraform environment and Kubernetes overlay are applied manually.
+    AWS deployment is shell-first. CI runs tests, CodeQL and documentation. The
+    **Deploy to AWS EKS** workflow is `workflow_dispatch` only, uses the
+    `production` environment and calls `scripts/deploy-aws.sh`; it does not run
+    on a push. Staging remains operator-applied and has no workflow.
 
 ## Prerequisites
 

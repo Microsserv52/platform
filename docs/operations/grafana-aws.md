@@ -6,7 +6,7 @@ icon: lucide/cloud
 
 This page describes the prepared AWS deployment. It is **not applied**. The
 local Docker Compose stack already hosts Prometheus, Mimir, Loki, Tempo,
-Pyroscope, Grafana, Alloy and blackbox.
+Pyroscope, Graphite, Telegraf, Grafana, Alloy and blackbox.
 
 ## Topology
 

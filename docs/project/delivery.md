@@ -35,12 +35,12 @@ delivered.
 | Bottlenecks | Partial | Catalog read path measured at 50 and 400 req/s; authenticated order flow measured; provider-failure flow still pending |
 | AWS provisioning | Provisioned | Terraform state, resource inventory and budget in this page |
 | EKS deployment | Provisioned | EKS 1.35, two nodes, metrics-server and Cluster Autoscaler; rollout evidence below |
-| CI/CD | Partial by design | CI tests/CodeQL/GHCR and a manual **Publish EKS images** workflow; deployment remains shell-first; no CI deploy step |
+| CI/CD | Partial by design | CI tests/CodeQL/GHCR, manual **Publish EKS images** and manual **Deploy to AWS EKS** workflows; deployment remains operator-approved |
 | Load tests | Partial | Read-only catalog baseline, HPA run and authenticated order flow completed; provider-failure flow pending |
 | PaaS, costs and SLA | Documented | [Costs, PaaS and SLA](../infrastructure/costs.md); actual spend pending |
 | Documentation | Published | `https://microsserv52.github.io/platform/`; LocalStack, runbook, observability and Grafana AWS pages are on `main` |
 | Public application URL | Available | `https://d15ogksm4jp6sl.cloudfront.net/` (landing), `/store/`, `/admin/`, `/api` |
-| Grafana / SLI dashboard | Implemented locally; AWS prepared | Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy, blackbox, five dashboards and unified alerts; see [Observability](../operations/observability.md) and [Grafana on AWS](../operations/grafana-aws.md) |
+| Grafana / SLI dashboard | Implemented locally; AWS prepared | Prometheus, Mimir, Loki, Tempo, Pyroscope, Graphite, Telegraf, Grafana, Alloy, blackbox, eight dashboards and unified alerts; see [Observability](../operations/observability.md) and [Grafana on AWS](../operations/grafana-aws.md) |
 | Team names, AI disclosure, presentation | Out of repository scope | Intentionally excluded by the project owner |
 
 The observability gap is closed in the repository: all six services expose
@@ -220,8 +220,9 @@ These are deliberate gaps, not hidden claims:
   isolated.
 - **EBS CSI is optional.** It is wired behind `enable_observability` and has not
   been applied to the live cluster.
-- **No CI deploy step.** The **Publish EKS images** workflow builds and pushes
-  images; deployment remains shell-first. See
+- **Deployment is manual.** The **Publish EKS images** workflow builds and
+  pushes images, and the **Deploy to AWS EKS** workflow calls the deploy script
+  on dispatch. Neither runs on a push. See
   [CI/CD](../development/cicd.md#eks-image-publishing-workflow).
 - **Database scaling ceiling.** Four replicas per database-backed service exceed
   the `db.t4g.micro` connection limit until the pool is reduced or RDS resized.

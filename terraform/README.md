@@ -69,7 +69,8 @@ Required inputs before the first real deployment:
 
 Use `--skip-terraform`, `--skip-images`, `--skip-addons`, `--frontends` or
 `--no-auto-approve` to control individual phases. Deployment is intentionally
-shell-first; there is no CI/CD deploy workflow.
+shell-first; the manual **Deploy to AWS EKS** workflow calls the deploy
+script and does not run on a push.
 
 ## Staging
 

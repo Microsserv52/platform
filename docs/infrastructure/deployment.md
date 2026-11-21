@@ -85,7 +85,8 @@ The compose file is not a production orchestration manifest. Production uses
 the Kubernetes manifests and must additionally define persistent storage, TLS,
 backups, observability, network policies and a rollback strategy.
 
-Deployment is shell-first and has no CI/CD deploy workflow. Infrastructure is
+Deployment is shell-first. The manual **Deploy to AWS EKS** workflow calls
+`scripts/deploy-aws.sh`; it does not run on a push. Infrastructure is
 declared in [`terraform/`](https://github.com/Microsserv52/platform/blob/main/terraform/README.md); workloads live in
 [`k8s/`](https://github.com/Microsserv52/platform/blob/main/k8s/README.md). Log in with short-lived credentials, then run:
 
@@ -113,7 +114,7 @@ run `scripts/seed_demo.py` manually against the deployed URL.
 
 Observability is a separate opt-in step. Set `TF_VAR_enable_observability=true`
 and apply Terraform, then run `scripts/install-observability.sh`. It installs
-Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy and blackbox, with
+Prometheus, Mimir, Loki, Tempo, Pyroscope, Graphite, Telegraf, Grafana, Alloy and blackbox, with
 EBS-backed PVCs. Grafana stays ClusterIP and is published behind Amazon Cognito
 at an ALB when a custom domain exists; see
 [Grafana on AWS](../operations/grafana-aws.md) and
