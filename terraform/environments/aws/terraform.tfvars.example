@@ -4,10 +4,15 @@ vpc_cidr           = "10.0.0.0/16"
 az_count           = 2
 kubernetes_version = "1.35"
 
-node_instance_types = ["t3.small"]
+# 6 services x 2 replicas request 3.0 vCPU. Two t3.medium nodes fit the
+# baseline; Cluster Autoscaler adds nodes up to max_size when pods stay Pending.
+node_instance_types = ["t3.medium"]
+# SPOT costs roughly 60% less but nodes can be interrupted; keep ON_DEMAND for
+# load-test baselines.
+node_capacity_type  = "ON_DEMAND"
 node_desired_size   = 2
-node_min_size       = 1
-node_max_size       = 4
+node_min_size       = 2
+node_max_size       = 6
 
 rds_instance_class    = "db.t4g.micro"
 rds_allocated_storage = 20
@@ -34,3 +39,7 @@ admin_principal_arn = ""
 
 cors_allowed_origins = ["https://app.example.com"]
 enable_cloudfront    = true
+
+# Keep deletion protection, the final RDS snapshot and bucket/image contents.
+# Apply with -var protect_state=false before destroying the demo stack.
+protect_state = true

@@ -99,10 +99,18 @@ microk8s kubectl get deployment gateway -n platform -w
 microk8s kubectl get hpa gateway -n platform
 ```
 
-Record initial and peak replica counts, HPA current/desired CPU, scale-up
-latency, p95/p99 latency, error rate, pod evictions and node capacity. The
-test passes only when the defined peak request rate and latency/error SLOs are
-met with headroom; scaling alone is not evidence of sufficient capacity.
+Record initial and peak replica counts, HPA current/desired CPU, node count,
+scale-up latency, p95/p99 latency, error rate, pod evictions and node capacity.
+The test passes only when the defined peak request rate and latency/error SLOs
+are met with headroom; scaling alone is not evidence of sufficient capacity.
+
+Set `RATE` from the [capacity envelope](../infrastructure/costs.md#traffic-scaling-and-capacity).
+The HPA starts at ≈ 2.1 cores of aggregate application CPU, which is about
+210 req/s if a request costs 10 ms of CPU. Below ~200 req/s the HPA stays at its
+two-replica minimum and the test measures only the baseline. The two-node
+baseline is already at that HPA minimum; the third replica stays `Pending`
+until Cluster Autoscaler adds a node. Replace the 10 ms planning value with the
+CPU time measured by `kubectl top pods` during the run.
 
 If the ingress addon is not exposing a host address, use port forwarding for a
 controlled test:
@@ -115,12 +123,14 @@ k6 run --env BASE_URL=http://127.0.0.1:18080 --env PATHS=/products tests/k6/plat
 ## Kubernetes exercise
 
 The course material demonstrates an HPA for Gateway and a temporary in-cluster
-load generator. Do not create a second HPA when `70-hpa.yaml` is installed. The following is
+load generator. Do not create a second HPA when `k8s/base/hpa.yaml` is installed. The following is
 suitable only for a separate controlled namespace without the managed HPA:
 
 ```bash
 kubectl autoscale deployment gateway --cpu-percent=50 --min=1 --max=10
 kubectl get hpa gateway
+kubectl -n kube-system get deploy metrics-server cluster-autoscaler
+kubectl get nodes
 kubectl get pods -l app=gateway --watch
 ```
 

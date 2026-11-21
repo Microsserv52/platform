@@ -50,14 +50,14 @@ module "storage" {
   source               = "../../modules/storage"
   name_prefix          = local.name
   cors_allowed_origins = var.cors_allowed_origins
-  force_destroy        = false
+  force_destroy        = !var.protect_state
   tags                 = local.tags
 }
 
 module "ecr" {
   source           = "../../modules/ecr"
   repository_names = ["account", "auth", "gateway", "order", "product", "exchange"]
-  force_delete     = false
+  force_delete     = !var.protect_state
   tags             = local.tags
 }
 
@@ -71,8 +71,8 @@ module "rds" {
   allocated_storage       = var.rds_allocated_storage
   password                = random_password.db.result
   publicly_accessible     = false
-  skip_final_snapshot     = false
-  deletion_protection     = true
+  skip_final_snapshot     = !var.protect_state
+  deletion_protection     = var.protect_state
   backup_retention_period = 7
   tags                    = local.tags
 }
@@ -88,18 +88,20 @@ module "elasticache" {
 }
 
 module "eks" {
-  source              = "../../modules/eks"
-  cluster_name        = local.name
-  kubernetes_version  = var.kubernetes_version
-  vpc_id              = module.network.vpc_id
-  subnet_ids          = module.network.private_subnet_ids
-  node_instance_types = var.node_instance_types
-  node_desired_size   = var.node_desired_size
-  node_min_size       = var.node_min_size
-  node_max_size       = var.node_max_size
-  media_bucket_arn    = module.storage.media_bucket.arn
-  admin_principal_arn = var.admin_principal_arn
-  tags                = local.tags
+  source                    = "../../modules/eks"
+  cluster_name              = local.name
+  kubernetes_version        = var.kubernetes_version
+  vpc_id                    = module.network.vpc_id
+  subnet_ids                = module.network.private_subnet_ids
+  node_instance_types       = var.node_instance_types
+  node_capacity_type        = var.node_capacity_type
+  create_cluster_autoscaler = true
+  node_desired_size         = var.node_desired_size
+  node_min_size             = var.node_min_size
+  node_max_size             = var.node_max_size
+  media_bucket_arn          = module.storage.media_bucket.arn
+  admin_principal_arn       = var.admin_principal_arn
+  tags                      = local.tags
 }
 
 module "dns" {

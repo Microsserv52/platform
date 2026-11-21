@@ -17,6 +17,8 @@ migrate an existing MicroK8s/EKS setup.
 | Kubernetes | Flat `k8s/*.yaml` replaced by `k8s/base` plus `microk8s`, `localstack` and `aws` overlays |
 | Workloads | Product and Exchange manifests added; frontends remain static S3/CloudFront exports |
 | Deployment | Shell-first `scripts/deploy-aws.sh`; `.github/workflows/deploy-eks.yml` removed |
+| Autoscaling | Cluster Autoscaler (IRSA, 2–6 nodes) and metrics-server installed by the deploy script; HPA for all six services |
+| Cost | 2-node `t3.medium` baseline, 2 replicas per service, budget/capacity documentation |
 | Secrets | `platform-secrets` now uses `SPRING_DATASOURCE_PASSWORD`, not `POSTGRES_PASSWORD` |
 | Configuration | `.env.example` gained LocalStack, AWS, Terraform and frontend sections |
 | Documentation | New runbook, LocalStack, Terraform, overlays and changes pages |
@@ -155,6 +157,24 @@ kubectl -n platform patch secret platform-secrets --type merge \
   -p "{\"stringData\":{\"SPRING_DATASOURCE_PASSWORD\":\"$(kubectl -n platform get secret platform-secrets -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)\"}}"
 ```
 
+### Autoscaling and cost reduction
+
+- The AWS node group defaults to 2 × `t3.medium`, min 2 / max 6. The previous
+  default was 3 nodes and 3 replicas per service, which left the 18-pod rollout
+  above two nodes' capacity.
+- All six workloads deploy 2 replicas, matching the HPA minimum. The baseline
+  requests 3.0 vCPU, which fits two `t3.medium` nodes.
+- Terraform creates the Cluster Autoscaler IRSA role and tags the node group
+  with `k8s.io/cluster-autoscaler/enabled` and
+  `k8s.io/cluster-autoscaler/<cluster>`.
+- `scripts/deploy-aws.sh` installs metrics-server and Cluster Autoscaler unless
+  `--skip-addons` is passed. This fixes HPAs reporting `<unknown>` and makes
+  `node_max_size` effective.
+- `node_capacity_type` supports `SPOT` for a further ≈ 60% node-cost reduction;
+  the default stays `ON_DEMAND` for load-test stability.
+- The estimated continuous cost falls from ≈ $270 to ≈ $240/month; a scheduled
+  10 h × 5 d profile is ≈ $80/month, inside the USD 100 budget.
+
 ### Workload configuration
 
 - Product now runs with `SPRING_PROFILES_ACTIVE=prod` and `PRODUCT_IMAGE_MODE=s3`
@@ -171,6 +191,12 @@ kubectl -n platform patch secret platform-secrets --type merge \
   CloudFront function already stripped `/api`; the Kubernetes Ingress previously
   did not, which made `/api/products` return 401 while `/products` returned 200.
 - HPA scales 2-6 replicas at 70% CPU; PDB keeps one replica available.
+- Cluster Autoscaler moves the managed node group between 2 and 6 nodes. It is
+  installed by `scripts/deploy-aws.sh` with metrics-server; Terraform creates
+  the autoscaler IRSA role and tags the node group for discovery.
+- The AWS baseline is two `t3.medium` nodes with two replicas per service.
+  The autoscaler adds a node when a rollout or HPA surge would leave a pod
+  `Pending`.
 - The `localstack` overlay adds the single control-plane toleration and one
   replica per deployment so the full stack fits on the LocalStack k3s node.
 - Frontends are not Kubernetes workloads; they are static exports synced to
@@ -253,8 +279,9 @@ are present.
 - [ ] Replace per-file `kubectl apply -f k8s/...` commands with the matching
       overlay.
 - [ ] For MicroK8s, build `microsserv52-image-storage:local`.
-- [ ] For AWS, log in, set `DEPLOY_EXCHANGE_PROVIDER_URL` and
-      `DEPLOY_EXCHANGE_PROVIDER_API_KEY`, then run `scripts/deploy-aws.sh`.
+- [ ] For AWS, log in, set `DEPLOY_EXCHANGE_PROVIDER_URL` (and the key only if
+      required), then run `scripts/deploy-aws.sh`. Use `--skip-addons` only when
+      metrics-server and Cluster Autoscaler are managed separately.
 - [ ] Install an ingress controller in EKS before expecting the Ingress to serve.
 - [ ] Stop using the deleted `Deploy to AWS EKS` workflow.
 
@@ -274,7 +301,9 @@ python3 -m unittest discover -s tests/frontend -p 'test_*.py'
 uv run zensical build --clean
 ```
 
-All checks passed. The LocalStack rehearsal was also executed end to end:
+All checks passed. A read-only AWS `terraform plan` shows **76 resources to
+add**, including the Cluster Autoscaler IRSA role and policy. The LocalStack
+rehearsal was also executed end to end:
 Terraform applied 67 resources, all images were pushed to LocalStack ECR, and
 every deployment reached ready state. Direct checks:
 

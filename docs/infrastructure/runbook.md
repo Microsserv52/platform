@@ -168,23 +168,25 @@ scripts/deploy-aws.sh --frontends
 The script runs these phases:
 
 1. Validate AWS credentials and required inputs.
-2. Bootstrap remote state when `TF_STATE_BUCKET` is set.
+2. Bootstrap the S3 state bucket (default `platform-tfstate-<account-id>`).
 3. `terraform init` and `terraform apply`.
 4. Export the `admin` kubeconfig and create the namespace.
-5. Create `platform-secrets` from the RDS outputs and shared secrets.
-6. Log Docker in to ECR and build/push the six service images.
-7. Apply `k8s/overlays/aws`.
-8. Patch `platform-config` with the media bucket, region, CloudFront origin and
+5. Install `metrics-server` and Cluster Autoscaler (unless `--skip-addons`).
+6. Create `platform-secrets` from the RDS outputs and shared secrets.
+7. Log Docker in to ECR and build/push the six service images.
+8. Apply `k8s/overlays/aws`.
+9. Patch `platform-config` with the media bucket, region, CloudFront origin and
    Exchange provider URL.
-9. Annotate the `product` service account with its IRSA role.
-10. Set image tags, restart and wait for each rollout.
-11. Optionally build/sync landing, store and admin to S3 and invalidate
+10. Annotate the `product` service account with its IRSA role.
+11. Set image tags, restart and wait for each rollout.
+12. Optionally build/sync landing, store and admin to S3 and invalidate
     CloudFront.
 
 | Flag | Effect |
 | --- | --- |
 | `--skip-terraform` | reuse the current infrastructure and outputs |
 | `--skip-images` | skip Docker build and push |
+| `--skip-addons` | do not install metrics-server or Cluster Autoscaler |
 | `--frontends` | also build and upload the static frontends |
 | `--no-auto-approve` | show the Terraform plan and require confirmation |
 | `--login` | run `aws sso login --profile "$AWS_PROFILE"` and exit |
@@ -207,17 +209,20 @@ The AWS environment creates:
 | Cache | Single-node ElastiCache Redis |
 | Storage | Media bucket plus landing, store and admin buckets |
 | CDN | One CloudFront distribution, OACs, `/store/*`, `/admin/*`, `/media/*`, optional `/api/*` |
-| Kubernetes | EKS cluster, managed node group, OIDC provider, Product IRSA, optional access entry |
+| Kubernetes | EKS cluster, 2–6 node managed group, OIDC provider, Product IRSA, Cluster Autoscaler IRSA, optional access entry |
 | DNS | Optional ACM certificate and Route 53 alias records |
 
 Terraform does not install an ingress controller. Install ingress-nginx (or an
 AWS Load Balancer Controller with matching annotations) before expecting the
-Ingress to receive traffic.
+Ingress to receive traffic. The node group starts at two `t3.medium` nodes and
+Cluster Autoscaler moves it to six when pods stay `Pending`.
 
 ### 7. Verify
 
 ```bash
 kubectl get nodes
+kubectl -n kube-system get deploy metrics-server cluster-autoscaler
+kubectl top nodes
 kubectl -n platform get pods,svc,ingress,hpa,pdb
 kubectl -n platform rollout status deployment/gateway --timeout=300s
 kubectl -n platform get secret platform-secrets
@@ -296,6 +301,9 @@ versions left behind keep billing until they are deleted explicitly.
 | Browser upload rejected | upload origin not allowlisted | add the exact S3 origin to `NEXT_PUBLIC_IMAGE_UPLOAD_ORIGINS` and S3 CORS |
 | Ingress has no address | no ingress controller | install ingress-nginx or the AWS Load Balancer Controller |
 | TLS certificate error | no certificate/secret | use `TF_VAR_create_dns=true` or supply `TF_VAR_acm_certificate_arn` and a TLS secret |
+| HPA shows `<unknown>` | metrics-server not installed or not ready | `kubectl -n kube-system get deploy metrics-server`; re-run without `--skip-addons` |
+| HPA replica stays `Pending` and no node appears | Cluster Autoscaler cannot see the group | check the CA logs, IRSA annotation and the `k8s.io/cluster-autoscaler/*` ASG tags |
+| Cluster Autoscaler is `CrashLoopBackOff` | wrong IRSA role or region | check `kubectl -n kube-system logs deploy/cluster-autoscaler` and the node group tags |
 
 ## LocalStack rehearsal
 

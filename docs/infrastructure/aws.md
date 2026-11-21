@@ -15,7 +15,9 @@ official AWS documentation.
 - Prefer IAM roles and short-lived credentials over long-lived access keys.
 - Configure AWS CLI with a named profile and an explicit region.
 - Apply least-privilege policies and record who can access production resources.
-- Configure billing alerts before creating infrastructure.
+- The account has a USD 100/month AWS Budget; see the
+  [budget guardrail](costs.md#budget-guardrail). Keep billing alerts active
+  before creating infrastructure.
 
 Never commit `~/.aws`, access keys, kubeconfig files or credentials to Git.
 

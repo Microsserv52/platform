@@ -61,3 +61,19 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "create_cluster_autoscaler" {
+  type        = bool
+  default     = false
+  description = "Create the IRSA role used by Cluster Autoscaler."
+}
+
+variable "cluster_autoscaler_namespace" {
+  type    = string
+  default = "kube-system"
+}
+
+variable "cluster_autoscaler_service_account" {
+  type    = string
+  default = "cluster-autoscaler"
+}

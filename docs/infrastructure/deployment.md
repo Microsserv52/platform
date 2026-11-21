@@ -92,8 +92,9 @@ export TF_STATE_BUCKET=my-platform-tf-state   # optional; defaults to platform-t
 scripts/deploy-aws.sh --frontends
 ```
 
-The script provisions VPC, EKS, ECR, RDS, ElastiCache, S3, CloudFront and the
-Product IRSA role, pushes images, creates `platform-secrets`, applies the
+The script provisions VPC, EKS, ECR, RDS, ElastiCache, S3, CloudFront, the
+Product IRSA role and the Cluster Autoscaler IRSA role, pushes images, installs
+`metrics-server` and Cluster Autoscaler, creates `platform-secrets`, applies the
 `aws` overlay, annotates the Product service account, rolls out the services
 and optionally syncs the frontends and invalidates CloudFront. It does not
 create long-lived AWS access keys; use IAM Identity Center or a role profile.

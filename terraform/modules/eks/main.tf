@@ -108,7 +108,14 @@ resource "aws_eks_node_group" "this" {
     max_unavailable = 1
   }
 
-  tags = merge(local.tags, { Name = "${var.cluster_name}-default" })
+  tags = merge(
+    local.tags,
+    { Name = "${var.cluster_name}-default" },
+    var.create_cluster_autoscaler ? {
+      "k8s.io/cluster-autoscaler/enabled"             = "true"
+      "k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
+    } : {},
+  )
 
   depends_on = [
     aws_iam_role_policy_attachment.node_worker,
@@ -184,6 +191,70 @@ resource "aws_iam_role_policy" "media_access" {
   name   = "media-access"
   role   = aws_iam_role.irsa[0].id
   policy = data.aws_iam_policy_document.media_access[0].json
+}
+
+
+
+data "aws_iam_policy_document" "cluster_autoscaler_assume" {
+  count = var.create_cluster_autoscaler && var.create_oidc_provider ? 1 : 0
+
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.this[0].arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_issuer}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_issuer}:sub"
+      values   = ["system:serviceaccount:${var.cluster_autoscaler_namespace}:${var.cluster_autoscaler_service_account}"]
+    }
+  }
+}
+
+resource "aws_iam_role" "cluster_autoscaler" {
+  count              = var.create_cluster_autoscaler && var.create_oidc_provider ? 1 : 0
+  name               = "${var.cluster_name}-cluster-autoscaler"
+  assume_role_policy = data.aws_iam_policy_document.cluster_autoscaler_assume[0].json
+  tags               = merge(local.tags, { Name = "${var.cluster_name}-cluster-autoscaler" })
+}
+
+data "aws_iam_policy_document" "cluster_autoscaler" {
+  count = var.create_cluster_autoscaler && var.create_oidc_provider ? 1 : 0
+
+  statement {
+    actions = [
+      "autoscaling:DescribeAutoScalingGroups",
+      "autoscaling:DescribeAutoScalingInstances",
+      "autoscaling:DescribeLaunchConfigurations",
+      "autoscaling:DescribeScalingActivities",
+      "autoscaling:DescribeTags",
+      "ec2:DescribeImages",
+      "ec2:DescribeInstanceTypes",
+      "ec2:DescribeLaunchTemplateVersions",
+      "ec2:GetInstanceTypesFromInstanceRequirements",
+      "eks:DescribeNodegroup",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    actions   = ["autoscaling:SetDesiredCapacity", "autoscaling:TerminateInstanceInAutoScalingGroup"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "cluster_autoscaler" {
+  count  = var.create_cluster_autoscaler && var.create_oidc_provider ? 1 : 0
+  name   = "cluster-autoscaler"
+  role   = aws_iam_role.cluster_autoscaler[0].id
+  policy = data.aws_iam_policy_document.cluster_autoscaler[0].json
 }
 
 resource "aws_eks_access_entry" "admin" {

@@ -24,7 +24,7 @@ Kubernetes workloads are separate from this layer; see [`../k8s/README.md`](../k
 | `elasticache` | Redis subnet group, security group and single-node cluster                |
 | `storage`     | Product media bucket, one bucket per frontend, CORS, lifecycle, versioning |
 | `cloudfront`  | One distribution, S3 OACs, `/store`, `/admin`, `/media` and optional `/api` |
-| `eks`         | Cluster, node group, OIDC provider, Product IRSA role, access entry       |
+| `eks`         | Cluster, node group, OIDC provider, Product IRSA, Cluster Autoscaler IRSA, access entry |
 | `dns`         | Optional ACM certificate and DNS validation through Route 53              |
 
 ## LocalStack rehearsal
@@ -44,14 +44,14 @@ secret and applies the LocalStack overlay.
 ```bash
 aws sso login --profile platform
 export AWS_PROFILE=platform
-export TF_STATE_BUCKET=my-platform-tf-state   # optional but recommended
+export TF_STATE_BUCKET=my-platform-tf-state   # optional; defaults to platform-tfstate-<account-id>
 scripts/deploy-aws.sh --frontends
 ```
 
 The deploy script performs, in order: state bootstrap, `terraform apply`, ECR
-login and image push, kubeconfig export, Secret creation, overlay apply,
-ConfigMap patch, IRSA annotation, rolling rollout, optional frontend sync and
-CloudFront invalidation.
+login and image push, kubeconfig export, `metrics-server` and Cluster Autoscaler
+installation, Secret creation, overlay apply, ConfigMap patch, IRSA annotation,
+rolling rollout, optional frontend sync and CloudFront invalidation.
 
 Required inputs before the first real deployment:
 
@@ -63,9 +63,9 @@ Required inputs before the first real deployment:
   or a pre-existing `TF_VAR_acm_certificate_arn` when using a custom domain.
 - An nginx ingress controller installed in the cluster.
 
-Use `--skip-terraform`, `--skip-images`, `--frontends` or `--no-auto-approve`
-to control individual phases. Deployment is intentionally shell-first; there is
-no CI/CD deploy workflow.
+Use `--skip-terraform`, `--skip-images`, `--skip-addons`, `--frontends` or
+`--no-auto-approve` to control individual phases. Deployment is intentionally
+shell-first; there is no CI/CD deploy workflow.
 
 ## State
 

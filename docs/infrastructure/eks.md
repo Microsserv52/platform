@@ -53,3 +53,8 @@ Horizontal Pod Autoscaling must be driven by a meaningful resource or custom
 metric and verified under load. Record minimum and maximum replicas, target,
 scale-up and scale-down behavior. Delete temporary test resources after the
 experiment.
+
+The deploy script installs `metrics-server` and Cluster Autoscaler unless
+`--skip-addons` is passed. Terraform creates the autoscaler IRSA role and tags
+the managed node group for auto-discovery; the group runs between 2 and 6
+nodes. HPA alone does not add nodes, so verify both layers together.

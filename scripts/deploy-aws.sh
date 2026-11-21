@@ -6,6 +6,7 @@ load_env_file
 SKIP_TERRAFORM=false
 SKIP_IMAGES=false
 SKIP_FRONTENDS=true
+SKIP_ADDONS=false
 LOGIN_ONLY=false
 AUTO_APPROVE="-auto-approve"
 
@@ -13,6 +14,7 @@ for arg in "$@"; do
   case "$arg" in
     --skip-terraform) SKIP_TERRAFORM=true ;;
     --skip-images) SKIP_IMAGES=true ;;
+    --skip-addons) SKIP_ADDONS=true ;;
     --frontends) SKIP_FRONTENDS=false ;;
     --no-auto-approve) AUTO_APPROVE="" ;;
     --login)
@@ -101,6 +103,7 @@ RDS_PASSWORD="$(tf_out "$TF_AWS" rds_password)"
 REDIS_ENDPOINT="$(tf_out "$TF_AWS" redis_endpoint)"
 REDIS_PORT="$(tf_out "$TF_AWS" redis_port)"
 CLUSTER_NAME="$(tf_out "$TF_AWS" eks_cluster_name)"
+CLUSTER_AUTOSCALER_ROLE_ARN="$(tf_out "$TF_AWS" cluster_autoscaler_role_arn)"
 IRSA_ROLE_ARN="$(tf_out "$TF_AWS" product_irsa_role_arn)"
 MEDIA_BUCKET="$(tf_out_json "$TF_AWS" media_bucket | jq -r '.bucket')"
 FRONTEND_BUCKETS="$(tf_out_json "$TF_AWS" frontend_buckets)"
@@ -110,6 +113,16 @@ export REGISTRY TAG="${TAG:-$(git -C "$ROOT_DIR" rev-parse --short HEAD)}"
 
 aws eks update-kubeconfig --region "$AWS_REGION" --name "$CLUSTER_NAME"
 ensure_namespace
+
+if [[ "$SKIP_ADDONS" == "false" ]]; then
+  if [[ -z "$CLUSTER_AUTOSCALER_ROLE_ARN" ]]; then
+    echo "warning: cluster_autoscaler_role_arn is empty; skipping addons" >&2
+  else
+    EKS_CLUSTER_NAME="$CLUSTER_NAME" \
+    CLUSTER_AUTOSCALER_ROLE_ARN="$CLUSTER_AUTOSCALER_ROLE_ARN" \
+      "$ROOT_DIR/scripts/install-aws-addons.sh"
+  fi
+fi
 
 export SPRING_DATASOURCE_URL="jdbc:postgresql://$RDS_ENDPOINT:$RDS_PORT/$RDS_DB_NAME"
 export SPRING_DATASOURCE_USERNAME="$RDS_USERNAME"

@@ -16,7 +16,7 @@ metadata:
   name: exchange
   namespace: platform
 spec:
-  replicas: 3
+  replicas: 2
   revisionHistoryLimit: 3
   selector:
     matchLabels:

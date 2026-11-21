@@ -27,4 +27,5 @@ output "cloudfront_domain_name" { value = try(module.cloudfront[0].distribution_
 output "eks_cluster_name" { value = module.eks.cluster_name }
 output "eks_cluster_endpoint" { value = module.eks.cluster_endpoint }
 output "product_irsa_role_arn" { value = module.eks.irsa_role_arn }
+output "cluster_autoscaler_role_arn" { value = module.eks.cluster_autoscaler_role_arn }
 output "certificate_arn" { value = local.certificate_arn }

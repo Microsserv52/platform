@@ -5,3 +5,7 @@ output "cluster_security_group_id" { value = aws_security_group.cluster.id }
 output "node_role_arn" { value = aws_iam_role.node.arn }
 output "oidc_provider_arn" { value = try(aws_iam_openid_connect_provider.this[0].arn, "") }
 output "irsa_role_arn" { value = try(aws_iam_role.irsa[0].arn, "") }
+
+output "cluster_autoscaler_role_arn" {
+  value = try(aws_iam_role.cluster_autoscaler[0].arn, "")
+}
