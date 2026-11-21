@@ -68,9 +68,9 @@ no CI/CD deploy workflow.
 
 ## State
 
-Without `TF_STATE_BUCKET`, the AWS environment keeps state locally
-(`-backend=false`). For shared or repeatable deployments, create the private
-versioned bucket once:
+By default `deploy-aws.sh` creates and uses a private bucket named
+`platform-tfstate-<account-id>`. To reuse a specific bucket, create it once and
+export its name:
 
 ```bash
 TF_STATE_BUCKET=my-platform-tf-state scripts/bootstrap-tf-state.sh
@@ -83,10 +83,12 @@ private and encrypted.
 ## Cost warning
 
 A real deployment is not free-tier-only. EKS control plane, worker nodes, NAT
-gateway, RDS, ElastiCache, Route 53 and Secrets Manager are billed while they
-exist. Use AWS Budgets, the smallest instance classes, and
-`terraform -chdir=terraform/environments/aws destroy` after the demo. LocalStack
-is the zero-cost rehearsal path.
+gateway, RDS, ElastiCache, Route 53 and the ingress load balancer are billed
+while they exist. Use AWS Budgets, the smallest instance classes that still fit
+the workloads, and `terraform -chdir=terraform/environments/aws destroy` after
+the demo. LocalStack is the zero-cost rehearsal path. See the
+[dated resource-by-resource estimate](../docs/infrastructure/costs.md),
+including node sizing and teardown caveats.
 
 ## Provider caveat
 

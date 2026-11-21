@@ -65,24 +65,20 @@ if [[ -z "${DEPLOY_EXCHANGE_PROVIDER_URL:-}" ]]; then
 fi
 
 TF_ARGS=()
-if [[ -n "${TF_STATE_BUCKET:-}" ]]; then
+
+if [[ "$SKIP_TERRAFORM" == "false" ]]; then
+  ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+  TF_STATE_BUCKET="${TF_STATE_BUCKET:-${TF_VAR_project:-platform}-tfstate-$ACCOUNT_ID}"
   TF_STATE_KEY="${TF_STATE_KEY:-platform/aws.tfstate}"
+  export TF_STATE_BUCKET TF_STATE_KEY
   "$ROOT_DIR/scripts/bootstrap-tf-state.sh"
   TF_ARGS+=(
     -backend-config="bucket=$TF_STATE_BUCKET"
     -backend-config="key=$TF_STATE_KEY"
     -backend-config="region=$AWS_REGION"
   )
-else
-  echo "warning: TF_STATE_BUCKET is unset; Terraform state stays local." >&2
-fi
 
-if [[ "$SKIP_TERRAFORM" == "false" ]]; then
-  if [[ ${#TF_ARGS[@]} -gt 0 ]]; then
-    terraform -chdir="$TF_AWS" init -reconfigure "${TF_ARGS[@]}"
-  else
-    terraform -chdir="$TF_AWS" init -backend=false -reconfigure
-  fi
+  terraform -chdir="$TF_AWS" init -reconfigure "${TF_ARGS[@]}"
 
   export TF_VAR_aws_region="$AWS_REGION"
 

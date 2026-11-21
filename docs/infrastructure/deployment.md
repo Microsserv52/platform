@@ -88,7 +88,7 @@ declared in [`terraform/`](https://github.com/Microsserv52/platform/blob/main/te
 ```bash
 aws sso login --profile platform
 export AWS_PROFILE=platform
-export TF_STATE_BUCKET=my-platform-tf-state   # optional remote state
+export TF_STATE_BUCKET=my-platform-tf-state   # optional; defaults to platform-tfstate-<account-id>
 scripts/deploy-aws.sh --frontends
 ```
 

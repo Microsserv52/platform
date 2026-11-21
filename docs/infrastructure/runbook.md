@@ -132,17 +132,17 @@ scripts/deploy-aws.sh --login
 scripts/deploy-aws.sh --frontends
 ```
 
-### 4. Optional remote Terraform state
+### 4. Terraform state
+
+`deploy-aws.sh` creates and uses a private, versioned, encrypted bucket named
+`platform-tfstate-<account-id>` when `TF_STATE_BUCKET` is unset. The AWS backend
+uses S3 native locking, so no DynamoDB table is needed. To reuse an existing
+bucket instead:
 
 ```bash
 export TF_STATE_BUCKET=my-platform-tf-state
 scripts/bootstrap-tf-state.sh
 ```
-
-The script creates a private, versioned, encrypted bucket and enables public
-access blocking. The AWS environment uses S3 native locking, so no DynamoDB
-table is needed. Without `TF_STATE_BUCKET`, state stays local in
-`terraform/environments/aws`.
 
 ### 5. Deploy
 
