@@ -1,0 +1,14 @@
+# Copy to terraform.tfvars and fill in from the Grafana Cloud stack.
+# Never commit the token. Prefer GRAFANA_AUTH / TF_VAR_grafana_auth.
+
+grafana_url            = "https://example.grafana.net"
+grafana_auth           = ""
+grafana_sm_access_token = ""
+grafana_sm_url         = ""
+
+folder_name               = "Platform"
+prometheus_datasource_uid = "prometheus"
+alert_email               = "ops@example.invalid"
+public_base_url           = "https://d15ogksm4jp6sl.cloudfront.net"
+probe_names               = ["Frankfurt", "San Francisco"]
+enable_synthetic_checks   = true

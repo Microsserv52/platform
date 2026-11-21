@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: platform-edge
+  namespace: observability
+  labels:
+    app.kubernetes.io/part-of: platform-observability
+spec:
+  jobName: platform-edge
+  interval: 30s
+  module: http_2xx
+  prober:
+    url: blackbox-exporter.observability.svc.cluster.local:9115
+    path: /probe
+    scheme: http
+  targets:
+    staticConfig:
+      static:
+        - https://d15ogksm4jp6sl.cloudfront.net/
+        - https://d15ogksm4jp6sl.cloudfront.net/store/
+        - https://d15ogksm4jp6sl.cloudfront.net/admin/
+        - https://d15ogksm4jp6sl.cloudfront.net/api/products
+        - https://d15ogksm4jp6sl.cloudfront.net/api/actuator/health
+      labels:
+        service: edge

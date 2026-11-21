@@ -70,7 +70,7 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-FAB040?style=flat&logo=precommit&logoColor=white)](https://pre-commit.com/)
 [![k6](https://img.shields.io/badge/k6-7D64FF?style=flat&logo=k6&logoColor=white)](https://grafana.com/oss/k6/)
 
-**Observability and analytics; Grafana Cloud selected, rollout pending**
+**Observability and analytics; local stack implemented, Grafana Cloud prepared**
 
 [![Grafana Cloud](https://img.shields.io/badge/Grafana_Cloud-F46800?style=flat&logo=grafana&logoColor=white)](https://grafana.com/products/cloud/)
 [![Grafana Mimir](https://img.shields.io/badge/Grafana_Mimir-F46800?style=flat&logo=grafana&logoColor=white)](https://grafana.com/oss/mimir/)
@@ -119,9 +119,9 @@ Redis is selected for a dedicated Cart service: carts expire seven days after th
 
 Terraform provisions the AWS environment: VPC, EKS with 2–6 `t3.medium` nodes, ECR, RDS PostgreSQL, ElastiCache Redis, private S3 buckets and CloudFront. Product implements image persistence with the AWS SDK for Java v2; Compose still uses the local blob-storage mock. CloudFront is the current image-delivery design baseline; a possible CDN move to Cloudflare remains open. The deployed inventory is recorded in [delivery evidence](docs/project/delivery.md).
 
-Grafana Cloud is selected for observability: Prometheus-compatible/Mimir metrics, Loki logs, Tempo traces, Pyroscope profiles, Faro, OpenTelemetry/Alloy and Graphite support. New metrics should use Prometheus/OTel; Graphite is available for Graphite-format producers. Collection and cloud provisioning remain pending. Umami stays a separate analytics integration. Cloudflare is selected for DDoS protection, WAF and Tunnel; its security role does not choose the frontend CDN, a CloudFront-to-Cloudflare delivery migration or the domain; those decisions remain open. Cloudflare R2 is still only an alternative, not a replacement for approved S3 storage. Kafka placement is proposed for post-order events and later Product background work; no broker or client is implemented.
+Observability is implemented locally with Prometheus, Grafana, Loki, Tempo, Pyroscope, Alloy and blackbox, with five dashboards and unified alerts. Grafana Cloud remains the managed destination; its Terraform, Alloy remote-write and synthetic checks are prepared but not applied. New metrics use Prometheus/OTel; Graphite is available for Graphite-format producers. Umami stays a separate analytics integration. Cloudflare is selected for DDoS protection, WAF and Tunnel; its security role does not choose the frontend CDN, a CloudFront-to-Cloudflare delivery migration or the domain; those decisions remain open. Cloudflare R2 is still only an alternative, not a replacement for approved S3 storage. Kafka placement is proposed for post-order events and later Product background work; no broker or client is implemented.
 
-Architecture details: [Grafana Cloud](docs/operations/observability.md), [Cart service](docs/services/cart/index.md), [Kafka proposals](docs/project/asynchronous-events.md) and [Cloudflare security](docs/infrastructure/cloudflare.md). Domain and frontend CDN remain undecided.
+Architecture details: [Observability](docs/operations/observability.md), [Grafana on AWS](docs/operations/grafana-aws.md), [Cart service](docs/services/cart/index.md), [Kafka proposals](docs/project/asynchronous-events.md) and [Cloudflare security](docs/infrastructure/cloudflare.md). Domain and frontend CDN remain undecided.
 
 Web application that allows authenticated users to buy and sell products
 through a set of microservices.

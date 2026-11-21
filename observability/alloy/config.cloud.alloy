@@ -1,0 +1,138 @@
+// Grafana Cloud collector. All endpoints and credentials come from the
+// environment; no token is ever written to this file or to Git.
+//
+// Required:
+//   GRAFANA_CLOUD_PROMETHEUS_URL, GRAFANA_CLOUD_PROMETHEUS_USER
+//   GRAFANA_CLOUD_LOKI_URL, GRAFANA_CLOUD_LOKI_USER
+//   GRAFANA_CLOUD_OTLP_ENDPOINT
+//   GRAFANA_CLOUD_PYROSCOPE_URL, GRAFANA_CLOUD_PYROSCOPE_USER
+//   GRAFANA_CLOUD_API_KEY
+//
+// The browser Faro SDK writes directly to the Grafana Cloud Frontend
+// Observability collector, not to this receiver.
+
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+prometheus.scrape "java_services" {
+  targets = [
+    { __address__ = "gateway.platform.svc.cluster.local:8080", service = "gateway" },
+    { __address__ = "auth.platform.svc.cluster.local:8080", service = "auth" },
+    { __address__ = "account.platform.svc.cluster.local:8080", service = "account" },
+    { __address__ = "order.platform.svc.cluster.local:8080", service = "order" },
+    { __address__ = "product.platform.svc.cluster.local:8080", service = "product" },
+  ]
+  metrics_path = "/actuator/prometheus"
+  forward_to   = [prometheus.remote_write.cloud.receiver]
+}
+
+prometheus.scrape "exchange" {
+  targets = [
+    { __address__ = "exchange.platform.svc.cluster.local:8080", service = "exchange" },
+  ]
+  metrics_path = "/metrics"
+  forward_to   = [prometheus.remote_write.cloud.receiver]
+}
+
+prometheus.remote_write "cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_PROMETHEUS_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PROMETHEUS_USER")
+      password = sys.env("GRAFANA_CLOUD_API_KEY")
+    }
+  }
+}
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+}
+
+loki.source.docker "containers" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.containers.targets
+  labels        = { job = "docker" }
+  relabel_rules = discovery.relabel.containers.rules
+  forward_to    = [loki.write.cloud.receiver]
+}
+
+loki.write "cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_LOKI_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_LOKI_USER")
+      password = sys.env("GRAFANA_CLOUD_API_KEY")
+    }
+  }
+}
+
+otelcol.receiver.otlp "cloud" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces = [otelcol.exporter.otlphttp.cloud.input]
+  }
+}
+
+otelcol.exporter.otlphttp "cloud" {
+  client {
+    endpoint = sys.env("GRAFANA_CLOUD_OTLP_ENDPOINT")
+
+    headers = {
+      "Authorization" = "Bearer " + sys.env("GRAFANA_CLOUD_API_KEY"),
+    }
+  }
+}
+
+pyroscope.write "cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_PYROSCOPE_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PYROSCOPE_USER")
+      password = sys.env("GRAFANA_CLOUD_API_KEY")
+    }
+  }
+}
+
+faro.receiver "cloud" {
+  server {
+    listen_address       = "0.0.0.0"
+    listen_port          = 12347
+    cors_allowed_origins = ["*"]
+  }
+
+  sourcemaps {
+    download = false
+  }
+
+  output {
+    logs   = [loki.write.cloud.receiver]
+    traces = [otelcol.exporter.otlphttp.cloud.input]
+  }
+}

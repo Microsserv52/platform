@@ -11,6 +11,9 @@ Terraform owns all AWS resources for both run modes:
   endpoints, dummy credentials and local state. No AWS account required.
 - `environments/aws` — the real account. Uses the standard AWS provider, remote
   S3 state when `TF_STATE_BUCKET` is set, and CloudFront in `us-east-1`.
+- `environments/grafana-cloud` — optional Grafana Cloud folder, dashboards,
+  contact point, alert rules and synthetic checks. Uses the `grafana/grafana`
+  provider and is validated locally without credentials.
 
 Kubernetes workloads are separate from this layer; see [`../k8s/README.md`](../k8s/README.md).
 
@@ -24,7 +27,7 @@ Kubernetes workloads are separate from this layer; see [`../k8s/README.md`](../k
 | `elasticache` | Redis subnet group, security group and single-node cluster                |
 | `storage`     | Product media bucket, one bucket per frontend, lifecycle, versioning       |
 | `cloudfront`  | One distribution, S3 OACs, media CORS, `/store`, `/admin`, `/media` and optional `/api` |
-| `eks`         | Cluster, node group, OIDC provider, Product IRSA, Cluster Autoscaler IRSA, access entry |
+| `eks`         | Cluster, node group, OIDC provider, Product IRSA, Cluster Autoscaler IRSA, access entry, optional EBS CSI IRSA/add-on |
 | `dns`         | Optional ACM certificate and DNS validation through Route 53              |
 
 ## LocalStack rehearsal
@@ -79,6 +82,27 @@ TF_STATE_BUCKET=my-platform-tf-state scripts/bootstrap-tf-state.sh
 The backend uses S3 native locking (`use_lockfile = true`), so no DynamoDB lock
 table is required. State contains the generated RDS password: keep the bucket
 private and encrypted.
+
+## Observability preparation
+
+The AWS environment has an opt-in observability flag (default `false`):
+
+```bash
+export TF_VAR_enable_observability=true
+terraform -chdir=terraform/environments/aws apply
+```
+
+This creates the `aws-ebs-csi-driver` add-on with its IRSA role and the Secrets
+Manager containers `platform/grafana/admin` and `platform/grafana/alerting`. It
+does not write secret values or deploy Grafana. See
+[Grafana on AWS](../docs/operations/grafana-aws.md).
+
+The Grafana Cloud environment is separate because it needs Cloud tokens:
+
+```bash
+terraform -chdir=terraform/environments/grafana-cloud init
+terraform -chdir=terraform/environments/grafana-cloud validate
+```
 
 ## Cost warning
 

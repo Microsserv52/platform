@@ -1,0 +1,145 @@
+name: platform
+
+# Local observability profile. The base application stack is unchanged:
+#   docker compose -f compose.yml -f compose.observability.yml --profile observability up -d
+#
+# Every UI/API port binds to 127.0.0.1. Nothing in this file is public.
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    profiles: ["observability"]
+    hostname: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+      - --web.enable-remote-write-receiver
+      - --web.external-url=http://localhost:9090
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    restart: unless-stopped
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.29.1
+    profiles: ["observability"]
+    hostname: blackbox-exporter
+    command:
+      - --config.file=/etc/blackbox_exporter/config.yml
+    volumes:
+      - ./observability/blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    ports:
+      - "127.0.0.1:9115:9115"
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.7.10
+    profiles: ["observability"]
+    hostname: loki
+    command: ["-config.file=/etc/loki/config.yml"]
+    volumes:
+      - ./observability/loki/loki.yaml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    ports:
+      - "127.0.0.1:3100:3100"
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.9.0
+    profiles: ["observability"]
+    hostname: tempo
+    command: ["-config.file=/etc/tempo/config.yml"]
+    volumes:
+      - ./observability/tempo/tempo.yaml:/etc/tempo/config.yml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "127.0.0.1:3200:3200"
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+    restart: unless-stopped
+
+  pyroscope:
+    image: grafana/pyroscope:2.4.4
+    profiles: ["observability"]
+    hostname: pyroscope
+    command: ["-config.file=/etc/pyroscope/config.yml"]
+    volumes:
+      - ./observability/pyroscope/pyroscope.yaml:/etc/pyroscope/config.yml:ro
+      - pyroscope-data:/data
+    ports:
+      - "127.0.0.1:4040:4040"
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.22.0
+    profiles: ["observability"]
+    hostname: alloy
+    user: "0:0"
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+    volumes:
+      - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy-data:/var/lib/alloy/data
+    ports:
+      - "127.0.0.1:12345:12345"
+      - "127.0.0.1:12347:12347"
+    depends_on:
+      - loki
+      - tempo
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:13.3.1
+    profiles: ["observability"]
+    hostname: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_USERS_ALLOW_ORG_CREATE: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+      GF_SERVER_ENFORCE_DOMAIN: "false"
+      GF_SECURITY_COOKIE_SECURE: "false"
+      GF_SMTP_ENABLED: ${GRAFANA_SMTP_ENABLED:-false}
+      GF_SMTP_HOST: ${GRAFANA_SMTP_HOST:-}
+      GF_SMTP_USER: ${GRAFANA_SMTP_USER:-}
+      GF_SMTP_PASSWORD: ${GRAFANA_SMTP_PASSWORD:-}
+      GF_SMTP_FROM_ADDRESS: ${GRAFANA_SMTP_FROM_ADDRESS:-}
+      GF_SMTP_FROM_NAME: ${GRAFANA_SMTP_FROM_NAME:-Platform alerts}
+      PROMETHEUS_URL: http://prometheus:9090
+      LOKI_URL: http://loki:3100
+      TEMPO_URL: http://tempo:3200
+      PYROSCOPE_URL: http://pyroscope:4040
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-ops@example.invalid}
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+      - pyroscope
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  loki-data:
+  tempo-data:
+  pyroscope-data:
+  alloy-data:
+  grafana-data:

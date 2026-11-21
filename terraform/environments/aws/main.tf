@@ -88,6 +88,7 @@ module "elasticache" {
 
 module "eks" {
   source                    = "../../modules/eks"
+  enable_ebs_csi            = var.enable_observability
   cluster_name              = local.name
   kubernetes_version        = var.kubernetes_version
   vpc_id                    = module.network.vpc_id

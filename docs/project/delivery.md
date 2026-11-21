@@ -17,10 +17,10 @@ submission.
 - [x] AWS account, region and resource inventory without secrets.
 - [x] EKS topology and Kubernetes manifests or commands.
 - [ ] CI/CD pipeline runs and rollback procedure.
-- [x] Load-test scenarios, raw results and interpretation (read-only catalog; write flows pending).
+- [x] Load-test scenarios, raw results and interpretation (catalog read and authenticated order write).
 - [x] Bottleneck investigation and before/after comparison (catalog read path).
 - [ ] Cost estimate, actual spend and PaaS decisions.
-- [ ] SLO/SLA definitions and observability dashboards.
+- [x] SLO/SLA definitions and observability dashboards (local stack and AWS-ready IaC).
 - [x] Test strategy and final verification.
 - [x] Known limitations and future work.
 
@@ -32,20 +32,22 @@ delivered.
 | Requirement | Status | Evidence / action |
 | --- | --- | --- |
 | Gateway, Auth, Account, Exchange | Met | Service contracts and tests in the submodules |
-| Bottlenecks | Partial | Catalog read path measured at 50 and 400 req/s; order/auth/provider flows still pending |
+| Bottlenecks | Partial | Catalog read path measured at 50 and 400 req/s; authenticated order flow measured; provider-failure flow still pending |
 | AWS provisioning | Provisioned | Terraform state, resource inventory and budget in this page |
 | EKS deployment | Provisioned | EKS 1.35, two nodes, metrics-server and Cluster Autoscaler; rollout evidence below |
 | CI/CD | Partial by design | CI tests/CodeQL/GHCR and a manual **Publish EKS images** workflow; deployment remains shell-first; no CI deploy step |
-| Load tests | Partial | Read-only catalog baseline and HPA run completed 2026-11-21; authenticated/write flows pending |
+| Load tests | Partial | Read-only catalog baseline, HPA run and authenticated order flow completed 2026-11-21; provider-failure flow pending |
 | PaaS, costs and SLA | Documented | [Costs, PaaS and SLA](../infrastructure/costs.md); actual spend pending |
-| Documentation | Branch only | LocalStack, runbook and changes pages exist on this branch; merge to `main` republishes Pages |
+| Documentation | Published | `https://microsserv52.github.io/platform/`; LocalStack, runbook, observability and Grafana AWS pages are on `main` |
 | Public application URL | Available | `https://d15ogksm4jp6sl.cloudfront.net/` (landing), `/store/`, `/admin/`, `/api` |
-| Grafana / SLI dashboard | Not implemented | Explicitly out of this change; SLO targets and alert plan are documented |
+| Grafana / SLI dashboard | Implemented locally; AWS prepared | Prometheus, Grafana, Loki, Tempo, Pyroscope, Alloy, blackbox, five dashboards and unified alerts; see [Observability](../operations/observability.md) and [Grafana on AWS](../operations/grafana-aws.md) |
 | Team names, AI disclosure, presentation | Out of repository scope | Intentionally excluded by the project owner |
 
-The Grafana gap remains the largest quality item: Product and Exchange expose
-metrics, but Gateway, Auth, Account and Order need Prometheus instrumentation
-before the SLOs can be measured. That work is planned, not claimed.
+The observability gap is closed in the repository: all six services expose
+metrics, the local stack provisions dashboards and alerts, and the AWS path is
+prepared with EBS CSI, Secrets Manager, Helm values and a Cognito/ALB example.
+The AWS stack is not applied by this change, and backend traces/profiles still
+need language agents.
 
 ## Deployment evidence — 2026-11-21
 
@@ -130,10 +132,18 @@ pod has restarted.
   bound.
 - S3 CORS preflight from the CloudFront origin returned 200 with
   `PUT`/`GET`/`HEAD`, `Content-Type`, `If-None-Match` and `ETag` allowed.
+- Authenticated order flow, local Compose: 601 orders at 5/s, **0 errors**,
+  p95 634 ms, p99 1.05 s; a clean 5/s rerun measured p95 48 ms and p99 378 ms.
+  Raw log: [authenticated orders](../operations/load-test-results/2026-11-21-authenticated-orders.log);
+  summary: [JSON](../operations/load-test-results/2026-11-21-authenticated-orders-summary.json).
+- Admin image upload acceptance passed locally: ticket 201, signed PUT 200,
+  attach 200, media download 200 (27,740 bytes), cleanup 204. Log:
+  [admin upload](../operations/verification/2026-11-21-admin-upload.log).
 
 The remaining measured ceiling is Product's HPA maximum and node CPU; the
-database has headroom after the pool tune. Authenticated order/write and
-provider-failure flows are still pending.
+database has headroom after the pool tune. Provider-failure and authenticated
+AWS write flows are still pending, and AWS image upload still needs an admin
+account and a browser acceptance run.
 
 Raw logs and summaries:
 [baseline](../operations/load-test-results/2026-11-21-baseline.log),
@@ -154,6 +164,26 @@ At the observed two-node steady state the run-rate is approximately
 a three-node rollout is about **$270/month**. The internet-facing Gateway NLB is included in the estimate; CloudFront serves the public frontend and `/api`. The account budget is USD 100, so
 the stack must be destroyed or scheduled after the demo.
 
+### Observability evidence — 2026-11-21
+
+The local Compose stack was started with the `observability` profile and
+verified end to end:
+
+```text
+Prometheus targets: 12 up, 0 unhealthy
+Grafana: 13.3.1, database ok
+Dashboards: Platform overview, Service RED, SLO and error budget,
+            Synthetic health, Dependencies
+Alert rules: 8 provisioned; notification policy -> platform-email
+Recording rules: 13 healthy
+Synthetic probes: 5/5 successful (landing, store, admin, catalog, health)
+Loki: container logs received; Tempo: OTLP trace ingested; Pyroscope: ready
+```
+
+- [Observability verification log](../operations/verification/2026-11-21-observability.log)
+- [Local stack guide](../operations/observability.md)
+- [AWS deployment plan](../operations/grafana-aws.md)
+
 ## Known limitations and next work
 
 These are deliberate gaps, not hidden claims:
@@ -162,21 +192,25 @@ These are deliberate gaps, not hidden claims:
   reaches the Terraform NLB over HTTP. The NLB security group only allows the
   AWS CloudFront origin-facing prefix list; direct NLB access times out.
 - **No custom domain.** The public URL is the CloudFront hostname.
-- **No Grafana/Alloy stack.** Product and Exchange expose metrics; Gateway,
-  Auth, Account and Order do not yet expose Prometheus metrics, so the SLO
-  targets in [Costs, PaaS and SLA](../infrastructure/costs.md#sla-and-slo) are
-  not measured.
-- **No load-test results or HPA/Cluster Autoscaler timeline.** The procedure and
-  capacity envelope are ready; the execution plan is marked "not run".
-- **No tracing and no NetworkPolicy.** The manifests keep services
-  cluster-internal but do not enforce network isolation.
-- **No EBS CSI / persistent volumes.** The workloads are stateless; RDS and S3
-  hold persistent data.
+- **Grafana AWS stack is prepared, not applied.** The repository has the Helm
+  values, manifests, EBS CSI flag, Secrets Manager containers and Cognito ingress
+  example. Applying them changes AWS resources and still needs an owner decision.
+- **Backend traces and profiles need agents.** Alloy, Tempo and Pyroscope are
+  configured, but the Java/Python services do not yet export spans or profiles.
+- **Provider-failure and authenticated AWS write load tests are pending.** The
+  read and authenticated order paths were measured locally; the live AWS write
+  path and Exchange failure mode were not.
+- **Image upload is verified locally, not in AWS.** The local ticket → signed
+  PUT → attach → download flow passed. The AWS S3/CloudFront browser flow still
+  needs an admin account and an acceptance run.
+- **No tracing and no NetworkPolicy enforcement.** The observability manifests
+  include a scrape NetworkPolicy, but platform services are still reachable
+  inside the cluster and are not fully isolated.
+- **EBS CSI is optional.** It is wired behind `enable_observability` and has not
+  been applied to the live cluster.
 - **No CI deploy step.** The **Publish EKS images** workflow builds and pushes
   images; deployment remains shell-first. See
   [CI/CD](../development/cicd.md#eks-image-publishing-workflow).
-- **Image upload is not verified end to end.** The S3/CloudFront configuration
-  is provisioned, but the browser presign flow still needs an acceptance run.
 - **Database scaling ceiling.** Four replicas per database-backed service exceed
   the `db.t4g.micro` connection limit until the pool is reduced or RDS resized.
 - **No staging environment.** The developer-only staging plan remains a backlog

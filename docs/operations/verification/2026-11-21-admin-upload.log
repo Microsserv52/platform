@@ -1,0 +1,9 @@
+admin login: 200
+product created: e5d6ffa6-922d-4e41-b275-f4ba2ee0d8e1
+upload ticket: 201 (1 signed headers)
+image PUT: 200
+image attached: 200 -> {'url': '/media/media/products/e5d6ffa6-922d-4e41-b275-f4ba2ee0d8e1/0fc6246c-f264-4c87-80be-aa568ddedb8d/original.jpg', 'alt': 'Upload acceptance image', 'width': 1200, 'height': 1000}
+product image URL: {'url': '/media/media/products/e5d6ffa6-922d-4e41-b275-f4ba2ee0d8e1/0fc6246c-f264-4c87-80be-aa568ddedb8d/original.jpg', 'alt': 'Upload acceptance image', 'width': 1200, 'height': 1000}
+image download: 200 (27740 bytes)
+cleanup delete: 204
+admin image upload acceptance: PASS

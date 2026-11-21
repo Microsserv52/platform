@@ -1,0 +1,41 @@
+# Example only: this ingress needs a real domain, ACM certificate and Cognito
+# user pool. Do not apply until those values exist.
+#
+# ALB + Cognito keeps Grafana behind an AWS account: the ALB redirects to the
+# Cognito hosted UI, Grafana stays ClusterIP, and no Grafana password is exposed
+# to the browser.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana
+  namespace: observability
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERTIFICATE_ID
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/auth-type: cognito
+    alb.ingress.kubernetes.io/auth-idp-cognito: '{"userPoolARN":"arn:aws:cognito-idp:us-east-1:ACCOUNT_ID:userpool/POOL_ID","userPoolClientID":"CLIENT_ID","userPoolDomain":"COGNITO_DOMAIN"}'
+    alb.ingress.kubernetes.io/auth-scope: openid
+    alb.ingress.kubernetes.io/auth-session-cookie: AWSELBAuthSessionCookie
+    alb.ingress.kubernetes.io/auth-session-timeout: "3600"
+    alb.ingress.kubernetes.io/group.name: platform-internal
+    alb.ingress.kubernetes.io/load-balancer-attributes: deletion_protection.enabled=false
+spec:
+  ingressClassName: alb
+  rules:
+    - host: grafana.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - grafana.example.com

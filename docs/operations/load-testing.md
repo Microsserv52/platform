@@ -203,8 +203,9 @@ The retained configuration is pool 8 per pod with a 5 s timeout. The measured
 bottleneck at 300+ req/s is the **Product HPA maximum and node CPU**, not the
 database: Product is pinned at 6 replicas, p95 is 1.25 s, RDS has only 52/112
 connections, and no requests fail. The next step is to raise the Product HPA
-maximum (and the node-group maximum) or reduce per-request CPU; a full
-authenticated order test is still required.
+maximum (and the node-group maximum) or reduce per-request CPU. The authenticated
+order path was measured separately on local Compose; the live AWS write path is
+still pending.
 
 Raw artifacts:
 
@@ -217,6 +218,31 @@ Raw artifacts:
 - [Pool-8 summary JSON](load-test-results/2026-11-21-high-pool8-summary.json)
 - [HPA/node monitor, pool 8](load-test-results/2026-11-21-monitor-pool8.log)
 
+## Authenticated order flow — 2026-11-21
+
+`tests/k6/authenticated-orders.js` logs in as the demo customer, reads the
+catalog, and creates one order per iteration. It is a write test and must not be
+run against production without explicit authorization.
+
+| Run | Load | Orders | Errors | p95 | p99 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Warm-up | 5 orders/s, 1 min | 296 | 0 | 1.13 s | 4.16 s |
+| Warm | 5 orders/s, 2 min | 601 | 0 | 634 ms | 1.05 s |
+| Summary rerun | 5 orders/s, 1 min | 300 | 0 | 48 ms | 378 ms |
+
+The first run included cold-start and JIT effects; the warm runs show the
+steady-state order path is well below the 800 ms SLO. The local Order service
+uses the retained Hikari pool of 8, and no 5xx responses were observed. The
+summary below is from the clean 1-minute rerun; it passed the `http_req_failed`
+and latency thresholds.
+
+- [Authenticated order log](load-test-results/2026-11-21-authenticated-orders.log)
+- [Authenticated order summary](load-test-results/2026-11-21-authenticated-orders-summary.json)
+- [Scenario](../../tests/k6/authenticated-orders.js)
+
+The live AWS write path and the Exchange provider-failure scenario are still
+pending.
+
 ## Execution plan and status
 
 | Scenario | Workload | Primary evidence | Status |
@@ -225,7 +251,7 @@ Raw artifacts:
 | HPA trigger | 400 req/s, 2–4 min | HPA desired/current replicas, CPU, pending pods | **Run 2026-11-21**; Product 6/6, Gateway 3 |
 | Database pool tuning | Pool 10/5/8 at 400 req/s | errors, Hikari wait, RDS connections | **Run 2026-11-21**; pool 8 retained |
 | Node autoscaling | Hold above HPA minimum | node count 2 → 3, pod scheduling time | Not triggered; 3 nodes held |
-| Order write | 20–50 concurrent users | order p95, DB pool wait, errors | Not run |
+| Order write | 5 orders/s, 1–2 min | order p95, DB pool wait, errors | **Run locally 2026-11-21**; 601 orders, 0 errors, p95 634 ms |
 | Provider failure | Exchange timeout/error injection | Exchange error rate, fallback behavior | Not run |
 | Scale-down | Stop load, observe | HPA stabilization, node scale-down time | Not observed; 3 nodes held |
 

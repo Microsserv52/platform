@@ -1,0 +1,23 @@
+# Optional: send in-cluster metrics to Grafana Cloud instead of retaining them
+# only in the local Prometheus. Merge this file with values.yaml and supply the
+# real endpoint and credentials through --set or a secret-backed values file.
+#
+#   helm upgrade --install observability prometheus-community/kube-prometheus-stack \
+#     -n observability --create-namespace \
+#     -f observability/helm/values.yaml \
+#     -f observability/helm/values-cloud.example.yaml \
+#     --set prometheus.prometheusSpec.remoteWrite[0].url="$GRAFANA_CLOUD_PROMETHEUS_URL" \
+#     --set prometheus.prometheusSpec.remoteWrite[0].basicAuth.username="$GRAFANA_CLOUD_PROMETHEUS_USER" \
+#     --set prometheus.prometheusSpec.remoteWrite[0].basicAuth.password="$GRAFANA_CLOUD_API_KEY"
+
+prometheus:
+  prometheusSpec:
+    remoteWrite:
+      - url: https://prometheus-prod-XX-REGION.grafana.net/api/prom/push
+        basicAuth:
+          username: "GRAFANA_CLOUD_PROMETHEUS_USER"
+          password: "GRAFANA_CLOUD_API_KEY"
+        writeRelabelConfigs:
+          - sourceLabels: [__name__]
+            regex: "go_.*|process_.*"
+            action: drop

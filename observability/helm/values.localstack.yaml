@@ -1,0 +1,27 @@
+# LocalStack EKS rehearsal: k3s has no dynamic gp3 provisioner and one tainted
+# control-plane node. Keep Prometheus in emptyDir and tolerate the taint.
+prometheus:
+  prometheusSpec:
+    storageSpec: {}
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+prometheusOperator:
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+kube-state-metrics:
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+prometheus-node-exporter:
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule

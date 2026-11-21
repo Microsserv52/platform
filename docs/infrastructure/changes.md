@@ -18,8 +18,10 @@ migrate an existing MicroK8s/EKS setup.
 | Workloads | Product and Exchange manifests added; frontends remain static S3/CloudFront exports |
 | Deployment | Shell-first `scripts/deploy-aws.sh`; `.github/workflows/deploy-eks.yml` removed |
 | Image publish | Manual **Publish EKS images** workflow builds/pushes ECR images; it does not deploy |
-| Public delivery | Frontends and `/api` on CloudFront; Gateway via internet-facing NLB; `x-site` cache key |
+| Public delivery | Frontends and `/api` on CloudFront; Gateway via a Terraform NLB with a CloudFront-only security group; `x-site` cache key |
 | Autoscaling | Cluster Autoscaler (IRSA, 2–6 nodes) and metrics-server installed by the deploy script; HPA for all six services |
+| Observability | `observability/` config tree; Prometheus, Grafana, Loki, Tempo, Pyroscope, Alloy and blackbox; five dashboards; unified alerts; AWS/LocalStack installers |
+| Service metrics | Gateway, Auth, Account, Order and Product expose `/actuator/prometheus` with latency histograms |
 | Cost | 2-node `t3.medium` baseline, 2 replicas per service, budget/capacity documentation |
 | Secrets | `platform-secrets` now uses `SPRING_DATASOURCE_PASSWORD`, not `POSTGRES_PASSWORD` |
 | Configuration | `.env.example` gained LocalStack, AWS, Terraform and frontend sections |

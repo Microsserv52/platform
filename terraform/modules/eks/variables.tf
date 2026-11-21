@@ -77,3 +77,9 @@ variable "cluster_autoscaler_service_account" {
   type    = string
   default = "cluster-autoscaler"
 }
+
+variable "enable_ebs_csi" {
+  type        = bool
+  default     = false
+  description = "Install the aws-ebs-csi-driver add-on with an IRSA role for persistent observability volumes."
+}

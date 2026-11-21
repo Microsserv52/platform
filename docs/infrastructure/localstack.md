@@ -48,6 +48,31 @@ container that the script reused is left running:
 scripts/localstack-down.sh
 ```
 
+## Observability rehearsal
+
+The Compose observability profile runs alongside LocalStack for a local
+metrics/logs/traces loop without touching the EKS rehearsal:
+
+```bash
+docker compose -f compose.yml -f compose.observability.yml \
+  --profile observability up -d
+```
+
+The LocalStack EKS rehearsal can install the same Prometheus/Grafana stack with
+emptyDir storage and the control-plane toleration:
+
+```bash
+scripts/install-observability.sh --localstack
+kubectl -n observability port-forward svc/grafana 3000:3000
+```
+
+It uses `observability/helm/values.localstack.yaml` and
+`k8s/overlays/localstack/observability`. The external CloudFront `Probe` is
+deleted in that overlay because LocalStack has no public edge. Prometheus and
+Grafana data is not durable in this mode; it is a rehearsal, not storage.
+
+See [Observability](../operations/observability.md).
+
 ## What is provisioned
 
 | Layer      | LocalStack resource                                          |

@@ -102,3 +102,9 @@ variable "protect_state" {
   default     = true
   description = "Keep RDS deletion protection, the final snapshot, S3 object versions and ECR images. Apply with false before destroying the stack."
 }
+
+variable "enable_observability" {
+  type        = bool
+  default     = false
+  description = "Prepare EBS CSI and Secrets Manager containers for the Grafana stack. Does not deploy Grafana."
+}

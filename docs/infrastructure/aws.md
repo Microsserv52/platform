@@ -57,10 +57,30 @@ stacks were created.
 | NAT gateway | 1 |
 | Load balancer | Gateway NLB `platform-gateway-ecaafe88209b53bc.elb.us-east-1.amazonaws.com` (internet-facing, HTTP 80, CloudFront-only SG) |
 | Budget | AWS Budget `Limit budget 100` (USD 100/month) |
+| Observability | Local Prometheus/Grafana stack implemented; AWS path prepared behind `enable_observability` |
 
 The workload rollout and cost evidence are recorded in
 [delivery evidence](../project/delivery.md). The public, internal and AWS
 endpoint map is in [Service URLs](service-urls.md).
+
+## Observability resources (prepared)
+
+`terraform/environments/aws` has an opt-in observability flag, default `false`:
+
+```bash
+export TF_VAR_enable_observability=true
+terraform -chdir=terraform/environments/aws apply
+```
+
+It creates the `aws-ebs-csi-driver` add-on with an IRSA role and the Secrets
+Manager containers `platform/grafana/admin` and `platform/grafana/alerting`.
+Secret values are written out of band; Terraform never stores them. The Helm
+values, manifests and Cognito ingress example are in
+[Grafana on AWS](../operations/grafana-aws.md).
+
+The live cluster does not have these resources yet. Enabling them adds an EBS
+CSI add-on, two empty secret containers, a 20 GiB Prometheus volume and a 10 GiB
+Grafana volume; the observability pods may add a third node.
 
 ## Resource inventory
 
