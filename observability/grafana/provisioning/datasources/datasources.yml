@@ -27,6 +27,15 @@ datasources:
       prometheusType: Mimir
       httpMethod: POST
 
+  - name: Graphite
+    uid: graphite
+    type: graphite
+    access: proxy
+    url: ${GRAPHITE_URL}
+    editable: false
+    jsonData:
+      graphiteVersion: "1.1"
+
   - name: Loki
     uid: loki
     type: loki

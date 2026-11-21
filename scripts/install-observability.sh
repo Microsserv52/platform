@@ -85,6 +85,9 @@ kubectl -n observability create configmap pyroscope-config \
 kubectl -n observability create configmap alloy-config \
   --from-file=config.alloy="$ROOT_DIR/observability/alloy/config.k8s.alloy" \
   --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n observability create configmap telegraf-config \
+  --from-file=telegraf.conf="$ROOT_DIR/observability/telegraf/telegraf-k8s.conf" \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 echo "creating PrometheusRule from the recording rules"
 python3 - "$ROOT_DIR/observability/prometheus/rules/sli.yml" <<'PY' | kubectl apply -f -
@@ -121,7 +124,7 @@ helm upgrade --install observability prometheus-community/kube-prometheus-stack 
 
 kubectl apply -k "$KUSTOMIZE_PATH"
 
-for deployment in mimir loki tempo pyroscope alloy grafana blackbox-exporter; do
+for deployment in graphite mimir loki tempo pyroscope alloy grafana blackbox-exporter; do
   kubectl -n observability rollout status "deployment/$deployment" --timeout=300s
 done
 

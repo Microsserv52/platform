@@ -417,3 +417,87 @@ groups:
           severity: ticket
           owner: platform
           service: product
+
+      - uid: graphite-pod-cpu-high
+        title: Pod CPU above 70%
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: graphite
+            model:
+              refId: A
+              target: "aliasByNode(removeBelowValue(platform.*.docker_container_cpu.usage_percent, 70), 1)"
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    params: [0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: "A container is above 70% CPU for 10 minutes."
+          runbook_url: "https://microsserv52.github.io/platform/operations/observability/#alert-runbook"
+        labels:
+          severity: warning
+          owner: platform
+
+      - uid: graphite-pod-memory-high
+        title: Pod memory above 80%
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: graphite
+            model:
+              refId: A
+              target: "aliasByNode(removeBelowValue(platform.*.docker_container_mem.usage_percent, 80), 1)"
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange:
+              from: 0
+              to: 0
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    params: [0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+                  type: query
+        noDataState: OK
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: "A container is above 80% memory for 10 minutes."
+          runbook_url: "https://microsserv52.github.io/platform/operations/observability/#alert-runbook"
+        labels:
+          severity: warning
+          owner: platform

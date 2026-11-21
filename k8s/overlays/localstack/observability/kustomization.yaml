@@ -40,14 +40,14 @@ patches:
         namespace: observability
   - target:
       kind: PersistentVolumeClaim
-      name: "mimir-data|loki-data|tempo-data|pyroscope-data|alloy-data"
+      name: "graphite-data|mimir-data|loki-data|tempo-data|pyroscope-data|alloy-data"
     patch: |-
       - op: replace
         path: /spec/storageClassName
         value: local-path
   - target:
       kind: Deployment
-      name: "mimir|loki|tempo|pyroscope|alloy"
+      name: "graphite|mimir|loki|tempo|pyroscope|alloy|telegraf"
     patch: |-
       - op: add
         path: /spec/template/spec/tolerations

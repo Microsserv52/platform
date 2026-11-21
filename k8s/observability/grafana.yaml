@@ -88,6 +88,8 @@ spec:
               value: http://observability-kube-prometheus-prometheus.observability.svc.cluster.local:9090
             - name: MIMIR_URL
               value: http://mimir.observability.svc.cluster.local:9009/prometheus
+            - name: GRAPHITE_URL
+              value: http://graphite.observability.svc.cluster.local
             - name: LOKI_URL
               value: http://loki.observability.svc.cluster.local:3100
             - name: TEMPO_URL
