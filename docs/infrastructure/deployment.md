@@ -107,6 +107,11 @@ requires authentication. Use `--skip-terraform`, `--skip-images` or
 `--no-auto-approve` for partial deployments. The demo seeder is never deployed;
 run `scripts/seed_demo.py` manually against the deployed URL.
 
+Observability is a separate opt-in step. Set `TF_VAR_enable_observability=true`
+and apply Terraform, then run `scripts/install-observability.sh`. Grafana stays
+ClusterIP and is published behind Cognito or Cloudflare Access; see
+[Grafana on AWS](../operations/grafana-aws.md).
+
 Images can also be built and pushed by the manual
 **Publish EKS images** workflow. It does not deploy; after it finishes, roll out
 the tag from the shell:
