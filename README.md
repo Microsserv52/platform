@@ -262,7 +262,7 @@ for each repository:
 
 | Repository                   | Required secrets                                                                                                                                                                                         |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Microsserv52/platform`      | `AWS_REGION`, `AWS_DEPLOY_ROLE_ARN` for the manual ECR image publish workflow. Deployment itself runs from a logged-in shell; see [`terraform/README.md`](terraform/README.md).                           |
+| `Microsserv52/platform`      | `AWS_REGION`, `AWS_DEPLOY_ROLE_ARN`, `DEPLOY_EXCHANGE_PROVIDER_URL`; optional `DEPLOY_EXCHANGE_PROVIDER_API_KEY`. Used by the manual **Publish EKS images** and **Deploy to AWS EKS** workflows. |
 | `Microsserv52/account`       | `JWT_SECRET`, `INTERNAL_SERVICE_SECRET`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`                                                                             |
 | `Microsserv52/auth`          | `JWT_SECRET`, `INTERNAL_SERVICE_SECRET`, `ACCOUNT_URL`, `ACCESS_TOKEN_EXPIRATION_SECONDS`                                                                                                                |
 | `Microsserv52/gateway`       | `JWT_SECRET`, `AUTH_URL`, `ACCOUNT_URL`, `ORDER_URL`, `PRODUCT_URL`, `EXCHANGE_URL`                                                                                                                      |
@@ -281,7 +281,10 @@ For the AWS-like rehearsal, run `scripts/localstack-up.sh` (see
 [`docs/infrastructure/localstack.md`](docs/infrastructure/localstack.md)).
 For real AWS, log in with a short-lived profile and run
 `scripts/deploy-aws.sh`; Terraform provisions VPC, EKS, ECR, RDS, ElastiCache,
-S3 and CloudFront. Deployment is intentionally not wired to CI/CD.
+S3 and CloudFront. The manual **Deploy to AWS EKS** workflow calls the same
+script with OIDC and the `production` environment; no push triggers it. Optional
+domain, Faro, WAF and observability flags are repository variables named
+`TF_VAR_*`.
 
 ### Environment variable locations
 
