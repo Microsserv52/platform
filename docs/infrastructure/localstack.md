@@ -23,17 +23,26 @@ daily loop remains [`compose.yml`](../../compose.yml).
 
 ```bash
 cp .env.example .env
-# set LOCALSTACK_AUTH_TOKEN and keep the dummy AWS_* values
+# set LOCALSTACK_AUTH_TOKEN
 scripts/localstack-up.sh
 ```
 
-The script starts [`compose.localstack.yml`](../../compose.localstack.yml),
-waits for `/_localstack/health`, runs `terraform apply` in
-`terraform/environments/localstack`, logs Docker in to LocalStack ECR, builds
-and pushes all six service images, exports the kubeconfig, creates
-`platform-secrets`, applies `k8s/overlays/localstack` and rolls the deployments.
+If a healthy LocalStack already answers on `LOCALSTACK_ENDPOINT`, the script
+reuses it. To re-apply manifests without rebuilding images:
 
-Teardown destroys the Terraform stack and the LocalStack volume:
+```bash
+SKIP_IMAGES=true scripts/localstack-up.sh
+```
+
+The script starts [`compose.localstack.yml`](../../compose.localstack.yml) when
+needed, waits for `/_localstack/health`, runs `terraform apply` in
+`terraform/environments/localstack`, logs Docker in to LocalStack ECR, builds
+and pushes all six service images plus the exchange mock, exports the
+kubeconfig, creates `platform-secrets`, applies `k8s/overlays/localstack` and
+rolls every deployment.
+
+Teardown destroys the Terraform stack and the LocalStack volume. An existing
+container that the script reused is left running:
 
 ```bash
 scripts/localstack-down.sh
@@ -44,8 +53,8 @@ scripts/localstack-down.sh
 | Layer      | LocalStack resource                                          |
 | ---------- | ------------------------------------------------------------ |
 | Network    | VPC, two public/private subnets, route tables (no NAT)        |
-| Registry   | ECR repositories for account, auth, gateway, order, product, exchange |
-| Database   | RDS PostgreSQL, publicly reachable on the Docker host         |
+| Registry   | ECR repositories for account, auth, gateway, order, product, exchange, exchange-mock |
+| Database   | RDS PostgreSQL, published on loopback and reached through the LocalStack container IP |
 | Cache      | ElastiCache Redis single node                                 |
 | Storage    | Media bucket plus landing, store and admin buckets            |
 | CDN        | One CloudFront distribution with OAC and path behaviors       |
@@ -57,8 +66,19 @@ scripts/localstack-down.sh
   enforced networking.
 - CloudFront resources exist through the API; edge behavior and DNS are
   emulated, so treat the distribution domain as a local URL.
-- RDS and ElastiCache are published on the host. Pods reach them through the
-  Docker bridge gateway (`LOCALSTACK_HOST_GATEWAY` overrides detection).
+- RDS and ElastiCache are published on loopback. The script reads the current
+  endpoint addresses and ports from the emulator and points pods at the
+  LocalStack container IP on the k3d network. `LOCALSTACK_HOST_IP` overrides
+  detection; do not rely on a port seen in an older run, because LocalStack can
+  reassign it.
+- LocalStack EKS has a single control-plane node with a `NoSchedule` taint. The
+  `localstack` overlay adds the matching toleration and runs one replica per
+  deployment so the full stack fits on one node. HPA and PDB objects remain, but
+  HPA needs `metrics-server` and stays idle without it.
+- LocalStack EKS does not install an ingress controller by default. Use
+  `kubectl port-forward svc/gateway 8080:8080` for direct API access. The nginx
+  and CloudFront paths, including the `/api` prefix rewrite, are exercised only
+  in the AWS and MicroK8s modes.
 - LocalStack ECR, RDS, ElastiCache and CloudFront have partial Terraform
   provider coverage. If a resource is rejected, use `awslocal` for that resource
   and record the gap.
@@ -76,13 +96,15 @@ Frontends are static exports. To publish them to LocalStack S3 and CloudFront:
 FRONTEND_BUCKETS="$(terraform -chdir=terraform/environments/localstack output -json frontend_buckets)" \
 CLOUDFRONT_DISTRIBUTION_ID="$(terraform -chdir=terraform/environments/localstack output -raw cloudfront_distribution_id)" \
 AWS_ENDPOINT_URL=http://localhost:4566 \
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080 \
 NEXT_PUBLIC_IMAGE_UPLOAD_ORIGINS=http://localhost:4566 \
 scripts/sync-frontends.sh
 ```
 
-LocalStack's HTTP endpoint is rejected by the admin allowlist unless the
-origin is configured or the page runs with the fixture flag. Validate S3 through
-the API first, then add LocalStack TLS for the browser flow.
+The Gateway expects `/products`, not `/api/products`. nginx and CloudFront strip
+the `/api` prefix in the deployed modes. Direct LocalStack access normally uses
+`kubectl port-forward svc/gateway 8080:8080`, so build the frontends with
+`NEXT_PUBLIC_API_BASE_URL=http://localhost:8080` and keep the forward open.
 
 ## Related
 

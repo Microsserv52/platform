@@ -2,7 +2,7 @@ output "region" { value = var.aws_region }
 output "vpc_id" { value = module.network.vpc_id }
 
 output "registry" {
-  value = try(values(module.ecr.repository_urls)[0], "")
+  value = try(split("/", values(module.ecr.repository_urls)[0])[0], "")
 }
 output "ecr_repository_urls" { value = module.ecr.repository_urls }
 

@@ -3,7 +3,7 @@ output "localstack_endpoint" { value = var.localstack_endpoint }
 output "vpc_id" { value = module.network.vpc_id }
 
 output "registry" {
-  value = try(values(module.ecr.repository_urls)[0], "")
+  value = try(split("/", values(module.ecr.repository_urls)[0])[0], "")
 }
 output "ecr_repository_urls" { value = module.ecr.repository_urls }
 

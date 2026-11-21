@@ -309,17 +309,27 @@ LOCALSTACK_IMAGE=localstack/localstack:2026.10.8
 LOCALSTACK_SERVICES=s3,cloudfront,rds,elasticache,eks,ecr,iam,sts,ec2
 LOCALSTACK_ENDPOINT=http://localhost:4566
 LOCALSTACK_HOST=localhost.localstack.cloud:4566
-LOCALSTACK_HOST_GATEWAY=
+LOCALSTACK_HOST_IP=
 ```
 
 Do not add dummy `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` to `.env`.
 `localstack-up.sh` exports test credentials and endpoints for its own commands,
-and `deploy-aws.sh` explicitly ignores them.
+and `deploy-aws.sh` explicitly ignores them. `LOCALSTACK_HOST_IP` is optional:
+when empty, the script uses the LocalStack container IP on the k3d network so
+pods can reach RDS/ElastiCache and S3.
 
 ### 3. Start the rehearsal
 
 ```bash
 scripts/localstack-up.sh
+```
+
+If a healthy LocalStack already answers on `LOCALSTACK_ENDPOINT`, the script
+reuses it instead of starting another container. To re-apply manifests without
+rebuilding images already present in LocalStack ECR:
+
+```bash
+SKIP_IMAGES=true scripts/localstack-up.sh
 ```
 
 The script:
@@ -366,10 +376,15 @@ aws --endpoint-url http://localhost:4566 ecr describe-repositories
 FRONTEND_BUCKETS="$(terraform -chdir=terraform/environments/localstack output -json frontend_buckets)" \
 CLOUDFRONT_DISTRIBUTION_ID="$(terraform -chdir=terraform/environments/localstack output -raw cloudfront_distribution_id)" \
 AWS_ENDPOINT_URL=http://localhost:4566 \
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api \
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080 \
 NEXT_PUBLIC_IMAGE_UPLOAD_ORIGINS=http://localhost:4566 \
 scripts/sync-frontends.sh
 ```
+
+The Gateway expects paths such as `/products`; nginx and CloudFront strip the
+`/api` prefix in the deployed modes. Direct LocalStack access is usually through
+`kubectl port-forward svc/gateway 8080:8080`, so build the frontends with
+`NEXT_PUBLIC_API_BASE_URL=http://localhost:8080` and keep the port-forward open.
 
 ### 6. Stop and reset
 
@@ -377,8 +392,10 @@ scripts/sync-frontends.sh
 scripts/localstack-down.sh
 ```
 
-This destroys the Terraform stack and removes the LocalStack volume. All
-emulated data, buckets and images are lost.
+This destroys the Terraform stack and removes the LocalStack volume. If the
+script reused an existing container, that container is not stopped; only the
+emulated resources are destroyed. All emulated data, buckets and images in the
+stack are lost.
 
 ### 7. Troubleshooting
 
@@ -387,7 +404,7 @@ emulated data, buckets and images are lost.
 | LocalStack exits at startup | missing or invalid auth token | set `LOCALSTACK_AUTH_TOKEN`; Student/paid is required for EKS |
 | Health check never passes | Docker socket or port conflict | check `docker compose logs localstack` and port 4566 |
 | Terraform cannot create a resource | provider coverage gap | use `awslocal <service> ...` for that resource |
-| Pods cannot reach RDS/Redis | endpoints resolve to `localhost` | set `LOCALSTACK_HOST_GATEWAY` to the Docker bridge gateway |
+| Pods cannot reach RDS/Redis | endpoints resolve to `localhost` or use a stale port | set `LOCALSTACK_HOST_IP` to the LocalStack container IP; the script re-reads the current endpoint ports on every run |
 | Images cannot be pulled | k3s cannot resolve/authenticate to LocalStack ECR | verify the registry host and LocalStack ECR login |
 | CloudFront URL does not serve assets | LocalStack edge emulation | test through S3/gateway directly; treat CloudFront as configuration-only |
 | Product image calls fail | SDK endpoint/path-style and HTTPS presign gap | see the limitation below |

@@ -165,8 +165,14 @@ kubectl -n platform patch secret platform-secrets --type merge \
   while AWS expects `DEPLOY_EXCHANGE_PROVIDER_URL`.
 - All backend Deployments now have startup, liveness and readiness probes,
   resource requests/limits, a restricted security context and a rolling update
-  strategy.
+  strategy. The startup probe allows 120 seconds so JVM startup on a busy node
+  does not trigger a restart.
+- The nginx Ingress rewrites `/api/(.*)` to `/$1`. Compose's nginx and the
+  CloudFront function already stripped `/api`; the Kubernetes Ingress previously
+  did not, which made `/api/products` return 401 while `/products` returned 200.
 - HPA scales 2-6 replicas at 70% CPU; PDB keeps one replica available.
+- The `localstack` overlay adds the single control-plane toleration and one
+  replica per deployment so the full stack fits on the LocalStack k3s node.
 - Frontends are not Kubernetes workloads; they are static exports synced to
   separate S3 buckets behind one CloudFront distribution.
 
@@ -195,6 +201,26 @@ scripts/deploy-aws.sh --frontends
 
 CI still runs tests, CodeQL and documentation. There is no plan to add a CI/CD
 deploy workflow.
+
+### LocalStack runtime hardening
+
+Running the full rehearsal surfaced and fixed several issues:
+
+- `terraform output -raw` fails on object outputs; the scripts now use
+  `-json` for the media bucket.
+- The registry output included the first repository path; it now returns the
+  registry host only.
+- The `order` image build context is `api/`, matching Compose, not the repo root.
+- LocalStack publishes RDS/ElastiCache on loopback and can reassign ports
+  between runs. The script reads the current endpoints from the RDS and
+  ElastiCache APIs and points pods at the LocalStack container IP on the k3d
+  network.
+- The exchange mock is pushed to LocalStack ECR and referenced by registry URL;
+  a local-only image is not visible to k3s.
+- A healthy existing LocalStack is reused instead of starting a conflicting
+  container. `SKIP_IMAGES=true` re-applies manifests without rebuilding images.
+- The LocalStack overlay tolerates the single control-plane taint and runs one
+  replica per deployment.
 
 ### Environment template
 
@@ -248,8 +274,23 @@ python3 -m unittest discover -s tests/frontend -p 'test_*.py'
 uv run zensical build --clean
 ```
 
-All checks passed. Runtime provisioning was not executed because this
-environment has no AWS credentials and no LocalStack Student token.
+All checks passed. The LocalStack rehearsal was also executed end to end:
+Terraform applied 67 resources, all images were pushed to LocalStack ECR, and
+every deployment reached ready state. Direct checks:
+
+```bash
+kubectl -n platform get deploy
+# account, auth, exchange, exchange-mock, gateway, order, product all READY
+
+curl -fsS http://localhost:18080/actuator/health
+# {"groups":["liveness","readiness"],"status":"UP"}
+
+curl -s -o /dev/null -w '%{http_code}\n' http://localhost:18081/products
+# 200
+```
+
+Real AWS provisioning was not executed because this environment has no AWS
+credentials.
 
 ## Related
 

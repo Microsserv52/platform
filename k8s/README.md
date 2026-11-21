@@ -85,6 +85,10 @@ the deployment scripts:
 kubectl -n platform patch configmap platform-config --type merge -p '{"data":{...}}'
 ```
 
+The Ingress rewrites `/api/(.*)` to `/$1` because the Gateway serves `/products`,
+not `/api/products`. Compose's nginx and the CloudFront function perform the
+same prefix strip.
+
 `SPRING_PROFILES_ACTIVE=prod` is set on the Product Deployment so it enables the
 S3 backend and structured logging. `ADMIN_EMAIL` and `ADMIN_PASSWORD` must never
 be set in the cluster; promote real accounts with SQL.
@@ -101,9 +105,14 @@ kubectl -n platform get hpa
 ## LocalStack constraints
 
 - LocalStack EKS is k3s, not real EKS; VPC and security groups are metadata.
+- The single node carries a control-plane taint. The `localstack` overlay adds
+  the toleration and sets one replica per deployment.
 - CloudFront is provisioned through the API but edge delivery is emulated.
-- RDS and ElastiCache ports are published on the Docker host, so pods reach
-  them through the host gateway address.
+- RDS and ElastiCache ports are dynamic and published on loopback. The deployment
+  script reads the current endpoints and uses the LocalStack container IP so
+  pods can reach them.
+- LocalStack does not install an ingress controller. Use
+  `kubectl port-forward svc/gateway 8080:8080` and call `/products` directly.
 - Product S3 server-side calls need `AWS_ENDPOINT_URL` support from the AWS SDK;
   the browser presign flow also needs an HTTPS origin in
   `NEXT_PUBLIC_IMAGE_UPLOAD_ORIGINS`. Validate this path before claiming full

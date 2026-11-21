@@ -13,3 +13,15 @@ patches:
       - op: replace
         path: /spec/ingressClassName
         value: traefik
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/template/spec/tolerations
+        value:
+          - key: node-role.kubernetes.io/control-plane
+            operator: Exists
+            effect: NoSchedule
+      - op: replace
+        path: /spec/replicas
+        value: 1

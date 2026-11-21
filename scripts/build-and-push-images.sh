@@ -19,7 +19,7 @@ build() {
 build account "$ROOT_DIR/api/account"
 build auth    "$ROOT_DIR/api/auth"
 build gateway "$ROOT_DIR/api/gateway"
-build order   "$ROOT_DIR" "api/order-service/Dockerfile"
+build order   "$ROOT_DIR/api" "order-service/Dockerfile"
 build product "$ROOT_DIR/api/product"
 build exchange "$ROOT_DIR/api/exchange"
 
