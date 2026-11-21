@@ -98,17 +98,16 @@ Search/sort operate locally on the unpaginated Product array. React deferred
 rendering keeps input responsive; it is not called network debounce. TanStack
 Table v9 uses explicit sorting/pagination features and 10-row pages. No virtual
 list is added without evidence of a large-list rendering problem, and no
-browser background queue is implemented. Backend [Kafka opportunities](../project/asynchronous-events.md)
-are proposed separately from UI state. New server search/pagination, debounce
-or queue packages require a separate contract/approval.
+browser background queue is implemented. There is no backend
+[Kafka](../project/asynchronous-events.md) transport. New server
+search/pagination, debounce or queue packages require a separate contract.
 
-## Selected server cart and infrastructure direction
+## Server cart and infrastructure
 
-The future [dedicated Cart service](../services/cart/index.md) will own Redis
-carts with seven-day expiry after the last successful mutation; reads do not
-renew TTL. Preserve guest and account carts, ownership, CSRF, revision checks
-and explicit migration from browser storage. No Cart API or Redis-backed store
-behavior is implemented yet.
+There is no Cart service. The Store keeps carts in browser storage and the PWA
+stays online-only. Redis is provisioned as a shared cache endpoint, but
+`CACHE_ENABLED=false` and no service-level cache or Redis cart logic exists. See
+[Cart](../services/cart/index.md).
 
 Observability is self-hosted on AWS with Prometheus, Mimir, Loki, Tempo,
 Pyroscope, Grafana and Alloy; the frontend uses Faro. Edge security uses AWS

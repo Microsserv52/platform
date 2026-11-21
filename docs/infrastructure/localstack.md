@@ -137,7 +137,6 @@ the `/api` prefix in the deployed modes. Direct LocalStack access normally uses
 ## Related
 
 - [Deployment runbook](runbook.md)
-- [Infrastructure changes](changes.md)
 - [Terraform modules](https://github.com/Microsserv52/platform/blob/main/terraform/README.md)
 - [Kubernetes overlays](https://github.com/Microsserv52/platform/blob/main/k8s/README.md)
 - [AWS setup](aws.md)

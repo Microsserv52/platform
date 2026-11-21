@@ -34,7 +34,7 @@ framework versions supplied by the generator are explicit.
   cancellation, cart/UI state, currency and timezone-aware display. No time library.
 - Faro SDK/tracing is configurable; Umami uses its official script via next/script.
 - Playwright tests exercise labeled fixtures; Vitest checks contracts/API behavior.
-- iron-session was removed from the proposal: static hosting uses Gateway sessions.
+- Static hosting uses Gateway sessions; no browser session library is installed.
 
 ## Resolved direct packages
 

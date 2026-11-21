@@ -56,14 +56,13 @@ Tempo is part of the local and EKS stacks, and Alloy accepts OTLP on
 Compose entrypoint or a Kubernetes init container; no service source change is
 needed. The frontends send Faro browser telemetry to Alloy's `faro.receiver`.
 
-Exchange is Python and still exports metrics and structured logs only. Backend
-spans for Exchange need an OpenTelemetry Python package and entrypoint change in
-its own repository; that change is intentionally not made here.
+Exchange is Python and exports metrics and structured logs only. It has no
+OpenTelemetry Python package or trace exporter.
 
 ### Profiles
 
-Pyroscope is hosted locally and on EKS. CPU/allocation profiling still needs a
-language agent and an overhead decision; no profiler is claimed as enabled.
+Pyroscope is hosted locally and on EKS. No service loads a profiling agent, so
+no profiles are collected.
 
 ## Local stack
 
@@ -236,7 +235,7 @@ environment variables; no token is committed.
 | Prometheus / Mimir | Metrics remote write | Configured in `observability/alloy/config.cloud.alloy` |
 | Loki | Logs | Configured through Alloy Docker log collection |
 | Tempo | Traces | OTLP receiver and Cloud exporter configured |
-| Pyroscope | Profiles | Cloud write endpoint configured; agent pending |
+| Pyroscope | Profiles | Cloud write endpoint configured; no service agent |
 | Faro / Frontend Observability | Browser errors, Web Vitals, traces | Frontend SDK present; URL remains a deployment value |
 | Synthetic Monitoring | External checks | Terraform in `terraform/environments/grafana-cloud` |
 | Grafana Alerting | Unified alerting | Provisioned locally; Cloud contact points are Terraform-managed |

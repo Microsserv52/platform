@@ -4,32 +4,32 @@ icon: lucide/panels-top-left
 
 # Frontend applications
 
-The initial implementation is merged. The selected
-[product image architecture](product-images.md) adds URL-based rendering and
-admin image management. The Product service implements the upload flow (S3 in
-production, a local mock in Compose); upload controls stay behind
-`NEXT_PUBLIC_ENABLE_PRODUCT_IMAGE_UPLOADS` and are enabled in explicit fixture
-mode until deployment acceptance.
+The three frontends render optional product image URLs and expose admin image
+management. The Product service implements the upload flow (S3 in production, a
+local mock in Compose). Upload controls are gated by
+`NEXT_PUBLIC_ENABLE_PRODUCT_IMAGE_UPLOADS`; fixture mode enables them against the
+local mock. See [Product images](product-images.md).
 
 Three independent Next.js repositories are integrated as Git submodules and
 implemented for static CDN export. The local Docker setup serves them on one
 origin. **This is an educational mock store: no real payments or transactions
 occur, and no goods are shipped.** Demo orders are API records, not purchases.
 
-## Agreed decisions
+## Stack and boundaries
 
-- English UI, shared modern branding and the existing project logo.
+- English UI, shared branding and the existing project logo.
 - Public catalog browsing; authentication to create or read own demo orders.
-- Next.js, TypeScript, MUI/Emotion, Tailwind and the approved TanStack/form/test tools.
-- antislop applied during implementation; reference research and defaults authorized.
-- Each app has a Dockerfile for local testing; no frontend Kubernetes manifests.
-- Observability is self-hosted (Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy) with OpenTelemetry and Faro; edge security uses AWS Shield, CloudFront, security groups and optional AWS WAF. No custom domain is configured.
-- A dedicated Redis Cart service is selected with seven-day expiry after writes; implementation is pending.
-- Domain name and static CDN provider remain open.
-- Production will use CDN hosting with separate per-app environment values.
-  Ask the owner about provider, origin routing and variables before deployment.
-- Additional libraries always require owner approval. No date library, queue
-  framework, animation stack or 21st.dev runtime dependency was added.
+- Next.js, TypeScript, MUI/Emotion, Tailwind and TanStack/form/test tools.
+- Each app has a Dockerfile for local testing; there are no frontend Kubernetes
+  manifests.
+- Observability is self-hosted (Prometheus, Mimir, Loki, Tempo, Pyroscope,
+  Grafana, Alloy) with OpenTelemetry and Faro; edge security uses AWS Shield,
+  CloudFront, security groups and optional AWS WAF.
+- CloudFront serves the static exports with separate per-app build values. The
+  current public origin is the CloudFront hostname; no custom domain is
+  configured.
+- No date library, queue framework, animation stack or 21st.dev runtime
+  dependency is installed.
 
 ## Sites and content
 
@@ -46,8 +46,9 @@ view, stock, shipping, payment fields or revenue reports are invented.
 
 Every screen has appropriate loading, failure and empty/access states. Shopping
 copy uses “Add to demo cart” and “Create demo order”; confirmation says that no
-payment was taken and no goods will be shipped. Product images support optional URL metadata, with explicit fallbacks. Admin
-upload controls remain fixture-only until the future Product backend is accepted.
+payment was taken and no goods will be shipped. Product images support optional
+URL metadata, with explicit fallbacks. Admin upload controls appear when
+`NEXT_PUBLIC_ENABLE_PRODUCT_IMAGE_UPLOADS` is enabled.
 
 ## Documentation
 
@@ -57,8 +58,8 @@ upload controls remain fixture-only until the future Product backend is accepted
 | [Architecture](architecture.md)               | Static zones, API-owned sessions, authorization and current contract limits           |
 | [Dependencies](dependencies.md)               | Approved packages, exact resolved versions and official setup                         |
 | [PWA and observability](pwa-observability.md) | Online-only store installation, Faro/Umami behavior and environment map               |
-| [Local development and delivery](delivery.md) | Real-service versus fixture Docker modes, commands, CI and remaining integration work |
+| [Local development and delivery](delivery.md) | Real-service versus fixture Docker modes, commands, CI and integration boundaries |
 | [Verification](verification.md)               | Actual checks, browser evidence and limits                                            |
 
-The initial implementation is merged and all ten source repositories are public.
-No custom domain or production Faro endpoint has been configured; the local stack uses the Alloy receiver.
+All ten source repositories are public. There is no custom domain or production
+Faro endpoint; the local stack uses the Alloy receiver.

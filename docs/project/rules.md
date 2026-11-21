@@ -50,6 +50,6 @@ project easier to operate and assess.
 ## Documentation rules
 
 - Update docs in the same pull request as a contract or behavior change.
-- Mark planned behavior as planned; distinguish it from deployed behavior.
+- Describe current behavior, not proposed or historical states.
 - Include commands, prerequisites, configuration and verification evidence.
-- Record architecture decisions and operational incidents.
+- Record current boundaries and verified operational results.

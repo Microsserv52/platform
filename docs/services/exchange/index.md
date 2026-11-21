@@ -20,11 +20,11 @@ This service follows the [Exchange API exercise](https://insper.github.io/platfo
 
 | Signal | Requirement | Current |
 | --- | --- | --- |
-| Health | `/health` with liveness/readiness semantics | implemented or planned with the service |
-| Metrics | `/metrics` with low-cardinality route/status labels | implemented or planned with the service |
-| Traces | OTLP to Alloy, W3C `traceparent` propagation | pending Python OTel integration |
-| Logs | structured JSON with service, request/trace ID, route and status | implemented or planned |
-| Profiles | Pyroscope agent where approved | pending |
+| Health | `/health` with liveness/readiness semantics | implemented |
+| Metrics | `/metrics` with low-cardinality route/status labels | implemented |
+| Traces | OTLP to Alloy, W3C `traceparent` propagation | not instrumented |
+| Logs | structured JSON with service, request/trace ID, route and status | implemented |
+| Profiles | Pyroscope agent where approved | not enabled |
 
 See [Service observability requirements](../observability-requirements.md) for
 the full contract, redaction rules and verification commands.

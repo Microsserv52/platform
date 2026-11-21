@@ -36,7 +36,7 @@ account for production. Kubernetes workloads live in [`k8s/`](https://github.com
 and are applied by the deployment scripts. A manual **Publish EKS images**
 workflow builds and pushes ECR images; there is no CI deploy step.
 
-## Deployed environment (2026-11-21)
+## Deployed environment
 
 The current account contains exactly one of each resource below; no duplicate
 stacks were created.

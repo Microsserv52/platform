@@ -4,9 +4,8 @@ icon: lucide/search-check
 
 # AWS observability assessment
 
-Assessment date: **2026-11-21**. Account `730335608828`, region `us-east-1`.
-This page records a **read-only** investigation. No AWS resources were created
-or changed.
+Account `730335608828`, region `us-east-1`. This page lists the observed AWS
+state and the observability options that reuse the existing edge.
 
 ## Current AWS state
 
@@ -109,9 +108,8 @@ tests. CloudWatch Logs ingestion is extra.
 
 The repository now prepares exactly that shape behind `enable_waf = false`:
 AWS Managed Rules Common, Known Bad Inputs and IP Reputation, plus a
-2,000-request/5-minute IP rate limit scoped to `/api/`. Review sampled requests during a controlled
-window before enabling it on live traffic. Do not enable Bot Control or Fraud
-Control without a separate budget decision.
+2,000-request/5-minute IP rate limit scoped to `/api/`. Bot Control and Fraud
+Control are not enabled; they add separate costs.
 
 ## Cost summary
 

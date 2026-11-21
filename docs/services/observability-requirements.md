@@ -39,13 +39,13 @@ deployment-side OpenTelemetry injection.
 
 | Service | Metrics | Logs | Traces | Profiles | Owner action |
 | --- | --- | --- | --- | --- | --- |
-| Gateway | yes | yes | OTel Java agent | pending | add Pyroscope agent if approved |
-| Auth | yes | yes | OTel Java agent | pending | add Pyroscope agent if approved |
-| Account | yes | yes | OTel Java agent | pending | add Pyroscope agent if approved |
-| Order | yes | yes | OTel Java agent | pending | add Pyroscope agent if approved |
-| Product | yes | yes | OTel Java agent | pending | add Pyroscope agent if approved |
+| Gateway | yes | yes | OTel Java agent | not enabled | add Pyroscope agent if approved |
+| Auth | yes | yes | OTel Java agent | not enabled | add Pyroscope agent if approved |
+| Account | yes | yes | OTel Java agent | not enabled | add Pyroscope agent if approved |
+| Order | yes | yes | OTel Java agent | not enabled | add Pyroscope agent if approved |
+| Product | yes | yes | OTel Java agent | not enabled | add Pyroscope agent if approved |
 | Exchange | yes | yes | **pending** | pending | add OTel Python packages and `opentelemetry-instrument` in its repo |
-| Landing / Store / Admin | n/a | n/a | Faro enabled locally | n/a | set the production Faro URL when an AWS HTTPS ingest path exists |
+| Landing / Store / Admin | n/a | n/a | Faro configured for local builds | n/a | set the production Faro URL when an AWS HTTPS ingest path exists |
 
 The Java agent is injected by `compose.observability.yml` and
 `k8s/base/otel-instrumentation.yaml`; metrics stay on the Micrometer endpoint.
