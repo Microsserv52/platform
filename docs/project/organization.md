@@ -18,15 +18,17 @@ single place to run the complete platform.
 | [`api/order-service`](../../api/order-service/) | Order service-layer submodule |
 | [`api/auth`](../../api/auth/) | Authentication submodule |
 | [`api/account`](../../api/account/) | Account submodule |
+| [`api/product`](../../api/product/) | Product submodule |
+| [`api/exchange`](../../api/exchange/) | Exchange submodule |
 | `web/landing`, `web/store`, `web/admin` | Independent static-export frontend submodules with local Dockerfiles and CI |
 | `docs/` | Project and service documentation |
 | `compose.yml` | Local service topology |
 | `.github/workflows/` | Repository automation |
 
-Product and Exchange repositories are expected by the platform architecture
-but are not currently present as submodules in this snapshot. The
+Product and Exchange are checked out under `api/product` and `api/exchange`;
+the deployment scripts build both images from those submodules. The
 [frontend documentation](../frontend/overview.md) defines ownership, dependencies and
-integration prerequisites for the three implemented web repositories.
+integration prerequisites for the three web repositories.
 
 ## Ownership
 

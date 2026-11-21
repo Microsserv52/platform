@@ -225,3 +225,10 @@ site
 # Environment
 
 .env
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log

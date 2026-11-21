@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: platform
+resources:
+  - ../../base
+  - exchange-mock.yaml
+
+patches:
+  - target:
+      kind: Ingress
+      name: platform
+    patch: |-
+      - op: replace
+        path: /spec/ingressClassName
+        value: traefik
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/template/spec/tolerations
+        value:
+          - key: node-role.kubernetes.io/control-plane
+            operator: Exists
+            effect: NoSchedule
+      - op: replace
+        path: /spec/replicas
+        value: 1

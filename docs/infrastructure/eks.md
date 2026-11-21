@@ -4,11 +4,18 @@ icon: lucide/boxes
 
 # EKS and Kubernetes
 
+For provisioning and deploy commands, see the [deployment runbook](runbook.md).
 The reference topology uses an EKS cluster with two public subnets for load
 balancers and two private subnets for application pods. Spread workloads across
 availability zones when capacity and budget allow.
 
 ## Setup sequence
+
+Terraform owns steps 1-6 in this sequence. See
+[`terraform/README.md`](https://github.com/Microsserv52/platform/blob/main/terraform/README.md); the `network` and `eks`
+modules create the VPC, cluster roles, control plane, node-group role and node
+group. The manual commands below remain useful for verification and for
+clusters provisioned outside the module.
 
 1. Create the EKS IAM role.
 2. Create a VPC with public and private subnets in the selected region.
@@ -46,3 +53,8 @@ Horizontal Pod Autoscaling must be driven by a meaningful resource or custom
 metric and verified under load. Record minimum and maximum replicas, target,
 scale-up and scale-down behavior. Delete temporary test resources after the
 experiment.
+
+The deploy script installs `metrics-server` and Cluster Autoscaler unless
+`--skip-addons` is passed. Terraform creates the autoscaler IRSA role and tags
+the managed node group for auto-discovery; the group runs between 2 and 6
+nodes. HPA alone does not add nodes, so verify both layers together.

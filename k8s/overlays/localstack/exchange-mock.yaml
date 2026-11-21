@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: exchange-mock
+  namespace: platform
+spec:
+  selector:
+    app: exchange-mock
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exchange-mock
+  namespace: platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: exchange-mock
+  template:
+    metadata:
+      labels:
+        app: exchange-mock
+    spec:
+      containers:
+        - name: exchange-mock
+          image: microsserv52-exchange-provider-mock:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

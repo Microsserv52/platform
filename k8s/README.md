@@ -1,113 +1,149 @@
 # Kubernetes deployment
 
-Kubernetes is the production backend. It does not use local Compose defaults:
-database credentials, JWT credentials, and the production database URL must
-come from a Kubernetes Secret or the deployment workflow. Product and Exchange
-are external services and their production base URLs must be configured as
-`PRODUCT_URL` and `EXCHANGE_URL`. Both also require the same `JWT_SECRET` as
-the platform services, and Product additionally requires its own
-`SPRING_DATASOURCE_URL/USERNAME/PASSWORD`. Leave `ADMIN_EMAIL`/`ADMIN_PASSWORD`
-unset: the Account bootstrap seeds a LOCAL-ONLY admin when both are set and
-refuses to start in an environment flagged as production by
-`ENV`/`APP_ENV`/`SPRING_PROFILES_ACTIVE`. Promote real accounts with SQL
-(see `docs/development/get_started.md`). Supply the platform secrets through
-`platform-secrets` or each service's own secret — the local Compose defaults
-must never be applied to this environment.
+For the full AWS and LocalStack operational sequence, see the
+[deployment runbook](../docs/infrastructure/runbook.md). For the manifest moves
+and secret rename, see
+[infrastructure changes](../docs/infrastructure/changes.md).
 
-The manifest targets MicroK8s with the Nginx ingress addon and can be adapted
-to AWS EKS by replacing local image names with registry references.
+Kubernetes runs the backend during the LocalStack rehearsal and in real AWS EKS.
+Configuration is shared through Kustomize:
 
-Create the required runtime secret without committing credentials:
-
-```bash
-microk8s kubectl create namespace platform
-microk8s kubectl -n platform create secret generic platform-secrets \
-  --from-literal=JWT_SECRET="$(openssl rand -base64 48)" \
-  --from-literal=INTERNAL_SERVICE_SECRET="$(openssl rand -base64 32)" \
-  --from-literal=POSTGRES_PASSWORD="$(openssl rand -base64 24)" \
-  --from-literal=SPRING_DATASOURCE_URL="jdbc:postgresql://database:5432/platform" \
-  --from-literal=SPRING_DATASOURCE_USERNAME="admin"
+```text
+k8s/
+  base/                 # workloads, Services, Ingress, HPA, PDB, ConfigMap
+  overlays/
+    microk8s/           # local PostgreSQL and Redis, nginx ingress
+    localstack/         # LocalStack EKS, Traefik ingress, exchange mock
+    aws/                # EKS, nginx ingress, IRSA service account
 ```
 
-For local MicroK8s, set `PRODUCT_URL` and `EXCHANGE_URL` in
-`00-namespace-config.yaml` to reachable service URLs, then apply:
+## Apply an overlay
+
+The `aws` and `microk8s` overlays expect an nginx ingress controller; install it
+first (for EKS, the ingress-nginx controller or an AWS Load Balancer Controller
+with matching annotations). The `localstack` overlay expects the Traefik
+controller that LocalStack EKS provides.
 
 ```bash
-microk8s start
-microk8s status --wait-ready
-microk8s enable dns metrics-server ingress
-microk8s kubectl apply -f k8s/
+kubectl apply -k k8s/overlays/microk8s
+kubectl apply -k k8s/overlays/localstack
+kubectl apply -k k8s/overlays/aws
 ```
 
-The HPA resources in `70-hpa.yaml` require the `metrics-server` addon. Verify
-it before testing autoscaling:
+For MicroK8s, also build the media mock image:
 
 ```bash
-microk8s kubectl top nodes
-microk8s kubectl top pods -n platform
-microk8s kubectl get hpa -n platform
+docker build -t microsserv52-image-storage:local mocks/image-storage
 ```
 
-For a local HPA test, load the application images into MicroK8s or change the
-manifest image references to registry images, deploy `70-hpa.yaml` and
-`71-pdb.yaml`, then generate traffic with the k6 procedure in
-[`load-testing.md`](../docs/operations/load-testing.md). HPA cannot scale a
-Deployment whose pods are not running and ready.
+The overlays do not contain credentials. Create the runtime secret first:
 
-The Kubernetes resources are split by responsibility:
+```bash
+JWT_SECRET="$(openssl rand -base64 48)" \
+INTERNAL_SERVICE_SECRET="$(openssl rand -base64 32)" \
+SPRING_DATASOURCE_URL="jdbc:postgresql://database:5432/platform" \
+SPRING_DATASOURCE_USERNAME=admin \
+SPRING_DATASOURCE_PASSWORD="$(openssl rand -base64 24)" \
+CACHE_REDIS_URL=redis://redis:6379 \
+scripts/create-platform-secrets.sh
+```
 
-- `00-namespace-config.yaml`: namespace and shared service configuration.
-- `05-redis.yaml`: disposable local Redis.
-- `10-database.yaml`: disposable local PostgreSQL Service and Deployment.
-- `20-account.yaml`, `30-auth.yaml`, `40-order.yaml`, and `50-gateway.yaml`: each
-  microservice's Service and Deployment.
-- `60-ingress.yaml`: Nginx Ingress for the gateway.
-- `70-hpa.yaml`, `71-pdb.yaml`: autoscaling and voluntary-disruption limits.
+`platform-secrets` contains `JWT_SECRET`, `INTERNAL_SERVICE_SECRET`,
+`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`,
+`SPRING_DATASOURCE_PASSWORD` and `CACHE_REDIS_URL`.
+`EXCHANGE_PROVIDER_API_KEY` is included only when the provider requires it;
+the Exchange Deployment treats that secret key as optional.
 
-The `10-database.yaml` PostgreSQL deployment is intended only for local
-MicroK8s. Do not apply it to EKS; EKS uses the production database URL in
-`SPRING_DATASOURCE_URL`.
+## Workloads
 
-For EKS, configure these GitHub Actions secrets:
+| Workload               | Replicas | Notes                                       |
+| ---------------------- | -------- | ------------------------------------------- |
+| `gateway`, `auth`, `account`, `order`, `product`, `exchange` | 2 | HPA and PDB included |
+| `database`, `redis`    | 1        | `microk8s` overlay only, disposable         |
+| `exchange-mock`        | 1        | `localstack` overlay only                   |
 
-- `AWS_REGION`
-- `AWS_DEPLOY_ROLE_ARN`
-- `EKS_CLUSTER_NAME`
-- `JWT_SECRET`
-- `INTERNAL_SERVICE_SECRET`
-- `SPRING_DATASOURCE_URL`
-- `SPRING_DATASOURCE_USERNAME`
-- `SPRING_DATASOURCE_PASSWORD`
-- `CACHE_REDIS_URL` (may contain Redis credentials; stored in the runtime Secret)
+Frontends are static exports served by S3 and CloudFront, not pods. The demo
+seeder is never deployed.
 
-Also configure repository variables `PRODUCT_URL` and `EXCHANGE_URL`. Run the
-manual `Deploy to AWS EKS` workflow. It deploys the application manifests,
-skips the local PostgreSQL deployment, and patches the ConfigMap with the
-external service URLs. Use an AWS Load Balancer Controller or Nginx Ingress
-Controller for the `Ingress` resource.
+## Overlay differences
 
-### Redis options
+| Setting            | microk8s                  | localstack                  | aws                                  |
+| ------------------ | ------------------------- | --------------------------- | ------------------------------------ |
+| Ingress class      | `nginx` (base)            | `traefik`                   | `nginx` with TLS redirect annotation |
+| Database           | local `database`          | LocalStack RDS              | RDS                                  |
+| Cache              | local `redis`             | LocalStack ElastiCache      | ElastiCache                          |
+| Image source       | local images              | LocalStack ECR              | ECR                                  |
+| S3 credentials     | not used                  | dummy env values            | Product IRSA service account         |
+| Product image mode | `s3` (bucket placeholder) | `s3` (LocalStack bucket)    | `s3` (real bucket)                   |
 
-Local MicroK8s includes the single-replica `05-redis.yaml` deployment and
-advertises `redis://redis:6379` through `CACHE_REDIS_URL`. This is suitable for
-development and cache experiments only; it has no high-availability or durable-storage guarantee.
+## Runtime configuration
 
-For EKS, set the `CACHE_REDIS_URL` repository secret to a reachable managed or
-external Redis endpoint, such as Redis Cloud or Amazon ElastiCache. The EKS
-workflow stores `CACHE_REDIS_URL` in `platform-secrets` with that value and does not deploy the
-single-replica local Redis manifest.
+The base ConfigMap holds internal service URLs, cache toggles and Product image
+settings. Endpoints that depend on infrastructure are patched after apply by
+the deployment scripts:
 
-The current platform repository only wires the endpoint into service
-configuration. Each service must implement and test cache-aside behavior,
-TTL, invalidation and stampede protection before Redis provides a functional
-performance mitigation.
+```bash
+kubectl -n platform patch configmap platform-config --type merge -p '{"data":{...}}'
+```
 
-The Exchange provider URL and credentials are configuration for the external
-Exchange service itself. Configure them in that service's deployment or secret
-manager; they are not stored in this platform repository.
+The Ingress rewrites `/api/(.*)` to `/$1` because the Gateway serves `/products`,
+not `/api/products`. Compose's nginx and the CloudFront function perform the
+same prefix strip.
 
-The selected [Cart service design](../docs/services/cart/index.md) uses Redis
-as temporary authoritative cart state with a seven-day mutation-based TTL.
-It is not implemented by this endpoint wiring. Production carts need dedicated
-resource/eviction/recovery controls; do not treat this disposable Redis manifest
-as durable or isolated cart storage.
+`SPRING_PROFILES_ACTIVE=prod` is set on the Product Deployment so it enables the
+S3 backend and structured logging. `ADMIN_EMAIL` and `ADMIN_PASSWORD` must never
+be set in the cluster; promote real accounts with SQL.
+
+## Autoscaling
+
+The HPAs scale all six services from 2 to 6 replicas at 70% CPU.
+`scripts/deploy-aws.sh` installs `metrics-server` and Cluster Autoscaler by
+default; pass `--skip-addons` when you manage them separately. Terraform
+creates the autoscaler IRSA role and tags the managed node group with
+`k8s.io/cluster-autoscaler/enabled` and
+`k8s.io/cluster-autoscaler/<cluster>`, so the autoscaler discovers the group
+automatically and moves it between 2 and 6 nodes.
+
+For MicroK8s, enable metrics-server (`microk8s enable metrics-server`); there is
+no node autoscaler in the single-node overlay. Verify an EKS deployment with:
+
+```bash
+kubectl -n kube-system get deploy metrics-server cluster-autoscaler
+kubectl top nodes
+kubectl -n platform get hpa
+aws autoscaling describe-auto-scaling-groups \
+  --filters Name=tag-key,Values=k8s.io/cluster-autoscaler/enabled
+```
+
+The two-node baseline fits the 12-pod HPA minimum. A third replica per service
+requests more CPU than the baseline has, so it stays `Pending` until Cluster
+Autoscaler adds a node. The shared RDS instance allows about 3.7 replicas per
+database-backed service; lower the Hikari pool or resize RDS before scaling
+past three. Check the
+[capacity envelope](../docs/infrastructure/costs.md#traffic-scaling-and-capacity)
+before a load test.
+
+## LocalStack constraints
+
+- LocalStack EKS is k3s, not real EKS; VPC and security groups are metadata.
+- The single node carries a control-plane taint. The `localstack` overlay adds
+  the toleration and sets one replica per deployment. HPA stays idle without
+  `metrics-server`, and Cluster Autoscaler is not installed for LocalStack.
+- CloudFront is provisioned through the API but edge delivery is emulated.
+- RDS and ElastiCache ports are dynamic and published on loopback. The deployment
+  script reads the current endpoints and uses the LocalStack container IP so
+  pods can reach them.
+- LocalStack does not install an ingress controller. Use
+  `kubectl port-forward svc/gateway 8080:8080` and call `/products` directly.
+- Product S3 server-side calls need `AWS_ENDPOINT_URL` support from the AWS SDK;
+  the browser presign flow also needs an HTTPS origin in
+  `NEXT_PUBLIC_IMAGE_UPLOAD_ORIGINS`. Validate this path before claiming full
+  image-upload parity.
+
+## Real EKS
+
+Terraform creates the cluster, node group, access entry, Product IRSA role and
+the Cluster Autoscaler IRSA role. The deploy script installs `metrics-server`
+and Cluster Autoscaler, annotates the `product` service account with the IRSA
+role and patches the ConfigMap with the real RDS, Redis, S3 and CloudFront
+values. See [`../terraform/README.md`](../terraform/README.md).

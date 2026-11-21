@@ -15,6 +15,7 @@
 [![OpenFeign](https://img.shields.io/badge/OpenFeign-6DB33F?style=flat&logo=spring&logoColor=white)](https://spring.io/projects/spring-cloud-openfeign)
 [![Lombok](https://img.shields.io/badge/Lombok-BC4521?style=flat)](https://projectlombok.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![H2](https://img.shields.io/badge/H2-09476B?style=flat)](https://www.h2database.com/)
 
 **Frontend**
@@ -85,16 +86,22 @@
 [![Grafana Faro](https://img.shields.io/badge/Grafana_Faro-F46800?style=flat&logo=grafana&logoColor=white)](https://grafana.com/oss/faro/)
 [![Umami](https://img.shields.io/badge/Umami-000000?style=flat&logo=umami&logoColor=white)](https://umami.is/)
 
-**Cloud deployment targets and approved image-storage design**
+**AWS deployment and image storage (provisioned)**
 
 [![AWS](https://img.shields.io/badge/AWS-FF9900?style=flat)](https://aws.amazon.com/)
 [![Amazon EKS](https://img.shields.io/badge/Amazon_EKS-FF9900?style=flat)](https://aws.amazon.com/eks/)
 [![Amazon ECR](https://img.shields.io/badge/Amazon_ECR-FF9900?style=flat)](https://aws.amazon.com/ecr/)
 [![Amazon VPC](https://img.shields.io/badge/Amazon_VPC-FF9900?style=flat)](https://aws.amazon.com/vpc/)
 [![Amazon RDS](https://img.shields.io/badge/Amazon_RDS-527FFF?style=flat)](https://aws.amazon.com/rds/)
+[![Amazon ElastiCache](https://img.shields.io/badge/Amazon_ElastiCache-527FFF?style=flat)](https://aws.amazon.com/elasticache/)
 [![Amazon S3](https://img.shields.io/badge/Amazon_S3-569A31?style=flat)](https://aws.amazon.com/s3/)
 [![Amazon CloudFront](https://img.shields.io/badge/Amazon_CloudFront-8C4FFF?style=flat)](https://aws.amazon.com/cloudfront/)
 [![AWS SDK](https://img.shields.io/badge/AWS_SDK-FF9900?style=flat)](https://aws.amazon.com/developer/tools/)
+[![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=flat&logo=terraform&logoColor=white)](https://developer.hashicorp.com/terraform)
+[![LocalStack](https://img.shields.io/badge/LocalStack-3D3D3D?style=flat)](https://localstack.cloud/)
+[![Helm](https://img.shields.io/badge/Helm-0F1689?style=flat&logo=helm&logoColor=white)](https://helm.sh/)
+[![Cluster Autoscaler](https://img.shields.io/badge/Cluster_Autoscaler-326CE5?style=flat&logo=kubernetes&logoColor=white)](https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler)
+[![metrics-server](https://img.shields.io/badge/metrics--server-326CE5?style=flat&logo=kubernetes&logoColor=white)](https://github.com/kubernetes-sigs/metrics-server)
 
 **Cloudflare security; selected, configuration pending**
 
@@ -110,7 +117,7 @@
 
 Redis is selected for a dedicated Cart service: carts expire seven days after the last change; reads do not renew TTL. The service is not implemented yet; the current Store still uses browser storage. Existing Redis endpoint wiring does not provide carts or service-level caching. The Store PWA remains online-only.
 
-AWS/EKS/ECR deployment configuration and the VPC/RDS target architecture are documented; this does not mean cloud resources are provisioned. Product implements image persistence with the AWS SDK for Java v2: S3 is the production backend, and a local blob-storage mock backs Compose. CloudFront is the current image-delivery design baseline; a possible CDN move to Cloudflare remains open. No S3 bucket or CloudFront distribution is provisioned by this repository.
+Terraform provisions the AWS environment: VPC, EKS with 2–6 `t3.medium` nodes, ECR, RDS PostgreSQL, ElastiCache Redis, private S3 buckets and CloudFront. Product implements image persistence with the AWS SDK for Java v2; Compose still uses the local blob-storage mock. CloudFront is the current image-delivery design baseline; a possible CDN move to Cloudflare remains open. The deployed inventory is recorded in [delivery evidence](docs/project/delivery.md).
 
 Grafana Cloud is selected for observability: Prometheus-compatible/Mimir metrics, Loki logs, Tempo traces, Pyroscope profiles, Faro, OpenTelemetry/Alloy and Graphite support. New metrics should use Prometheus/OTel; Graphite is available for Graphite-format producers. Collection and cloud provisioning remain pending. Umami stays a separate analytics integration. Cloudflare is selected for DDoS protection, WAF and Tunnel; its security role does not choose the frontend CDN, a CloudFront-to-Cloudflare delivery migration or the domain; those decisions remain open. Cloudflare R2 is still only an alternative, not a replacement for approved S3 storage. Kafka placement is proposed for post-order events and later Product background work; no broker or client is implemented.
 
@@ -171,11 +178,12 @@ domain and CDN decisions remain open.
 
 ## Which environment should I run?
 
-| Environment    | Purpose                                   | Database                | Exchange provider                   | Entry point                      |
-| -------------- | ----------------------------------------- | ----------------------- | ----------------------------------- | -------------------------------- |
-| Docker Compose | Local development and integration testing | PostgreSQL container    | Local deterministic mock by default | `http://localhost:8080`          |
-| MicroK8s       | Local Kubernetes validation               | `k8s/10-database.yaml`  | External Exchange service URL       | Ingress address                  |
-| AWS EKS        | Production backend                        | External PostgreSQL/RDS | External Exchange service URL       | Production Ingress/load balancer |
+| Environment    | Purpose                                   | Database                          | Exchange provider                   | Entry point                      |
+| -------------- | ----------------------------------------- | --------------------------------- | ----------------------------------- | -------------------------------- |
+| Docker Compose | Local development and integration testing | PostgreSQL container              | Local deterministic mock by default | `http://localhost:8080`          |
+| LocalStack     | AWS deployment rehearsal                  | LocalStack RDS                    | Local exchange mock by default      | LocalStack CloudFront/gateway     |
+| MicroK8s       | Local Kubernetes validation               | `k8s/overlays/microk8s/database.yaml` | External Exchange service URL   | Ingress address                  |
+| AWS EKS        | Production backend                        | RDS PostgreSQL                    | External Exchange service URL       | Production Ingress/load balancer |
 
 Compose and Kubernetes are separate runtime environments. Do not use the
 Compose mock or its local defaults in EKS.
@@ -189,9 +197,9 @@ docker compose ps
 docker compose down
 ```
 
-Product and Exchange images must be available locally or in a registry because
-their source repositories are not included here. Compose supplies PostgreSQL,
-the checked-out Java services, and the local Exchange provider mock.
+Product and Exchange are checked out as submodules at `api/product` and
+`api/exchange`; Compose builds their images from this checkout. Compose also
+supplies PostgreSQL and the local Exchange provider mock.
 
 > [!WARNING]
 > `.env.example` is a local-only starting point and its placeholder values are
@@ -219,14 +227,25 @@ See [Get started → Demo data](docs/development/get_started.md#demo-data-option
 
 Follow the [Kubernetes runbook](k8s/README.md). It requires MicroK8s with the
 Nginx ingress addon, a `platform-secrets` Secret, reachable Product/Exchange
-services, and local images loaded into MicroK8s.
+services, and local images (including `microsserv52-image-storage:local`) loaded
+into MicroK8s.
+
+### Run the LocalStack rehearsal
+
+Run `scripts/localstack-up.sh` with a LocalStack Student token in `.env`. It
+provisions EKS, ECR, RDS, ElastiCache, S3 and CloudFront through Terraform and
+deploys the backend. See [LocalStack rehearsal](docs/infrastructure/localstack.md)
+and the [LocalStack runbook](docs/infrastructure/runbook.md#localstack-rehearsal).
 
 ### Run production EKS
 
-Configure the required GitHub Actions secrets and `PRODUCT_URL`/
-`EXCHANGE_URL` repository variables, then run the manual **Deploy to AWS EKS**
-workflow. EKS uses the production database URL and does not deploy the local
-PostgreSQL manifest.
+Log in with a short-lived AWS profile, optionally set `TF_STATE_BUCKET`, then run
+`scripts/deploy-aws.sh --frontends`. The script applies Terraform, pushes images,
+creates the cluster secret and deploys the `aws` overlay. A manual
+**Publish EKS images** workflow builds and pushes images to ECR; deployment
+remains shell-first. See the [AWS deployment runbook](docs/infrastructure/runbook.md#aws-deployment),
+[infrastructure changes](docs/infrastructure/changes.md),
+[Terraform](terraform/README.md) and [Deployment](docs/infrastructure/deployment.md).
 
 ## CI/CD and environment variables
 
@@ -234,7 +253,9 @@ Each service repository owns lint, format, tests, JaCoCo quality gates, CodeQL,
 and container publishing to GHCR. Images are tagged
 `ghcr.io/microsserv52/<service>:sha-<commit>`. The platform workflow validates
 the integration and pulls the image for each submodule commit; it builds locally
-only when that immutable image is not available.
+only when that immutable image is not available. AWS provisioning and deployment
+run from a logged-in shell; the separate **Publish EKS images** workflow only
+builds and pushes ECR images.
 
 Copy [`.env.example`](.env.example) for local development. Do not commit the
 real `.env` file or any secret values.
@@ -244,7 +265,7 @@ for each repository:
 
 | Repository                   | Required secrets                                                                                                                                                                                         |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Microsserv52/platform`      | `AWS_REGION`, `AWS_DEPLOY_ROLE_ARN`, `EKS_CLUSTER_NAME`, `JWT_SECRET`, `INTERNAL_SERVICE_SECRET`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `CACHE_REDIS_URL` |
+| `Microsserv52/platform`      | `AWS_REGION`, `AWS_DEPLOY_ROLE_ARN` for the manual ECR image publish workflow. Deployment itself runs from a logged-in shell; see [`terraform/README.md`](terraform/README.md).                           |
 | `Microsserv52/account`       | `JWT_SECRET`, `INTERNAL_SERVICE_SECRET`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`                                                                             |
 | `Microsserv52/auth`          | `JWT_SECRET`, `INTERNAL_SERVICE_SECRET`, `ACCOUNT_URL`, `ACCESS_TOKEN_EXPIRATION_SECONDS`                                                                                                                |
 | `Microsserv52/gateway`       | `JWT_SECRET`, `AUTH_URL`, `ACCOUNT_URL`, `ORDER_URL`, `PRODUCT_URL`, `EXCHANGE_URL`                                                                                                                      |
@@ -257,21 +278,24 @@ For local Compose, copy `.env.example` to `.env`; Compose provisions the local
 PostgreSQL database and defaults internal service settings. Product uses the
 same local PostgreSQL database and the shared `JWT_SECRET` (its Flyway
 migrations create its schema on first boot). Product and Exchange images plus
-Exchange provider settings are the only external local inputs. For MicroK8s, create the `platform-secrets` Kubernetes secret as
-described in [`k8s/README.md`](k8s/README.md). For EKS, use an RDS PostgreSQL
-URL, add secret values to the **platform** repository's Actions secrets, and
-configure `PRODUCT_URL` and `EXCHANGE_URL` as Actions variables and
-`CACHE_REDIS_URL` as an Actions secret.
+Exchange provider settings are the only external local inputs. For MicroK8s,
+create `platform-secrets` as described in [`k8s/README.md`](k8s/README.md).
+For the AWS-like rehearsal, run `scripts/localstack-up.sh` (see
+[`docs/infrastructure/localstack.md`](docs/infrastructure/localstack.md)).
+For real AWS, log in with a short-lived profile and run
+`scripts/deploy-aws.sh`; Terraform provisions VPC, EKS, ECR, RDS, ElastiCache,
+S3 and CloudFront. Deployment is intentionally not wired to CI/CD.
 
 ### Environment variable locations
 
-| Variable type                | Local development          | GitHub Actions                                                                 | Kubernetes/EKS                           |
-| ---------------------------- | -------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------- |
-| Service URLs and image tags  | Root `.env`                | Repository variables or workflow defaults                                      | ConfigMap/deployment values              |
-| JWT and internal credentials | Root `.env` (never commit) | Repository **Secrets**                                                         | `platform-secrets`                       |
-| Database URL and credentials | Root `.env`                | Platform or service **Secrets**                                                | `platform-secrets` / AWS Secrets Manager |
-| AWS deployment values        | Not required               | Platform **Secrets** (`AWS_REGION`, `AWS_DEPLOY_ROLE_ARN`, `EKS_CLUSTER_NAME`) | IAM/OIDC and cluster configuration       |
+| Variable type                | Daily Compose              | LocalStack rehearsal                        | AWS deployment                              |
+| ---------------------------- | -------------------------- | ------------------------------------------- | ------------------------------------------- |
+| Service URLs and image tags  | Root `.env`                | Terraform outputs + ConfigMap patches       | Terraform outputs + ConfigMap patches       |
+| JWT and internal credentials | Root `.env` (never commit) | `platform-secrets`                          | `platform-secrets`                          |
+| Database URL and credentials | Root `.env`                | LocalStack RDS output                       | RDS output (local Terraform state or S3)    |
+| AWS deployment values        | Not required               | Dummy `AWS_ACCESS_KEY_ID=test` (LocalStack) | `AWS_PROFILE` session; no long-lived keys   |
+| LocalStack licence           | Not required               | `LOCALSTACK_AUTH_TOKEN` in `.env`           | Not required                                |
 
-The service workflows need `packages: write` to publish GHCR images. The
-platform workflow needs `packages: read` to pull them. Keep GHCR packages
-private unless the deployment policy explicitly requires public images.
+The service workflows need `packages: write` to publish GHCR images. Keep GHCR
+packages private unless the deployment policy explicitly requires public
+images.

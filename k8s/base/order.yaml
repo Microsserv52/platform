@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: account
+  name: order
   namespace: platform
 spec:
   selector:
-    app: account
+    app: order
   ports:
     - port: 8080
       targetPort: 8080
@@ -13,31 +13,38 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: account
+  name: order
   namespace: platform
 spec:
-  replicas: 3
+  replicas: 2
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
-      app: account
+      app: order
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   template:
     metadata:
       labels:
-        app: account
+        app: order
     spec:
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
-        - name: account
-          image: microsserv52-account:local
+        - name: order
+          image: microsserv52-order:local
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
-          resources:
-            requests:
-              cpu: 250m
-              memory: 256Mi
-            limits:
-              cpu: 500m
-              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           envFrom:
             - configMapRef:
                 name: platform-config
@@ -58,8 +65,29 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: platform-secrets
-                  key: POSTGRES_PASSWORD
+                  key: SPRING_DATASOURCE_PASSWORD
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            failureThreshold: 60
+            periodSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 3
           readinessProbe:
             httpGet:
               path: /actuator/health
               port: 8080
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

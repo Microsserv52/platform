@@ -95,10 +95,10 @@ Choose exact classes after a cold-start/steady-state fit test and budget review.
 | Grafana Cloud / Alloy / Faro                           | Separate staging stack/collector credentials; one small Alloy collector and the same signal integrations, with lower approved ingestion budgets.                                              | Production telemetry, dashboards and alerts must not ingest staging data. Faro errors enabled.                                                                                                   |
 | Umami / usage analytics                                | No staging tracker, pageviews, demo funnel events or analytics ingestion; no staging Umami deployment required.                                                                               | Intentional exception to service parity, explicitly requested by the owner. Technical error/health telemetry remains active.                                                                     |
 
-Do not apply production overlays unchanged. Current `k8s/70-hpa.yaml` starts
-services at three replicas and `71-pdb.yaml` requires two available replicas.
-The future staging overlay must omit HPA, set one replica, and use a compatible
-disruption/rollout policy so maintenance is not blocked. Fix node count and
+Do not apply production overlays unchanged. Current `k8s/base/hpa.yaml` scales
+services from two to six replicas and `k8s/base/pdb.yaml` requires one available
+replica. The future staging overlay must fix one replica, omit or disable HPA,
+and use a compatible disruption/rollout policy so maintenance is not blocked. Fix node count and
 database storage/compute size as well; removing HPA alone is insufficient.
 Keep resource/probe/security settings and budget for rollout surge, or document
 an intentional short maintenance outage. This page does **not** edit manifests.
@@ -191,8 +191,9 @@ by this document. Frontend environment values are public, never secret tokens.
   Prefer short-lived CI cloud credentials and least-privilege staging roles;
   staging must have no production write access.
 - Plan a protected GitHub `staging` environment with its own approvals/secrets,
-  concurrency and explicit deployment target. The existing manual EKS workflow
-  targets `production` and must not be reused without a separate reviewed design.
+  concurrency and explicit deployment target. The production deployment path
+  targets production and must not be reused for staging without a separate
+  reviewed design.
 - Promote immutable backend image digests. Frontends use the same tested source
   commits but need separate builds because public environment values are baked
   into static exports. Keep staging/prod artifacts and browser cookies isolated;
