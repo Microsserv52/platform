@@ -71,7 +71,9 @@ on EKS, then writes them to Graphite. Graphite is provisioned as the `graphite`
 datasource and feeds the **Pod resources** dashboard plus the pod CPU and memory
 alerts. Locally, Carbon listens on `2003` and the Graphite UI on `8082`; on EKS
 the service is `graphite.observability.svc.cluster.local:2003`. The EKS
-DaemonSet reads the kubelet summary API for the `platform` namespace.
+DaemonSet reads the kubelet summary API for the `platform` namespace. The
+**Pod resources** dashboard has a Docker section and an EKS kubelet section for
+CPU cores, working set, network and root filesystem.
 
 ### Cross-service traces
 
