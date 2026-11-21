@@ -55,8 +55,9 @@ CloudFront invalidation.
 
 Required inputs before the first real deployment:
 
-- `DEPLOY_EXCHANGE_PROVIDER_URL` and `DEPLOY_EXCHANGE_PROVIDER_API_KEY` for the
-  real Exchange provider.
+- `DEPLOY_EXCHANGE_PROVIDER_URL` for the real Exchange provider and, only if
+  the provider requires authentication, `DEPLOY_EXCHANGE_PROVIDER_API_KEY`.
+  Set `DEPLOY_EXCHANGE_PROVIDER_REQUIRES_API_KEY=true` in that case.
 - `TF_VAR_cors_allowed_origins` including the admin origin.
 - `TF_VAR_domain_name`/`TF_VAR_hosted_zone_id` (with `TF_VAR_create_dns=true`)
   or a pre-existing `TF_VAR_acm_certificate_arn` when using a custom domain.
@@ -84,11 +85,26 @@ private and encrypted.
 
 A real deployment is not free-tier-only. EKS control plane, worker nodes, NAT
 gateway, RDS, ElastiCache, Route 53 and the ingress load balancer are billed
-while they exist. Use AWS Budgets, the smallest instance classes that still fit
-the workloads, and `terraform -chdir=terraform/environments/aws destroy` after
-the demo. LocalStack is the zero-cost rehearsal path. See the
+while they exist. The account has a USD 100/month budget, but the full stack is
+≈ $270/month if left running, so use the smallest instance classes that fit the
+workloads and `terraform -chdir=terraform/environments/aws destroy` after the
+demo. LocalStack is the zero-cost rehearsal path. See the
 [dated resource-by-resource estimate](../docs/infrastructure/costs.md),
-including node sizing and teardown caveats.
+including the budget guardrail, node sizing and teardown caveats.
+
+## Teardown
+
+`protect_state = true` (the default) keeps RDS deletion protection and its final
+snapshot, and blocks deleting non-empty S3 buckets and ECR repositories. Turn the
+guards off first, then destroy:
+
+```bash
+terraform -chdir=terraform/environments/aws apply   -var protect_state=false
+terraform -chdir=terraform/environments/aws destroy -var protect_state=false
+```
+
+The first command deletes no data. A final snapshot left behind and retained S3
+versions keep billing until removed.
 
 ## Provider caveat
 

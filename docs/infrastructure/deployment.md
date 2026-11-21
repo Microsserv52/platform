@@ -98,10 +98,12 @@ Product IRSA role, pushes images, creates `platform-secrets`, applies the
 and optionally syncs the frontends and invalidates CloudFront. It does not
 create long-lived AWS access keys; use IAM Identity Center or a role profile.
 Product needs `JWT_SECRET` and its datasource values, and Exchange needs
-`DEPLOY_EXCHANGE_PROVIDER_URL` and `DEPLOY_EXCHANGE_PROVIDER_API_KEY` for the
-real provider. Use `--skip-terraform`, `--skip-images` or `--no-auto-approve`
-for partial deployments. The demo seeder is never deployed; run
-`scripts/seed_demo.py` manually against the deployed URL.
+`DEPLOY_EXCHANGE_PROVIDER_URL`. The provider API key is optional; set
+`DEPLOY_EXCHANGE_PROVIDER_API_KEY` and
+`DEPLOY_EXCHANGE_PROVIDER_REQUIRES_API_KEY=true` only when the provider
+requires authentication. Use `--skip-terraform`, `--skip-images` or
+`--no-auto-approve` for partial deployments. The demo seeder is never deployed;
+run `scripts/seed_demo.py` manually against the deployed URL.
 
 The Kubernetes resources must additionally define persistent storage, TLS,
 backups, observability, network policies and a rollback strategy before the

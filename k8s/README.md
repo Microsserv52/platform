@@ -50,8 +50,9 @@ scripts/create-platform-secrets.sh
 
 `platform-secrets` contains `JWT_SECRET`, `INTERNAL_SERVICE_SECRET`,
 `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`,
-`SPRING_DATASOURCE_PASSWORD`, `CACHE_REDIS_URL` and
-`EXCHANGE_PROVIDER_API_KEY`.
+`SPRING_DATASOURCE_PASSWORD` and `CACHE_REDIS_URL`.
+`EXCHANGE_PROVIDER_API_KEY` is included only when the provider requires it;
+the Exchange Deployment treats that secret key as optional.
 
 ## Workloads
 
@@ -95,12 +96,22 @@ be set in the cluster; promote real accounts with SQL.
 
 ## Autoscaling
 
-HPA resources require `metrics-server`. Verify before relying on them:
+The HPAs scale all six services from 2 to 6 replicas at 70% CPU, but this
+repository does not install `metrics-server`. Without it the HPAs report
+`<unknown>` and never scale. Install it first (on EKS apply the upstream
+`components.yaml`, on MicroK8s run `microk8s enable metrics-server`), then
+verify:
 
 ```bash
 kubectl top nodes
 kubectl -n platform get hpa
 ```
+
+There is no node autoscaler. Three `t3.medium` nodes hold about 20 application
+pods, and the shared RDS instance allows about three replicas per
+database-backed service. Check the
+[capacity envelope](../docs/infrastructure/costs.md#traffic-scaling-and-capacity)
+before a load test.
 
 ## LocalStack constraints
 

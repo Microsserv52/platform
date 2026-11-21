@@ -9,17 +9,23 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 JWT_SECRET="${JWT_SECRET:-$(random_secret 48)}"
 INTERNAL_SERVICE_SECRET="${INTERNAL_SERVICE_SECRET:-$(random_secret 32)}"
-EXCHANGE_PROVIDER_API_KEY="${EXCHANGE_PROVIDER_API_KEY:-local-development}"
+
+SECRET_ARGS=(
+  --from-literal=JWT_SECRET="$JWT_SECRET"
+  --from-literal=INTERNAL_SERVICE_SECRET="$INTERNAL_SERVICE_SECRET"
+  --from-literal=CACHE_REDIS_URL="$CACHE_REDIS_URL"
+  --from-literal=SPRING_DATASOURCE_URL="$SPRING_DATASOURCE_URL"
+  --from-literal=SPRING_DATASOURCE_USERNAME="$SPRING_DATASOURCE_USERNAME"
+  --from-literal=SPRING_DATASOURCE_PASSWORD="$SPRING_DATASOURCE_PASSWORD"
+)
+
+if [[ -n "${EXCHANGE_PROVIDER_API_KEY:-}" ]]; then
+  SECRET_ARGS+=(--from-literal=EXCHANGE_PROVIDER_API_KEY="$EXCHANGE_PROVIDER_API_KEY")
+fi
 
 ensure_namespace
 kubectl -n "$NAMESPACE" create secret generic platform-secrets \
-  --from-literal=JWT_SECRET="$JWT_SECRET" \
-  --from-literal=INTERNAL_SERVICE_SECRET="$INTERNAL_SERVICE_SECRET" \
-  --from-literal=CACHE_REDIS_URL="$CACHE_REDIS_URL" \
-  --from-literal=SPRING_DATASOURCE_URL="$SPRING_DATASOURCE_URL" \
-  --from-literal=SPRING_DATASOURCE_USERNAME="$SPRING_DATASOURCE_USERNAME" \
-  --from-literal=SPRING_DATASOURCE_PASSWORD="$SPRING_DATASOURCE_PASSWORD" \
-  --from-literal=EXCHANGE_PROVIDER_API_KEY="$EXCHANGE_PROVIDER_API_KEY" \
+  "${SECRET_ARGS[@]}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo "platform-secrets applied in namespace $NAMESPACE"

@@ -29,6 +29,7 @@ data:
   PRODUCT_IMAGE_S3_REGION: us-east-1
   PRODUCT_IMAGE_S3_MEDIA_ORIGIN: https://replace-with-cloudfront-domain
   EXCHANGE_PROVIDER_URL: http://exchange-mock:8080
+  EXCHANGE_PROVIDER_REQUIRES_API_KEY: "false"
 ---
 apiVersion: v1
 kind: ServiceAccount

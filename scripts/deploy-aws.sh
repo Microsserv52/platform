@@ -58,11 +58,18 @@ AWS_REGION="${AWS_REGION:-$(aws configure get region || true)}"
 AWS_REGION="${AWS_REGION:-us-east-1}"
 export AWS_REGION
 
-if [[ -z "${DEPLOY_EXCHANGE_PROVIDER_URL:-}" ]]; then
-  echo "error: set DEPLOY_EXCHANGE_PROVIDER_URL to the real Exchange provider URL" >&2
-  echo "       (the local Compose mock is not deployed to AWS)" >&2
+EXCHANGE_PROVIDER_URL_FOR_DEPLOY="${DEPLOY_EXCHANGE_PROVIDER_URL:-}"
+if [[ -z "$EXCHANGE_PROVIDER_URL_FOR_DEPLOY" \
+  && -n "${EXCHANGE_PROVIDER_URL:-}" \
+  && "${EXCHANGE_PROVIDER_URL}" != *exchange-provider-mock* ]]; then
+  EXCHANGE_PROVIDER_URL_FOR_DEPLOY="$EXCHANGE_PROVIDER_URL"
+fi
+if [[ -z "$EXCHANGE_PROVIDER_URL_FOR_DEPLOY" ]]; then
+  echo "error: set DEPLOY_EXCHANGE_PROVIDER_URL" >&2
+  echo "       (or a non-mock EXCHANGE_PROVIDER_URL; the Compose mock is not deployed to AWS)" >&2
   exit 1
 fi
+export DEPLOY_EXCHANGE_PROVIDER_URL="$EXCHANGE_PROVIDER_URL_FOR_DEPLOY"
 
 TF_ARGS=()
 
@@ -109,11 +116,17 @@ export SPRING_DATASOURCE_USERNAME="$RDS_USERNAME"
 export SPRING_DATASOURCE_PASSWORD="$RDS_PASSWORD"
 export CACHE_REDIS_URL="redis://$REDIS_ENDPOINT:$REDIS_PORT"
 
+EXCHANGE_PROVIDER_REQUIRES_API_KEY="${DEPLOY_EXCHANGE_PROVIDER_REQUIRES_API_KEY:-false}"
 if [[ -n "${DEPLOY_EXCHANGE_PROVIDER_API_KEY:-}" ]]; then
   export EXCHANGE_PROVIDER_API_KEY="$DEPLOY_EXCHANGE_PROVIDER_API_KEY"
-elif [[ -z "${EXCHANGE_PROVIDER_API_KEY:-}" || "${EXCHANGE_PROVIDER_API_KEY}" == replace-* ]]; then
-  echo "warning: set DEPLOY_EXCHANGE_PROVIDER_API_KEY for the real Exchange provider" >&2
+else
+  unset EXCHANGE_PROVIDER_API_KEY
 fi
+if [[ "$EXCHANGE_PROVIDER_REQUIRES_API_KEY" == "true" && -z "${EXCHANGE_PROVIDER_API_KEY:-}" ]]; then
+  echo "error: the Exchange provider requires an API key; set DEPLOY_EXCHANGE_PROVIDER_API_KEY" >&2
+  exit 1
+fi
+export EXCHANGE_PROVIDER_REQUIRES_API_KEY
 
 "$ROOT_DIR/scripts/create-platform-secrets.sh"
 
@@ -129,11 +142,9 @@ CONFIG_PATCH="$(jq -n \
   --arg mediaBucket "$MEDIA_BUCKET" \
   --arg region "$AWS_REGION" \
   --arg mediaOrigin "https://$CLOUDFRONT_DOMAIN" \
-  '{data: {PRODUCT_IMAGE_S3_BUCKET: $mediaBucket, PRODUCT_IMAGE_S3_REGION: $region, PRODUCT_IMAGE_S3_MEDIA_ORIGIN: $mediaOrigin}}')"
-
-if [[ -n "${DEPLOY_EXCHANGE_PROVIDER_URL:-}" ]]; then
-  CONFIG_PATCH="$(jq --arg url "$DEPLOY_EXCHANGE_PROVIDER_URL" '.data.EXCHANGE_PROVIDER_URL = $url' <<<"$CONFIG_PATCH")"
-fi
+  --arg exchangeUrl "$DEPLOY_EXCHANGE_PROVIDER_URL" \
+  --arg requiresKey "$EXCHANGE_PROVIDER_REQUIRES_API_KEY" \
+  '{data: {PRODUCT_IMAGE_S3_BUCKET: $mediaBucket, PRODUCT_IMAGE_S3_REGION: $region, PRODUCT_IMAGE_S3_MEDIA_ORIGIN: $mediaOrigin, EXCHANGE_PROVIDER_URL: $exchangeUrl, EXCHANGE_PROVIDER_REQUIRES_API_KEY: $requiresKey}}')"
 
 kubectl -n "$NAMESPACE" patch configmap platform-config --type merge -p "$CONFIG_PATCH"
 

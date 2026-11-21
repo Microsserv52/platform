@@ -85,8 +85,9 @@ inside the file: Docker Compose reads `.env` literally.
 | --- | --- | --- |
 | `JWT_SECRET` | yes | shared signing secret for Gateway, Auth, Account, Order, Product, Exchange |
 | `INTERNAL_SERVICE_SECRET` | yes | Auth to Account internal calls |
-| `DEPLOY_EXCHANGE_PROVIDER_URL` | yes | real Exchange provider; the script stops if empty |
-| `DEPLOY_EXCHANGE_PROVIDER_API_KEY` | yes for real provider | stored in `platform-secrets` |
+| `DEPLOY_EXCHANGE_PROVIDER_URL` | yes | real Exchange provider; falls back to a non-mock `EXCHANGE_PROVIDER_URL` |
+| `DEPLOY_EXCHANGE_PROVIDER_API_KEY` | only when the provider requires it | stored in `platform-secrets` when set |
+| `DEPLOY_EXCHANGE_PROVIDER_REQUIRES_API_KEY` | optional | defaults to `false`; the service sends no `Authorization` header when false and no key is set |
 | `TF_VAR_cors_allowed_origins` | yes with image uploads | S3 CORS and admin upload origin |
 | `TF_STATE_BUCKET` | recommended | private versioned bucket for Terraform state |
 | `TF_VAR_domain_name` | optional | custom frontend domain |
@@ -269,14 +270,18 @@ Create or promote the admin account with SQL first if it does not exist. See
     IAM resources. Take a backup first. RDS has deletion protection and final
     snapshots, and ECR repositories are not force-deleted by default.
 
+The stack is protected by default (`protect_state = true`): RDS keeps deletion
+protection and a final snapshot, and S3 and ECR refuse to delete non-empty
+resources. Disable the guards first, then destroy. The first command does not
+delete any data.
+
 ```bash
-# Empty the frontend/media buckets first if force_destroy is false.
-terraform -chdir=terraform/environments/aws destroy
+terraform -chdir=terraform/environments/aws apply   -var protect_state=false
+terraform -chdir=terraform/environments/aws destroy -var protect_state=false
 ```
 
-If Terraform refuses to delete RDS, temporarily set `deletion_protection=false`
-and `skip_final_snapshot=true`, apply, then destroy. Empty ECR repositories or
-set `force_delete=true` in the ECR module before destroying.
+Keep `protect_state = true` for production. A final snapshot or retained S3
+versions left behind keep billing until they are deleted explicitly.
 
 ### 11. Troubleshooting
 
@@ -286,7 +291,7 @@ set `force_delete=true` in the ECR module before destroying.
 | `kubectl` returns Unauthorized | principal not mapped into EKS | set `TF_VAR_admin_principal_arn` to your IAM role ARN and re-apply |
 | `ImagePullBackOff` | node role lacks ECR read or wrong image | check the node role policy and the ECR repository URL |
 | Product returns S3 access denied | IRSA annotation missing or role policy wrong | check the `product` ServiceAccount annotation and the media bucket ARN |
-| Exchange crash-loops | provider URL/key missing | set `DEPLOY_EXCHANGE_PROVIDER_URL` and `DEPLOY_EXCHANGE_PROVIDER_API_KEY` |
+| Exchange crash-loops | provider URL missing or a required key absent | set `DEPLOY_EXCHANGE_PROVIDER_URL`; set the key and `DEPLOY_EXCHANGE_PROVIDER_REQUIRES_API_KEY=true` only if the provider requires auth |
 | Frontend loads but `/api` returns 404 | `/api` is not routed through CloudFront | set `TF_VAR_cloudfront_api_origin_domain` or a reachable `NEXT_PUBLIC_API_BASE_URL` |
 | Browser upload rejected | upload origin not allowlisted | add the exact S3 origin to `NEXT_PUBLIC_IMAGE_UPLOAD_ORIGINS` and S3 CORS |
 | Ingress has no address | no ingress controller | install ingress-nginx or the AWS Load Balancer Controller |
