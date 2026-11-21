@@ -106,6 +106,17 @@ requires authentication. Use `--skip-terraform`, `--skip-images` or
 `--no-auto-approve` for partial deployments. The demo seeder is never deployed;
 run `scripts/seed_demo.py` manually against the deployed URL.
 
+Images can also be built and pushed by the manual
+**Publish EKS images** workflow. It does not deploy; after it finishes, roll out
+the tag from the shell:
+
+```bash
+TAG=<workflow-tag> scripts/deploy-aws.sh --skip-terraform --skip-images
+```
+
+See [CI/CD](../development/cicd.md#eks-image-publishing-workflow) for the
+workflow inputs and ECR permissions.
+
 The Kubernetes resources must additionally define persistent storage, TLS,
 backups, observability, network policies and a rollback strategy before the
 deployment is treated as production-grade.

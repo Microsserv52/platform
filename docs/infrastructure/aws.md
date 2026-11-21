@@ -33,7 +33,8 @@ AWS infrastructure is declared in [`terraform/`](https://github.com/Microsserv52
 VPC/subnets, EKS, ECR, RDS, ElastiCache, S3, CloudFront, IAM/IRSA and optional
 Route 53/ACM. Apply it against LocalStack for the rehearsal or against a real
 account for production. Kubernetes workloads live in [`k8s/`](https://github.com/Microsserv52/platform/blob/main/k8s/README.md)
-and are applied by the deployment scripts; there is no CI/CD deploy workflow.
+and are applied by the deployment scripts. A manual **Publish EKS images**
+workflow builds and pushes ECR images; there is no CI deploy step.
 
 ## Deployed environment (2026-11-21)
 

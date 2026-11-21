@@ -35,7 +35,7 @@ delivered.
 | Bottlenecks | Partial | Analysis table updated; before/after measurements still pending |
 | AWS provisioning | Provisioned | Terraform state, resource inventory and budget in this page |
 | EKS deployment | Provisioned | EKS 1.35, two nodes, metrics-server and Cluster Autoscaler; rollout evidence below |
-| CI/CD | Partial by design | CI tests/CodeQL/GHCR; AWS deployment is shell-first and documented; no deploy workflow |
+| CI/CD | Partial by design | CI tests/CodeQL/GHCR and a manual **Publish EKS images** workflow; deployment remains shell-first; no CI deploy step |
 | Load tests | Not run | k6 procedure and capacity envelope ready; raw results pending |
 | PaaS, costs and SLA | Documented | [Costs, PaaS and SLA](../infrastructure/costs.md); actual spend pending |
 | Documentation | Branch only | LocalStack, runbook and changes pages exist on this branch; merge to `main` republishes Pages |
@@ -134,8 +134,9 @@ These are deliberate gaps, not hidden claims:
   cluster-internal but do not enforce network isolation.
 - **No EBS CSI / persistent volumes.** The workloads are stateless; RDS and S3
   hold persistent data.
-- **No CI deploy workflow.** This is intentional; the shell deployment is the
-  single path. See [CI/CD](../development/cicd.md#deployment-model-in-this-repository).
+- **No CI deploy step.** The **Publish EKS images** workflow builds and pushes
+  images; deployment remains shell-first. See
+  [CI/CD](../development/cicd.md#eks-image-publishing-workflow).
 - **Image upload is not verified end to end.** The S3/CloudFront configuration
   is provisioned, but the browser presign flow still needs an acceptance run.
 - **Database scaling ceiling.** Four replicas per database-backed service exceed

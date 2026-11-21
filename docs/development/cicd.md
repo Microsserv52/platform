@@ -70,6 +70,51 @@ If the course requires an automated deploy job, add a `workflow_dispatch`
 workflow that assumes an OIDC role and calls the same script. The script must
 remain the single deployment path so local and CI runs cannot drift.
 
+## EKS image publishing workflow
+
+`.github/workflows/publish-eks-images.yml` is a manual `workflow_dispatch`
+workflow that builds and pushes the six backend images to ECR. It does **not**
+run Terraform, install add-ons, change Kubernetes workloads or deploy to EKS.
+
+| Setting | Value |
+| --- | --- |
+| Trigger | Manual **Run workflow** |
+| Input | `tag`; defaults to the full commit SHA |
+| AWS access | OIDC role `AWS_DEPLOY_ROLE_ARN`, `AWS_REGION` |
+| Permissions | `contents: read`, `id-token: write` |
+| Environment | `production` (approval rules and environment secrets apply) |
+| Output | Six ECR images plus a digest table in the job summary |
+
+The role needs ECR push permissions:
+
+```text
+ecr:GetAuthorizationToken
+ecr:BatchCheckLayerAvailability
+ecr:InitiateLayerUpload
+ecr:UploadLayerPart
+ecr:CompleteLayerUpload
+ecr:PutImage
+ecr:DescribeRepositories
+```
+
+No EKS permissions are required for this workflow. Apply Terraform first so the
+six repositories exist; the workflow fails with a clear message if they do not.
+
+Deploy an already-published tag from the shell:
+
+```bash
+# Existing infrastructure
+TAG=<tag> scripts/deploy-aws.sh --skip-terraform --skip-images
+
+# Apply Terraform and add-ons, but reuse the CI-published images
+TAG=<tag> scripts/deploy-aws.sh --skip-images
+```
+
+The image contexts match `scripts/build-and-push-images.sh`: order is built from
+`./api` with `api/order-service/Dockerfile`; Product and Exchange are built from
+their submodule directories. Tests and CodeQL remain in the normal CI jobs; this
+workflow only publishes artifacts.
+
 ## Rollback
 
 Images are tagged with the Git short SHA and ECR keeps prior tags. Roll back the

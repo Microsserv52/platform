@@ -241,8 +241,9 @@ and the [LocalStack runbook](docs/infrastructure/runbook.md#localstack-rehearsal
 
 Log in with a short-lived AWS profile, optionally set `TF_STATE_BUCKET`, then run
 `scripts/deploy-aws.sh --frontends`. The script applies Terraform, pushes images,
-creates the cluster secret and deploys the `aws` overlay. There is no CI/CD
-deploy workflow. See the [AWS deployment runbook](docs/infrastructure/runbook.md#aws-deployment),
+creates the cluster secret and deploys the `aws` overlay. A manual
+**Publish EKS images** workflow builds and pushes images to ECR; deployment
+remains shell-first. See the [AWS deployment runbook](docs/infrastructure/runbook.md#aws-deployment),
 [infrastructure changes](docs/infrastructure/changes.md),
 [Terraform](terraform/README.md) and [Deployment](docs/infrastructure/deployment.md).
 
@@ -253,7 +254,8 @@ and container publishing to GHCR. Images are tagged
 `ghcr.io/microsserv52/<service>:sha-<commit>`. The platform workflow validates
 the integration and pulls the image for each submodule commit; it builds locally
 only when that immutable image is not available. AWS provisioning and deployment
-run from a logged-in shell and are not part of CI/CD.
+run from a logged-in shell; the separate **Publish EKS images** workflow only
+builds and pushes ECR images.
 
 Copy [`.env.example`](.env.example) for local development. Do not commit the
 real `.env` file or any secret values.
@@ -263,7 +265,7 @@ for each repository:
 
 | Repository                   | Required secrets                                                                                                                                                                                         |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Microsserv52/platform`      | No deployment secrets. Infrastructure and deployment run from a logged-in shell; see [`terraform/README.md`](terraform/README.md).                                                                        |
+| `Microsserv52/platform`      | `AWS_REGION`, `AWS_DEPLOY_ROLE_ARN` for the manual ECR image publish workflow. Deployment itself runs from a logged-in shell; see [`terraform/README.md`](terraform/README.md).                           |
 | `Microsserv52/account`       | `JWT_SECRET`, `INTERNAL_SERVICE_SECRET`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`                                                                             |
 | `Microsserv52/auth`          | `JWT_SECRET`, `INTERNAL_SERVICE_SECRET`, `ACCOUNT_URL`, `ACCESS_TOKEN_EXPIRATION_SECONDS`                                                                                                                |
 | `Microsserv52/gateway`       | `JWT_SECRET`, `AUTH_URL`, `ACCOUNT_URL`, `ORDER_URL`, `PRODUCT_URL`, `EXCHANGE_URL`                                                                                                                      |

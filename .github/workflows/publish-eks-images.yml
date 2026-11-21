@@ -1,0 +1,96 @@
+name: Publish EKS images
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag (defaults to the commit SHA)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-eks-images-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and push to ECR
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: false
+
+      - name: Checkout backend submodules
+        run: >-
+          git -c url.https://github.com/.insteadOf=git@github.com:
+          submodule update --init --recursive --
+          api/account api/auth api/gateway api/order api/order-service
+          api/product api/exchange
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Resolve registry and tag
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          test -n "$AWS_REGION" || { echo "AWS_REGION is required" >&2; exit 1; }
+          ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          echo "REGISTRY=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com" >> "$GITHUB_ENV"
+          echo "TAG=${INPUT_TAG:-$GITHUB_SHA}" >> "$GITHUB_ENV"
+
+      - name: Verify ECR repositories
+        run: |
+          for repo in account auth gateway order product exchange; do
+            aws ecr describe-repositories --repository-names "$repo" >/dev/null || {
+              echo "ECR repository '$repo' is missing; apply Terraform first." >&2
+              exit 1
+            }
+          done
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+
+      - name: Build and push images
+        run: |
+          set -euo pipefail
+          docker build -t "$REGISTRY/account:$TAG" ./api/account
+          docker build -t "$REGISTRY/auth:$TAG" ./api/auth
+          docker build -t "$REGISTRY/gateway:$TAG" ./api/gateway
+          docker build -t "$REGISTRY/order:$TAG" -f api/order-service/Dockerfile ./api
+          docker build -t "$REGISTRY/product:$TAG" ./api/product
+          docker build -t "$REGISTRY/exchange:$TAG" ./api/exchange
+
+          for svc in account auth gateway order product exchange; do
+            docker push "$REGISTRY/$svc:$TAG"
+          done
+
+      - name: Record image digests
+        run: |
+          {
+            echo "### EKS images published"
+            echo ""
+            echo "Tag: \`$TAG\`"
+            echo ""
+            echo "| Service | Digest |"
+            echo "| --- | --- |"
+            for svc in account auth gateway order product exchange; do
+              digest="$(aws ecr describe-images \
+                --repository-name "$svc" \
+                --image-ids imageTag="$TAG" \
+                --query 'imageDetails[0].imageDigest' \
+                --output text)"
+              echo "| $svc | $digest |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"

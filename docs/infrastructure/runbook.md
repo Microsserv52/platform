@@ -188,7 +188,7 @@ The script runs these phases:
 | Flag | Effect |
 | --- | --- |
 | `--skip-terraform` | reuse the current infrastructure and outputs |
-| `--skip-images` | skip Docker build and push |
+| `--skip-images` | skip Docker build/push and reuse the requested `TAG` already in ECR |
 | `--skip-addons` | do not install metrics-server or Cluster Autoscaler |
 | `--frontends` | also build and upload the static frontends |
 | `--no-auto-approve` | show the Terraform plan and require confirmation |
@@ -269,6 +269,20 @@ Create or promote the admin account with SQL first if it does not exist. See
 | Frontends only | `scripts/deploy-aws.sh --skip-terraform --skip-images --frontends` |
 | Infrastructure only | `scripts/deploy-aws.sh --skip-images` |
 | Rebuild images without touching Terraform | `scripts/deploy-aws.sh --skip-terraform` |
+
+### 9c. Use images published by CI
+
+The manual **Publish EKS images** workflow pushes the six images without
+touching the cluster. Deploy its tag with:
+
+```bash
+TAG=<workflow-tag> scripts/deploy-aws.sh --skip-terraform --skip-images
+```
+
+Omit `--skip-terraform` when the infrastructure itself also needs applying. The
+workflow defaults to the full commit SHA; pass an explicit `tag` input to use a
+shorter or release tag. See
+[CI/CD](../development/cicd.md#eks-image-publishing-workflow).
 
 ### 9b. Roll back an application release
 
