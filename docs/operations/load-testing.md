@@ -138,3 +138,23 @@ Use k6 for formal results. A loop with `wget` is useful as a smoke experiment
 but is not sufficient evidence for capacity or SLA claims. Delete temporary
 HPAs and load-generator pods after testing; keep the managed HPA manifests when
 they are part of the production deployment.
+
+## Execution plan and status
+
+| Scenario | Workload | Primary evidence | Status |
+| --- | --- | --- | --- |
+| Catalogue baseline | 50–100 req/s, 10 min | p50/p95/p99, errors, pods, nodes | Not run |
+| HPA trigger | 200–250 req/s, 15 min | HPA desired/current replicas, CPU, pending pods | Not run |
+| Node autoscaling | Hold above HPA minimum | node count 2 → 3, pod scheduling time | Not run |
+| Order write | 20–50 concurrent users | order p95, DB pool wait, errors | Not run |
+| Provider failure | Exchange timeout/error injection | Exchange error rate, fallback behavior | Not run |
+| Scale-down | Stop load, observe | HPA stabilization, node scale-down time | Not run |
+
+For each run record the Git SHA, image tags, cluster/node count, `RATE`,
+`DURATION`, k6 summary JSON, `kubectl top pods`, HPA and node timelines. Store
+the artifacts under the run record or a linked issue; do not commit credentials
+or raw personal data.
+
+The capacity envelope in [Costs, PaaS and SLA](../infrastructure/costs.md#traffic-scaling-and-capacity)
+is a planning input, not a result. Until these rows are run, the project must
+not claim a supported request rate or user count.

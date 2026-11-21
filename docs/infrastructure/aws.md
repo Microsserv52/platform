@@ -35,6 +35,30 @@ Route 53/ACM. Apply it against LocalStack for the rehearsal or against a real
 account for production. Kubernetes workloads live in [`k8s/`](https://github.com/Microsserv52/platform/blob/main/k8s/README.md)
 and are applied by the deployment scripts; there is no CI/CD deploy workflow.
 
+## Deployed environment (2026-11-21)
+
+The current account contains exactly one of each resource below; no duplicate
+stacks were created.
+
+| Item | Value |
+| --- | --- |
+| AWS account / region | `730335608828` / `us-east-1` |
+| Terraform state | `s3://platform-tfstate-730335608828/platform/aws.tfstate` |
+| EKS | `platform`, Kubernetes `1.35`, node group `platform-default` |
+| Nodes | 2 × `t3.medium` baseline (Cluster Autoscaler range 2–6; a third node may appear during rollout) |
+| Add-ons | metrics-server `3.14.0` / `0.9.0`; Cluster Autoscaler `9.60.0` / `1.37.0` |
+| RDS | `platform-postgres.cf0a6omck937.us-east-1.rds.amazonaws.com:5432` |
+| ElastiCache | `platform-redis.wkuz0g.0001.use1.cache.amazonaws.com:6379` |
+| S3 | `platform-media-730335608828`, `platform-landing-…`, `platform-store-…`, `platform-admin-…` |
+| ECR | `730335608828.dkr.ecr.us-east-1.amazonaws.com` (6 repositories) |
+| CloudFront | `E2HCWED02TM6CL`, `d15ogksm4jp6sl.cloudfront.net` |
+| NAT gateway | 1 |
+| Load balancer / ingress | none installed |
+| Budget | AWS Budget `Limit budget 100` (USD 100/month) |
+
+The workload rollout and cost evidence are recorded in
+[delivery evidence](../project/delivery.md).
+
 ## Resource inventory
 
 Record the region, owner, environment, purpose, monthly estimate and deletion

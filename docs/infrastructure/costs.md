@@ -32,6 +32,14 @@ icon: lucide/badge-dollar-sign
 | Teardown guard  | `protect_state = true`                     | `destroy` needs `false` applied first        |
 | Frontend/edge   | S3 + CloudFront `PriceClass_100`           | 1 TB + 10M requests per month free           |
 
+!!! note "Live deployment: 2026-11-21"
+
+    EKS, RDS, ElastiCache, NAT, S3, ECR and CloudFront are provisioned. The
+    autoscaler ran three `t3.medium` nodes during rollout; the two-node baseline
+    is the steady target. There is no ingress NLB. At three nodes the estimated
+    run-rate is ≈ $240/month; at two nodes ≈ $210/month. The AWS Budget is
+    USD 100, so destroy or schedule the stack after the demo.
+
 ### Continuous operation
 
 | Resource              | Configuration                              | Assumption                                                    | USD/month  | Owner      |
@@ -311,21 +319,67 @@ on the staging TODO checklist.
 
 ## PaaS decisions
 
-Document which managed services are used as PaaS, why they were selected, what
-operational work they remove, and their cost and portability trade-offs. EKS,
-managed databases, managed load balancers and managed observability are
-possible examples; do not label a service PaaS without explaining the boundary.
+| Capability | Selected service | Why | Trade-off / boundary |
+| --- | --- | --- | --- |
+| Kubernetes control plane | Amazon EKS | Managed API server and control plane; the same manifests run locally and on AWS | $0.10/hour cluster fee; no stopped state; AWS-specific IAM/IRSA |
+| Container registry | Amazon ECR | IAM-native pull/push, scan-on-push, lifecycle policy | AWS lock-in; images must be mirrored for another cloud |
+| Relational database | Amazon RDS PostgreSQL | Managed backups, patching, PITR and Multi-AZ option | No superuser; connection ceiling on `db.t4g.micro`; storage and backup cost |
+| Cache | Amazon ElastiCache Redis | Managed Redis endpoint shared by the services | Single node has no failover; no stop state |
+| Object storage | Amazon S3 | Versioning, lifecycle, presigned uploads, private buckets | Egress through CloudFront; bucket policies and CORS must be managed |
+| CDN and TLS | Amazon CloudFront | OAC for private buckets, one distribution, default certificate | Edge invalidation and cache behaviour must be tested; custom domain needs ACM |
+| Network | Terraform VPC, NAT gateway, private subnets | Private workloads with controlled egress | NAT is a fixed hourly cost; AWS Load Balancer Controller is not installed |
+| DNS and certificates | Route 53 + ACM (optional) | DNS validation and free public certificates | Domain approval is external to this repository |
+| Secrets | Kubernetes `platform-secrets` | Minimal moving parts for the course deployment | Not a managed secret store; rotation and audit are manual |
+| CI | GitHub Actions | Tests, CodeQL, image publishing | Deployment is deliberately shell-first; there is no CI deploy workflow |
+| Observability | Grafana Cloud selected; local Grafana plan | Prometheus-compatible metrics, Loki/Tempo/Pyroscope/Faro | **Not implemented in this change**; no Grafana, Alloy or dashboards were added |
+| Documentation | Zensical + GitHub Pages | Versioned docs built from `docs/` | Public site only after merge to `main` |
+
+The Terraform boundary is explicit: EKS, ECR, RDS, ElastiCache, S3, CloudFront,
+VPC/NAT and IAM are provisioned by Terraform. Kubernetes workloads, HPAs,
+Cluster Autoscaler, metrics-server and the optional ingress controller are
+applied after the cluster exists. Secrets are runtime Kubernetes objects, not
+Terraform outputs beyond the generated RDS password.
 
 ## SLA and SLO
 
-Define service-level objectives before claiming an SLA:
+!!! info "Targets, not measured claims"
 
-- availability target;
-- latency target for the main flows;
-- acceptable error rate;
-- recovery time and recovery point objectives;
-- maintenance and dependency exclusions;
-- measurement window and monitoring source.
+    The repository has no production traffic or Grafana dashboards yet. Product
+    exposes `/actuator/prometheus` and Exchange exposes `/metrics`; Gateway,
+    Auth, Account and Order still expose only `health,info`. The table below is
+    the target contract and instrumentation plan, not measured evidence.
 
-The SLA document must link each objective to an observable metric and an
-incident response or rollback procedure.
+### Service-level objectives
+
+| Service / flow | SLI | SLO (28 days) | Error budget | Measurement source |
+| --- | --- | --- | --- | --- |
+| Public API availability | successful responses / all responses | **99.5%** | 3 h 22 min | ingress/gateway RED metric (planned instrumentation) |
+| Product reads | fraction of `GET /products*` under 300 ms | **p95 < 300 ms** | 5% of requests | Product `/actuator/prometheus` |
+| Order writes | fraction of successful order requests under 800 ms | **p95 < 800 ms** | 5% of requests | Order Prometheus metric (planned) |
+| API error rate | 5xx responses / all responses | **< 1%** | 5% of the 28-day window | gateway RED metric (planned) |
+| Exchange provider | successful provider calls / all calls | **99%** | 1% | Exchange `/metrics` |
+| Readiness | ready pods / desired pods per service | **≥ 99%** | 1% | kube-state-metrics (planned) |
+| Recovery | RDS point-in-time restore | **RTO 1 h, RPO ≤ 5 min** | — | RDS automated backups (7-day retention) |
+
+### Alert plan
+
+These are implementation plans; no Grafana rules or contact points are added by
+this change.
+
+| Signal | Condition | Route | Owner |
+| --- | --- | --- | --- |
+| Availability burn rate | 14.4× over 1 h + 5 m | page | service owner |
+| Availability burn rate | 6× over 6 h + 30 m | page | service owner |
+| Availability burn rate | 1× over 3 d + 6 h | ticket | service owner |
+| Error rate | 5xx > 1% for 10 m | page | gateway owner |
+| Latency | p95 > 300 ms for 15 m | ticket | service owner |
+| Readiness | any service below 99% ready for 10 m | page | platform owner |
+| HPA capacity | HPA at `maxReplicas` for 15 m | ticket | platform owner |
+| Database saturation | pool wait time or connection errors for 10 m | page | data owner |
+| Exchange provider | provider error rate > 1% for 10 m | page | exchange owner |
+
+Every page alert should carry a `runbook_url` and the service owner; inhibit
+page alerts when the dependency alert is already active. Planned dashboards are
+RED per service, SLO/error-budget, HPA/node capacity, dependency health and the
+k6 run overlay. The full local Grafana plan remains in the observability
+roadmap; it is intentionally not implemented here.

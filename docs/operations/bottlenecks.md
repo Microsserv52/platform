@@ -113,3 +113,21 @@ Each experiment should record:
 | Result    | p95 240 ms, 0% errors                  |
 | Trade-off | Additional storage                     |
 | Evidence  | Dashboard, trace or load-test artifact |
+
+## Bottleneck ownership and evidence plan
+
+The public repository intentionally does not store member names. Each row is a
+claimable area for the final submission; assign one row per member in the LMS or
+presentation material and attach the measured evidence there.
+
+| Area | Bottleneck 1 | Bottleneck 2 | Current evidence | Next evidence |
+| --- | --- | --- | --- | --- |
+| Account / Auth | Database connection pool (`pool 10 × 3 DB services` caps replicas) | Login/JWT/session latency | Analysis above; no measurement | k6 login + profile run, pool wait metrics |
+| Order / Product | PostgreSQL locks and single-writer contention | Product image/S3 path and catalogue latency | Analysis above; no measurement | k6 checkout run, `pg_stat_activity`, Product p95 |
+| Gateway / Platform | Ingress and Gateway connection queues | HPA/node capacity (two-node baseline) | HPAs and Cluster Autoscaler installed | k6 at 200+ req/s, node-count timeline |
+| Exchange / Data | External provider quota and latency | Redis cache stampede / eviction | Provider adapter and metrics exposed | Provider error injection, Redis hit ratio |
+| Cross-cutting | NAT/egress and payload size | Log volume and serialization cost | Cost model only | NAT bytes, log volume, p95 under load |
+
+Status is **planned / partially evidenced**, not fixed. A row is complete only
+after the same workload is run before and after a change with the metrics,
+errors and rollback recorded.

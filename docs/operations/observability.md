@@ -41,6 +41,12 @@ At minimum, expose:
 Use low-cardinality labels. Never use user IDs, order IDs or unrestricted URLs
 as metric labels.
 
+The service-level objectives and planned burn-rate alerts are defined in
+[Costs, PaaS and SLA](../infrastructure/costs.md#sla-and-slo). Product exposes
+`/actuator/prometheus` and Exchange exposes `/metrics`; Gateway, Auth, Account
+and Order need Prometheus instrumentation before the SLIs can be measured.
+Grafana and the collection stack are not implemented in this change.
+
 ### Traces
 
 Propagate a trace context from Gateway through Product, Order, Account, Auth and

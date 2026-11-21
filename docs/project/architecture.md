@@ -17,7 +17,7 @@ identify technologies, not proof of deployment.
 
 Redis is selected for a dedicated Cart service: carts expire seven days after the last change; reads do not renew TTL. The service is not implemented yet; the current Store still uses browser storage. Existing Redis endpoint wiring does not provide carts or service-level caching. The Store PWA remains online-only.
 
-AWS/EKS/ECR deployment configuration and the VPC/RDS target architecture are documented; this does not mean cloud resources are provisioned. Product implements image persistence with the AWS SDK for Java v2: S3 is the production backend, and a local blob-storage mock backs Compose. CloudFront is the current image-delivery design baseline; a possible CDN move to Cloudflare remains open. No S3 bucket or CloudFront distribution is provisioned by this repository.
+AWS/EKS/ECR deployment configuration and the VPC/RDS architecture are implemented in Terraform. The provisioned inventory is recorded in [delivery evidence](../project/delivery.md). Product implements image persistence with the AWS SDK for Java v2: S3 is the production backend, and a local blob-storage mock backs Compose. Terraform provisions private media and frontend buckets behind CloudFront; public frontend publishing is not yet performed. A possible CDN move to Cloudflare remains open.
 
 Grafana Cloud is selected for observability: Prometheus-compatible/Mimir metrics, Loki logs, Tempo traces, Pyroscope profiles, Faro, OpenTelemetry/Alloy and Graphite support. New metrics should use Prometheus/OTel; Graphite is available for Graphite-format producers. Collection and cloud provisioning remain pending. Umami stays a separate analytics integration. Cloudflare is selected for DDoS protection, WAF and Tunnel; its security role does not choose the frontend CDN, a CloudFront-to-Cloudflare delivery migration or the domain; those decisions remain open. Cloudflare R2 is still only an alternative, not a replacement for approved S3 storage. Kafka placement is proposed for post-order events and later Product background work; no broker or client is implemented.
 
@@ -93,8 +93,8 @@ flowchart TB
     gatewayRepo["Microsserv52/gateway\nsubmodule: api/gateway"]
     orderRepo["Microsserv52/order\nsubmodule: api/order"]
     orderServiceRepo["Microsserv52/order-service\nsubmodule: api/order-service"]
-    productRepo["Product repository\nplanned integration"]
-    exchangeRepo["Exchange repository\nplanned integration"]
+    productRepo["Microsserv52/product\nsubmodule: api/product"]
+    exchangeRepo["Microsserv52/exchange\nsubmodule: api/exchange"]
     accountRepo["Microsserv52/account\nsubmodule: api/account"]
     authRepo["Microsserv52/auth\nsubmodule: api/auth"]
 
@@ -115,8 +115,8 @@ flowchart TB
 | `Microsserv52/gateway`       | Public routing and edge policies                               | Submodule present                                     |
 | `Microsserv52/order`         | Java Order API implementation                                  | Submodule present                                     |
 | `Microsserv52/order-service` | Order service-layer integration and image source               | Submodule present                                     |
-| Product repository           | Product API and product image                                  | Required by target architecture; not a root submodule |
-| Exchange repository          | Python Exchange API and provider adapter                       | Required by target architecture; not a root submodule |
+| Product repository           | Product API and product image                                  | Submodule at `api/product`                             |
+| Exchange repository          | Python Exchange API and provider adapter                       | Submodule at `api/exchange`                            |
 | `Microsserv52/account`       | Registration and account management                            | Submodule present                                     |
 | `Microsserv52/auth`          | Login, token issuance and validation                           | Submodule present                                     |
 

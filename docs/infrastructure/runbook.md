@@ -270,6 +270,25 @@ Create or promote the admin account with SQL first if it does not exist. See
 | Infrastructure only | `scripts/deploy-aws.sh --skip-images` |
 | Rebuild images without touching Terraform | `scripts/deploy-aws.sh --skip-terraform` |
 
+### 9b. Roll back an application release
+
+Image tags are the Git short SHA, so a previous release remains in ECR. Roll
+back only the workloads; do not rebuild with `TAG=<old-sha>` because that would
+build the current source under an old tag.
+
+```bash
+REGISTRY="$(terraform -chdir=terraform/environments/aws output -raw registry)"
+PREVIOUS=<previous-short-sha>
+for svc in account auth gateway order product exchange; do
+  kubectl -n platform set image "deployment/$svc" "$svc=$REGISTRY/$svc:$PREVIOUS"
+done
+kubectl -n platform rollout status deployment/gateway --timeout=300s
+```
+
+Infrastructure rollback means reverting the Terraform change and applying it.
+Database migrations must be backward-compatible; test the rollback plan before
+relying on it.
+
 ### 10. Teardown
 
 !!! danger "Destructive operation"
