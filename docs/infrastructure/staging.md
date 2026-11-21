@@ -180,7 +180,17 @@ kubectl apply -k k8s/overlays/staging
 ```
 
 Push the six service images to the staging ECR repositories before applying the
-overlay, and install ingress-nginx and the observability stack afterward. The
+overlay, and point the Deployments at the immutable staging tags:
+
+```bash
+REGISTRY="$(terraform -chdir=terraform/environments/staging output -raw registry)"
+for service in account auth exchange gateway order product; do
+  kubectl -n platform set image "deployment/$service" \
+    "$service=$REGISTRY/$service:<tag>"
+done
+```
+
+Install ingress-nginx and the observability stack after the overlay. The
 [deployment runbook](runbook.md) covers AWS authentication, image publishing and
 the observability installer. Teardown is a normal `terraform destroy`; the
 staging environment keeps no deletion protection.
