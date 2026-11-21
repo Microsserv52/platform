@@ -74,8 +74,11 @@ Fill at least:
 JWT_SECRET=<paste output of: openssl rand -base64 48>
 INTERNAL_SERVICE_SECRET=<paste output of: openssl rand -base64 32>
 DEPLOY_EXCHANGE_PROVIDER_URL=https://provider.example.com
-DEPLOY_EXCHANGE_PROVIDER_API_KEY=...
-TF_VAR_cors_allowed_origins=["https://app.example.com"]
+# Optional, only when the provider requires authentication:
+# DEPLOY_EXCHANGE_PROVIDER_API_KEY=...
+# DEPLOY_EXCHANGE_PROVIDER_REQUIRES_API_KEY=false
+# Optional extra CORS origins; CloudFront domain and aliases are automatic:
+# TF_VAR_cors_allowed_origins=[]
 ```
 
 Generate the two secrets first, then paste the values. Do not use `$(...)`
@@ -88,7 +91,7 @@ inside the file: Docker Compose reads `.env` literally.
 | `DEPLOY_EXCHANGE_PROVIDER_URL` | yes | real Exchange provider; falls back to a non-mock `EXCHANGE_PROVIDER_URL` |
 | `DEPLOY_EXCHANGE_PROVIDER_API_KEY` | only when the provider requires it | stored in `platform-secrets` when set |
 | `DEPLOY_EXCHANGE_PROVIDER_REQUIRES_API_KEY` | optional | defaults to `false`; the service sends no `Authorization` header when false and no key is set |
-| `TF_VAR_cors_allowed_origins` | yes with image uploads | S3 CORS and admin upload origin |
+| `TF_VAR_cors_allowed_origins` | optional | extra browser origins; the CloudFront domain and aliases are added automatically |
 | `TF_STATE_BUCKET` | recommended | private versioned bucket for Terraform state |
 | `TF_VAR_domain_name` | optional | custom frontend domain |
 | `TF_VAR_hosted_zone_id` | optional | Route 53 zone for the domain |
@@ -298,7 +301,7 @@ versions left behind keep billing until they are deleted explicitly.
 | Product returns S3 access denied | IRSA annotation missing or role policy wrong | check the `product` ServiceAccount annotation and the media bucket ARN |
 | Exchange crash-loops | provider URL missing or a required key absent | set `DEPLOY_EXCHANGE_PROVIDER_URL`; set the key and `DEPLOY_EXCHANGE_PROVIDER_REQUIRES_API_KEY=true` only if the provider requires auth |
 | Frontend loads but `/api` returns 404 | `/api` is not routed through CloudFront | set `TF_VAR_cloudfront_api_origin_domain` or a reachable `NEXT_PUBLIC_API_BASE_URL` |
-| Browser upload rejected | upload origin not allowlisted | add the exact S3 origin to `NEXT_PUBLIC_IMAGE_UPLOAD_ORIGINS` and S3 CORS |
+| Browser upload rejected | page origin not in S3 CORS or upload URL origin not in the admin allowlist | CloudFront and aliases are added automatically; add extra origins with `TF_VAR_cors_allowed_origins`, and the exact S3 URL to `NEXT_PUBLIC_IMAGE_UPLOAD_ORIGINS` |
 | Ingress has no address | no ingress controller | install ingress-nginx or the AWS Load Balancer Controller |
 | TLS certificate error | no certificate/secret | use `TF_VAR_create_dns=true` or supply `TF_VAR_acm_certificate_arn` and a TLS secret |
 | HPA shows `<unknown>` | metrics-server not installed or not ready | `kubectl -n kube-system get deploy metrics-server`; re-run without `--skip-addons` |

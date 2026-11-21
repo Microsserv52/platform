@@ -36,18 +36,6 @@ resource "aws_s3_bucket_public_access_block" "media" {
   restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket_cors_configuration" "media" {
-  bucket = aws_s3_bucket.media.id
-
-  cors_rule {
-    allowed_headers = ["Content-Type", "If-None-Match"]
-    allowed_methods = ["GET", "PUT", "HEAD"]
-    allowed_origins = var.cors_allowed_origins
-    expose_headers  = ["ETag"]
-    max_age_seconds = 3000
-  }
-}
-
 resource "aws_s3_bucket_lifecycle_configuration" "media" {
   bucket = aws_s3_bucket.media.id
 

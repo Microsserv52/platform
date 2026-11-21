@@ -53,11 +53,10 @@ module "network" {
 }
 
 module "storage" {
-  source               = "../../modules/storage"
-  name_prefix          = local.name
-  cors_allowed_origins = ["*"]
-  force_destroy        = true
-  tags                 = local.tags
+  source        = "../../modules/storage"
+  name_prefix   = local.name
+  force_destroy = true
+  tags          = local.tags
 }
 
 module "ecr" {
@@ -109,10 +108,11 @@ module "eks" {
 }
 
 module "cloudfront" {
-  source           = "../../modules/cloudfront"
-  count            = var.enable_cloudfront ? 1 : 0
-  name             = local.name
-  frontend_buckets = module.storage.frontend_buckets
-  media_bucket     = module.storage.media_bucket
-  tags             = local.tags
+  source               = "../../modules/cloudfront"
+  count                = var.enable_cloudfront ? 1 : 0
+  name                 = local.name
+  frontend_buckets     = module.storage.frontend_buckets
+  media_bucket         = module.storage.media_bucket
+  cors_allowed_origins = ["*"]
+  tags                 = local.tags
 }

@@ -47,11 +47,10 @@ module "network" {
 }
 
 module "storage" {
-  source               = "../../modules/storage"
-  name_prefix          = local.name
-  cors_allowed_origins = var.cors_allowed_origins
-  force_destroy        = !var.protect_state
-  tags                 = local.tags
+  source        = "../../modules/storage"
+  name_prefix   = local.name
+  force_destroy = !var.protect_state
+  tags          = local.tags
 }
 
 module "ecr" {
@@ -128,6 +127,7 @@ module "cloudfront" {
   frontend_buckets           = module.storage.frontend_buckets
   media_bucket               = module.storage.media_bucket
   aliases                    = local.cloudfront_aliases
+  cors_allowed_origins       = var.cors_allowed_origins
   certificate_arn            = local.certificate_arn
   api_origin_domain          = var.cloudfront_api_origin_domain
   api_origin_protocol_policy = var.cloudfront_api_origin_protocol_policy

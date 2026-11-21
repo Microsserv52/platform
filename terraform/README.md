@@ -22,8 +22,8 @@ Kubernetes workloads are separate from this layer; see [`../k8s/README.md`](../k
 | `ecr`         | One repository per service, scan-on-push and lifecycle policy             |
 | `rds`         | PostgreSQL subnet group, security group and instance                      |
 | `elasticache` | Redis subnet group, security group and single-node cluster                |
-| `storage`     | Product media bucket, one bucket per frontend, CORS, lifecycle, versioning |
-| `cloudfront`  | One distribution, S3 OACs, `/store`, `/admin`, `/media` and optional `/api` |
+| `storage`     | Product media bucket, one bucket per frontend, lifecycle, versioning       |
+| `cloudfront`  | One distribution, S3 OACs, media CORS, `/store`, `/admin`, `/media` and optional `/api` |
 | `eks`         | Cluster, node group, OIDC provider, Product IRSA, Cluster Autoscaler IRSA, access entry |
 | `dns`         | Optional ACM certificate and DNS validation through Route 53              |
 
@@ -58,7 +58,6 @@ Required inputs before the first real deployment:
 - `DEPLOY_EXCHANGE_PROVIDER_URL` for the real Exchange provider and, only if
   the provider requires authentication, `DEPLOY_EXCHANGE_PROVIDER_API_KEY`.
   Set `DEPLOY_EXCHANGE_PROVIDER_REQUIRES_API_KEY=true` in that case.
-- `TF_VAR_cors_allowed_origins` including the admin origin.
 - `TF_VAR_domain_name`/`TF_VAR_hosted_zone_id` (with `TF_VAR_create_dns=true`)
   or a pre-existing `TF_VAR_acm_certificate_arn` when using a custom domain.
 - An nginx ingress controller installed in the cluster.

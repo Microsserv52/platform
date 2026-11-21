@@ -17,6 +17,11 @@ variable "media_bucket" {
     regional_domain_name = string
   })
 }
+variable "cors_allowed_origins" {
+  type    = list(string)
+  default = []
+}
+
 variable "api_origin_domain" {
   type    = string
   default = ""

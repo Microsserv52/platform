@@ -91,7 +91,7 @@ variable "admin_principal_arn" {
 }
 variable "cors_allowed_origins" {
   type    = list(string)
-  default = ["https://example.com"]
+  default = []
 }
 variable "enable_cloudfront" {
   type    = bool

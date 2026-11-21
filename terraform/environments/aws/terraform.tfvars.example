@@ -37,7 +37,8 @@ acm_certificate_arn = ""
 # creates the cluster already receives admin access.
 admin_principal_arn = ""
 
-cors_allowed_origins = ["https://app.example.com"]
+# Optional extra origins; the CloudFront domain and aliases are automatic.
+cors_allowed_origins = []
 enable_cloudfront    = true
 
 # Keep deletion protection, the final RDS snapshot and bucket/image contents.

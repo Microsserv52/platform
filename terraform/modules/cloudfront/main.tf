@@ -149,6 +149,22 @@ resource "aws_cloudfront_distribution" "this" {
   }
 }
 
+resource "aws_s3_bucket_cors_configuration" "media" {
+  bucket = var.media_bucket.bucket
+
+  cors_rule {
+    allowed_headers = ["Content-Type", "If-None-Match"]
+    allowed_methods = ["GET", "PUT", "HEAD"]
+    allowed_origins = distinct(concat(
+      var.cors_allowed_origins,
+      [for alias in var.aliases : "https://${alias}"],
+      ["https://${aws_cloudfront_distribution.this.domain_name}"],
+    ))
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
+
 data "aws_iam_policy_document" "frontend" {
   for_each = var.frontend_buckets
   statement {
