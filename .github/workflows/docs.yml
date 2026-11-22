@@ -6,8 +6,12 @@ on:
       - main
 permissions:
   contents: read
+  actions: write
   pages: write
   id-token: write
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
 jobs:
   deploy:
     environment:
@@ -22,6 +26,19 @@ jobs:
           python-version: 3.x
       - run: pip install zensical
       - run: zensical build --clean
+      - name: Remove stale GitHub Pages artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          artifact_ids="$(
+            gh api --paginate \
+              "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" \
+              --jq '.artifacts[] | select(.name == "github-pages") | .id'
+          )"
+          for artifact_id in $artifact_ids; do
+            gh api --method DELETE \
+              "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}"
+          done
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site
