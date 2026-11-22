@@ -54,8 +54,9 @@ EOF
 fi
 
 if ! kubectl -n observability get secret grafana-alerting >/dev/null 2>&1; then
+  : "${ALERT_EMAIL_TO:?ALERT_EMAIL_TO is required when grafana-alerting does not already exist}"
   kubectl -n observability create secret generic grafana-alerting \
-    --from-literal="email-to=${ALERT_EMAIL_TO:-ops@example.invalid}" \
+    --from-literal="email-to=${ALERT_EMAIL_TO}" \
     --dry-run=client -o yaml | kubectl apply -f -
 fi
 
@@ -133,6 +134,13 @@ helm upgrade --install observability prometheus-community/kube-prometheus-stack 
   --wait --timeout 10m
 
 kubectl apply -k "$KUSTOMIZE_PATH"
+
+kubectl -n observability create configmap grafana-config \
+  --from-literal="root-url=${GRAFANA_ROOT_URL:-http://localhost:3000}" \
+  --from-literal="enforce-domain=${GRAFANA_ENFORCE_DOMAIN:-false}" \
+  --from-literal="cookie-secure=${GRAFANA_COOKIE_SECURE:-false}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n observability rollout restart deployment/grafana
 
 for deployment in graphite mimir loki tempo pyroscope alloy grafana blackbox-exporter; do
   kubectl -n observability rollout status "deployment/$deployment" --timeout=300s

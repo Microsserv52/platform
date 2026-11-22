@@ -7,8 +7,28 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 : "${SPRING_DATASOURCE_PASSWORD:?SPRING_DATASOURCE_PASSWORD is required}"
 : "${CACHE_REDIS_URL:?CACHE_REDIS_URL is required}"
 
-JWT_SECRET="${JWT_SECRET:-$(random_secret 48)}"
-INTERNAL_SERVICE_SECRET="${INTERNAL_SERVICE_SECRET:-$(random_secret 32)}"
+ensure_namespace
+
+secret_value() {
+  local key="$1"
+  kubectl -n "$NAMESPACE" get secret platform-secrets \
+    -o "jsonpath={.data.${key}}" 2>/dev/null | base64 --decode
+}
+
+if [[ -z "${JWT_SECRET:-}" ]]; then
+  JWT_SECRET="$(secret_value JWT_SECRET)"
+fi
+if [[ -z "${INTERNAL_SERVICE_SECRET:-}" ]]; then
+  INTERNAL_SERVICE_SECRET="$(secret_value INTERNAL_SERVICE_SECRET)"
+fi
+if [[ -z "$JWT_SECRET" || -z "$INTERNAL_SERVICE_SECRET" ]]; then
+  cat >&2 <<'EOF'
+error: JWT_SECRET and INTERNAL_SERVICE_SECRET must be supplied through the
+environment or an existing platform-secrets Secret; refusing to generate new
+values because that would invalidate sessions and internal authentication.
+EOF
+  exit 1
+fi
 
 SECRET_ARGS=(
   --from-literal=JWT_SECRET="$JWT_SECRET"
@@ -23,7 +43,6 @@ if [[ -n "${EXCHANGE_PROVIDER_API_KEY:-}" ]]; then
   SECRET_ARGS+=(--from-literal=EXCHANGE_PROVIDER_API_KEY="$EXCHANGE_PROVIDER_API_KEY")
 fi
 
-ensure_namespace
 kubectl -n "$NAMESPACE" create secret generic platform-secrets \
   "${SECRET_ARGS[@]}" \
   --dry-run=client -o yaml | kubectl apply -f -

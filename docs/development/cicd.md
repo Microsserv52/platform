@@ -119,7 +119,7 @@ workflow only publishes artifacts.
 
 ## Rollback
 
-Images are tagged with the Git short SHA and ECR keeps prior tags. Roll back the
+Images are tagged with the full Git SHA and ECR keeps prior tags. Roll back the
 workloads with `kubectl set image` to the previous SHA; do not rebuild under an
 old tag. The full procedure is in the
 [deployment runbook](../infrastructure/runbook.md#9b-roll-back-an-application-release).

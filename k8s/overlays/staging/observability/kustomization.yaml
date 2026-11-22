@@ -12,6 +12,19 @@ labels:
 
 patches:
   - target:
+      kind: ConfigMap
+      name: grafana-config
+    patch: |-
+      - op: replace
+        path: /data/root-url
+        value: http://localhost:3000
+      - op: replace
+        path: /data/enforce-domain
+        value: "false"
+      - op: replace
+        path: /data/cookie-secure
+        value: "false"
+  - target:
       group: monitoring.coreos.com
       version: v1
       kind: Probe

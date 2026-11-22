@@ -47,7 +47,7 @@ REGISTRY="$(tf_out "$TF_LOCALSTACK" registry)"
 CLUSTER_NAME="$(tf_out "$TF_LOCALSTACK" eks_cluster_name)"
 MEDIA_BUCKET="$(tf_out_json "$TF_LOCALSTACK" media_bucket | jq -r '.bucket')"
 CLOUDFRONT_DOMAIN="$(tf_out "$TF_LOCALSTACK" cloudfront_domain_name)"
-TAG="${TAG:-$(git -C "$ROOT_DIR" rev-parse --short HEAD)}"
+TAG="${TAG:-$(git -C "$ROOT_DIR" rev-parse HEAD)}"
 
 # LocalStack publishes RDS/ElastiCache endpoints on loopback only. Pods reach
 # them through the LocalStack container address on the k3d network instead.
