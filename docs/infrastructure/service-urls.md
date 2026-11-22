@@ -4,8 +4,13 @@ icon: lucide/link
 
 # Service URLs
 
-Environment: AWS account `730335608828`, region `us-east-1`, EKS cluster
-`platform`. The frontend and API are published through CloudFront.
+Environment: AWS region `us-east-1`, EKS cluster `platform`. The frontend and API
+are published through CloudFront.
+
+The public documentation intentionally omits AWS account IDs, EKS API endpoints,
+database and cache hostnames, private bucket names and internal load-balancer
+hostnames. Keep the full inventory in the private operator runbook and record
+only public URLs and redacted resource names in delivery evidence.
 
 ## Public endpoints
 
@@ -16,7 +21,6 @@ Environment: AWS account `730335608828`, region `us-east-1`, EKS cluster
 | Admin | `https://d15ogksm4jp6sl.cloudfront.net/admin/` | Verified 200, CloudFront static S3 export |
 | API | `https://d15ogksm4jp6sl.cloudfront.net/api` | Verified 200, CloudFront `/api/*` → Gateway NLB |
 | API health | `https://d15ogksm4jp6sl.cloudfront.net/api/actuator/health` | Verified 200; prefix stripped |
-| Gateway NLB origin | `http://platform-gateway-ecaafe88209b53bc.elb.us-east-1.amazonaws.com` | CloudFront-only security group; direct access times out |
 | Faro ingest (prepared) | `https://d15ogksm4jp6sl.cloudfront.net/faro/collect` | Prepared behind `enable_faro_ingest`; not deployed |
 | Documentation | `https://microsserv52.github.io/platform/` | Published from `main` |
 
@@ -87,12 +91,12 @@ use port-forward unless the Cognito ALB ingress is installed.
 
 | Service | Endpoint |
 | --- | --- |
-| EKS API | `https://E809E54F1ACAC4DACB972ABD6A78E62F.gr7.us-east-1.eks.amazonaws.com` |
-| ECR | `730335608828.dkr.ecr.us-east-1.amazonaws.com` |
-| RDS PostgreSQL | `platform-postgres.cf0a6omck937.us-east-1.rds.amazonaws.com:5432` |
-| ElastiCache Redis | `platform-redis.wkuz0g.0001.use1.cache.amazonaws.com:6379` |
-| CloudFront | `E2HCWED02TM6CL` / `d15ogksm4jp6sl.cloudfront.net` |
-| Gateway NLB | `platform-gateway-ecaafe88209b53bc.elb.us-east-1.amazonaws.com` |
+| EKS API | Private operator detail; region `us-east-1` |
+| ECR | Private operator detail; region `us-east-1` |
+| RDS PostgreSQL | Private operator detail; private subnet |
+| ElastiCache Redis | Private operator detail; private subnet |
+| CloudFront | Public hostname `d15ogksm4jp6sl.cloudfront.net` |
+| Gateway NLB | Private operator detail; CloudFront-only origin |
 
 RDS and ElastiCache are in private subnets and are not publicly accessible. The
 NLB is internet-facing on HTTP port 80, but its security group allows only the
@@ -108,11 +112,11 @@ invalidates CloudFront.
 
 | Site | S3 bucket | CloudFront behaviour |
 | --- | --- | --- |
-| Landing | `platform-landing-730335608828` | default `/*` |
-| Store | `platform-store-730335608828` | `/store/*` |
-| Admin | `platform-admin-730335608828` | `/admin/*` |
-| Media | `platform-media-730335608828` | `/media/*` |
+| Landing | `<account>-landing frontend bucket` | default `/*` |
+| Store | `<account>-store frontend bucket` | `/store/*` |
+| Admin | `<account>-admin frontend bucket` | `/admin/*` |
+| Media | `<account>-media bucket` | `/media/*` |
 
 The admin build also needs
-`NEXT_PUBLIC_IMAGE_UPLOAD_ORIGINS=https://platform-media-730335608828.s3.us-east-1.amazonaws.com`
+`NEXT_PUBLIC_IMAGE_UPLOAD_ORIGINS=https://<media-bucket>.s3.us-east-1.amazonaws.com`
 for browser presigned uploads.

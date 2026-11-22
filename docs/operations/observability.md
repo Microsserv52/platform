@@ -195,6 +195,23 @@ Dashboards are provisioned from
 Every dashboard uses the provisioned `prometheus` datasource UID, so the same
 JSON works locally and on EKS.
 
+## EKS installation verification
+
+The installer is available as `scripts/install-observability.sh`. AWS EKS
+installation is not complete until a credentialed operator records:
+
+- `kubectl get pods -A` or scoped observability rollout status;
+- the active Prometheus target API response with one `up=1` result for each
+  expected service and synthetic target;
+- Grafana HTTP health and `api/search?type=dash-db` dashboard results;
+- alert-rule configuration and evaluation timestamps;
+- blackbox probe success counts for landing, store, admin, catalog and health;
+- the commit SHA, cluster, UTC time and Grafana verification hostname.
+
+Do not mark the EKS observability item delivered based only on a successful
+`kubectl apply`. Capture the evidence in [Delivery evidence](../project/delivery.md)
+and retain a redacted log or screenshot.
+
 ## SLIs, SLOs and alerts
 
 The 28-day availability SLO is **99.5%** for the service set. The error budget is
