@@ -109,7 +109,7 @@ MEDIA_BUCKET="$(tf_out_json "$TF_AWS" media_bucket | jq -r '.bucket')"
 FRONTEND_BUCKETS="$(tf_out_json "$TF_AWS" frontend_buckets)"
 DISTRIBUTION_ID="$(tf_out "$TF_AWS" cloudfront_distribution_id)"
 CLOUDFRONT_DOMAIN="$(tf_out "$TF_AWS" cloudfront_domain_name)"
-export REGISTRY TAG="${TAG:-$(git -C "$ROOT_DIR" rev-parse --short HEAD)}"
+export REGISTRY TAG="${TAG:-$(git -C "$ROOT_DIR" rev-parse HEAD)}"
 
 aws eks update-kubeconfig --region "$AWS_REGION" --name "$CLUSTER_NAME"
 ensure_namespace

@@ -4,7 +4,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 load_env_file
 
 : "${REGISTRY:?REGISTRY is required (e.g. 123456789012.dkr.ecr.us-east-1.amazonaws.com)}"
-TAG="${TAG:-$(git -C "$ROOT_DIR" rev-parse --short HEAD)}"
+TAG="${TAG:-$(git -C "$ROOT_DIR" rev-parse HEAD)}"
 PUSH="${PUSH:-true}"
 
 build() {

@@ -289,13 +289,13 @@ shorter or release tag. See
 
 ### 9b. Roll back an application release
 
-Image tags are the Git short SHA, so a previous release remains in ECR. Roll
+Image tags are the full Git SHA, so a previous release remains in ECR. Roll
 back only the workloads; do not rebuild with `TAG=<old-sha>` because that would
 build the current source under an old tag.
 
 ```bash
 REGISTRY="$(terraform -chdir=terraform/environments/aws output -raw registry)"
-PREVIOUS=<previous-short-sha>
+PREVIOUS=<previous-full-sha>
 for svc in account auth gateway order product exchange; do
   kubectl -n platform set image "deployment/$svc" "$svc=$REGISTRY/$svc:$PREVIOUS"
 done

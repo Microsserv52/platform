@@ -10,7 +10,7 @@ spec:
     matchLabels:
       app: gateway
   endpoints:
-    - port: 8080
+    - port: http
       path: /actuator/prometheus
       interval: 15s
       scrapeTimeout: 10s
@@ -30,7 +30,7 @@ spec:
     matchLabels:
       app: auth
   endpoints:
-    - port: 8080
+    - port: http
       path: /actuator/prometheus
       interval: 15s
       scrapeTimeout: 10s
@@ -50,7 +50,7 @@ spec:
     matchLabels:
       app: account
   endpoints:
-    - port: 8080
+    - port: http
       path: /actuator/prometheus
       interval: 15s
       scrapeTimeout: 10s
@@ -70,7 +70,7 @@ spec:
     matchLabels:
       app: order
   endpoints:
-    - port: 8080
+    - port: http
       path: /actuator/prometheus
       interval: 15s
       scrapeTimeout: 10s
@@ -90,7 +90,7 @@ spec:
     matchLabels:
       app: product
   endpoints:
-    - port: 8080
+    - port: http
       path: /actuator/prometheus
       interval: 15s
       scrapeTimeout: 10s
@@ -110,7 +110,7 @@ spec:
     matchLabels:
       app: exchange
   endpoints:
-    - port: 8080
+    - port: http
       path: /metrics
       interval: 15s
       scrapeTimeout: 10s

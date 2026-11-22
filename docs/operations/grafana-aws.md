@@ -199,6 +199,17 @@ separate AWS WAF web ACL to the ALB; the prepared `enable_waf` Terraform option
 covers the CloudFront distribution, not this ALB. See
 [AWS edge security](../infrastructure/aws-edge-security.md).
 
+Configure Grafana before applying the ingress. The installer uses a local,
+HTTP-safe default for port-forwarding; for the published hostname, provide the
+real HTTPS URL and enable the matching security flags:
+
+```bash
+GRAFANA_ROOT_URL=https://grafana.example.com \
+GRAFANA_ENFORCE_DOMAIN=true \
+GRAFANA_COOKIE_SECURE=true \
+scripts/install-observability.sh
+```
+
 Create Cognito groups such as `platform-admins` and `platform-viewers`, and map
 them to Grafana roles with generic OAuth if Grafana-native login is not desired.
 The ALB authentication alone does not assign Grafana roles.

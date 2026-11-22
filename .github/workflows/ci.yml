@@ -33,6 +33,23 @@ jobs:
           git -c url.https://github.com/.insteadOf=git@github.com: submodule update --init --recursive -- mocks
       - run: python -m unittest discover -s tests/infrastructure -p 'test_*.py'
 
+  observability:
+    name: Observability manifest validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: false
+      - name: Checkout observability submodule
+        run: >-
+          git -c url.https://github.com/.insteadOf=git@github.com:
+          submodule update --init --recursive -- observability
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --disable-pip-version-check pyyaml
+      - run: scripts/validate-observability.sh
+
   java:
     name: ${{ matrix.service }} tests and coverage
     runs-on: ubuntu-latest
