@@ -72,6 +72,21 @@ Staging is applied manually from `terraform/environments/staging` and
 `k8s/overlays/staging`. No workflow provisions or deploys it, and the staging
 job does not run in CI.
 
+## GitHub Actions infrastructure and development cost
+
+Repository validation runs on GitHub-hosted Actions runners. This includes Java
+Maven jobs, frontend fixture tests, infrastructure tests, observability
+validation, Docker Compose integration, CodeQL and documentation builds.
+GitHub provides the compute, runner image and network for each hosted run; the
+workflows do not use a self-hosted runner or GitHub-owned AWS account.
+
+For planning, reserve approximately **USD 10 for development-phase GitHub
+Actions use**. This is a project allowance, not a confirmed GitHub invoice:
+public-repository hosted-runner pricing and included usage can differ, and
+service repositories may have their own minute consumption. Validate the final
+cost from GitHub **Settings > Billing and licensing > Usage** and record the
+billable runner hours and estimated charge with the delivery evidence.
+
 ## EKS image publishing workflow
 
 `.github/workflows/publish-eks-images.yml` is a manual `workflow_dispatch`
@@ -97,6 +112,7 @@ ecr:UploadLayerPart
 ecr:CompleteLayerUpload
 ecr:PutImage
 ecr:DescribeRepositories
+ecr:DescribeImages
 ```
 
 No EKS permissions are required for this workflow. Apply Terraform first so the
@@ -154,3 +170,31 @@ For every deployment record: UTC time, account and region, cluster name,
 Terraform state location, image tags, add-on versions, node count, HPA state,
 health-check result, cost estimate and any known gap. The
 [delivery evidence](../project/delivery.md) page is the index.
+
+## GitHub setup checklist for EKS deployment
+
+Create the `production` GitHub environment, require at least one reviewer, and
+do not allow deploys from unreviewed branches. Configure the repository or
+environment with:
+
+| Kind | Name | Purpose |
+| --- | --- | --- |
+| Secret | `AWS_DEPLOY_ROLE_ARN` | OIDC role assumed by both EKS workflows |
+| Secret | `AWS_REGION` | AWS region used for credentials and ECR |
+| Secret | `DEPLOY_EXCHANGE_PROVIDER_URL` | Exchange provider endpoint |
+| Secret | `DEPLOY_EXCHANGE_PROVIDER_API_KEY` | Optional exchange provider credential |
+| Variable | `DEPLOY_EXCHANGE_PROVIDER_REQUIRES_API_KEY` | Enable provider-key enforcement |
+| Variables | `TF_VAR_domain_name`, `TF_VAR_api_domain_name`, `TF_VAR_hosted_zone_id`, `TF_VAR_create_dns`, `TF_VAR_acm_certificate_arn` | Domain and certificate inputs |
+| Variables | `TF_VAR_enable_observability`, `TF_VAR_enable_faro_ingest`, `TF_VAR_enable_waf` | AWS feature flags |
+
+The IAM role trust policy must pin both:
+
+```text
+aud=sts.amazonaws.com
+sub=repo:Microsserv52/platform:environment:production
+```
+
+After AWS authorization and secrets are available, run **Publish EKS images**
+once, deploy it with **Deploy to AWS EKS**, verify the rollout and add both run
+URLs to the [delivery evidence](../project/delivery.md). Do not store AWS keys
+in the repository or workflow.

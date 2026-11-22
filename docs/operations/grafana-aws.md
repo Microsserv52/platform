@@ -176,7 +176,12 @@ balancer or custom domain is required. See
 
 ## Step 4 — Publish behind an account
 
-### Option A — ALB + Cognito (AWS-native)
+### Selected decision: ALB + Cognito (AWS-native)
+
+This project chooses the AWS-native ALB + Cognito option. Cloudflare Tunnel +
+Access remains an optional lower-infrastructure alternative, but it is not the
+selected delivery path and should not be implemented without an explicit
+operations decision.
 
 Fill in the real domain, ACM ARN, user-pool ARN, client ID and Cognito domain in
 `grafana-ingress-cognito.example.yaml`, rename it to `.yaml`, and apply it:
@@ -257,6 +262,25 @@ curl -fsS 'http://localhost:9090/api/v1/targets?state=active'
 
 No secret value belongs in a Terraform variable, Helm value, provisioning file,
 dashboard JSON or CI workflow.
+
+## Front-door implementation checklist
+
+The following is a documentation and operations checklist; it requires AWS
+authorization and an operator to provision resources.
+
+- [ ] Install the AWS Load Balancer Controller with IRSA.
+- [ ] Create or confirm an ACM certificate for the Grafana hostname.
+- [ ] Create a public or private Route 53 record pointing to the ALB.
+- [ ] Create the Cognito user pool, app client and hosted domain.
+- [ ] Fill `k8s/observability/grafana-ingress-cognito.example.yaml`.
+- [ ] Set `GF_AUTH_ANONYMOUS_ENABLED=false`.
+- [ ] Set `GF_USERS_ALLOW_SIGN_UP=false`.
+- [ ] Set `grafana-config.root-url` to the HTTPS hostname.
+- [ ] Set `grafana-config.enforce-domain=true`.
+- [ ] Set `grafana-config.cookie-secure=true`.
+- [ ] Store Grafana and Cognito secrets in Secrets Manager with ESO injection.
+- [ ] Verify unauthenticated requests redirect to Cognito and authorized users
+  reach Grafana.
 
 ## Cost
 

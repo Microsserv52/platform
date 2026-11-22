@@ -17,6 +17,7 @@ submission.
 - [x] AWS account, region and resource inventory without secrets.
 - [x] EKS topology and Kubernetes manifests or commands.
 - [ ] CI/CD pipeline runs and rollback procedure.
+- [ ] EKS observability installation evidence for targets, dashboards, alerts and probes.
 - [x] Load-test scenarios, raw results and interpretation (catalog read and authenticated order write).
 - [x] Bottleneck investigation and before/after comparison (catalog read path).
 - [ ] Cost estimate, actual spend and PaaS decisions.
@@ -35,20 +36,20 @@ delivered.
 | Bottlenecks | Partial | Catalog read path measured at 50 and 400 req/s; authenticated order flow measured; provider-failure flow still pending |
 | AWS provisioning | Provisioned | Terraform state, resource inventory and budget in this page |
 | EKS deployment | Provisioned | EKS 1.35, two nodes, metrics-server and Cluster Autoscaler; rollout evidence below |
-| CI/CD | Partial by design | CI tests/CodeQL/GHCR, manual **Publish EKS images** and manual **Deploy to AWS EKS** workflows; deployment remains operator-approved |
+| CI/CD | Partial by design | CI tests/CodeQL/GHCR are established; OIDC secrets and two live EKS workflow runs are pending. GitHub Actions runs on GitHub-hosted infrastructure; development allowance is approximately USD 10 |
 | Load tests | Partial | Read-only catalog baseline, HPA run and authenticated order flow completed; provider-failure flow pending |
 | PaaS, costs and SLA | Documented | [Costs, PaaS and SLA](../infrastructure/costs.md); actual spend pending |
 | Documentation | Published | `https://microsserv52.github.io/platform/`; LocalStack, runbook, observability and Grafana AWS pages are on `main` |
 | Public application URL | Available | `https://d15ogksm4jp6sl.cloudfront.net/` (landing), `/store/`, `/admin/`, `/api` |
-| Grafana / SLI dashboard | Implemented locally; AWS prepared | Prometheus, Mimir, Loki, Tempo, Pyroscope, Graphite, Telegraf, Grafana, Alloy, blackbox, eight dashboards and unified alerts; see [Observability](../operations/observability.md) and [Grafana on AWS](../operations/grafana-aws.md) |
+| Grafana / SLI dashboard | Implemented locally; EKS evidence pending | Local Prometheus, Mimir, Loki, Tempo, Pyroscope, Graphite, Telegraf, Grafana, Alloy, blackbox, eight dashboards and unified alerts are verified. EKS targets, dashboards, alert evaluation and blackbox probes require a credentialed run |
 | Team names, AI disclosure, presentation | Out of repository scope | Intentionally excluded by the project owner |
 
-The observability gap is closed in the repository: all six services expose
+The repository observability implementation is complete: all six services expose
 metrics, Java services export OpenTelemetry traces, the frontends use Faro, and
-the local stack hosts Prometheus, Mimir, Loki, Tempo, Pyroscope and Grafana. The
-AWS path is prepared with EBS CSI, Secrets Manager, Helm values, LGTM manifests
-and a Cognito/ALB example. The AWS stack is not applied; Exchange traces and
-Pyroscope language agents remain pending.
+the local stack hosts Prometheus, Mimir, Loki, Tempo, Pyroscope and Grafana.
+The AWS path is prepared with EBS CSI, Secrets Manager, Helm values, LGTM
+manifests and a Cognito/ALB example. EKS runtime verification remains pending;
+Exchange traces and Pyroscope language agents remain pending.
 
 ## Deployment evidence
 
@@ -113,6 +114,19 @@ GET https://d15ogksm4jp6sl.cloudfront.net/admin/   200  admin
 GET https://d15ogksm4jp6sl.cloudfront.net/api/products          200
 GET https://d15ogksm4jp6sl.cloudfront.net/api/actuator/health  200 UP
 ```
+
+### CI/CD workflow evidence
+
+The repository currently has successful build and test evidence on GitHub
+hosted runners. The following evidence is still pending until AWS OIDC secrets,
+the `production` environment reviewers and the AWS role are configured:
+
+- Publish EKS images workflow run URL and full-SHA image tag.
+- Deploy to AWS EKS workflow run URL and rollout summary.
+- Rollback command output or a rollback rehearsal link.
+
+Record each run by UTC time, commit SHA, image tag, account/region and known
+gaps. Do not paste AWS credentials or role session values into the evidence.
 
 The ASG carries `k8s.io/cluster-autoscaler/enabled` and
 `k8s.io/cluster-autoscaler/platform`; min 2, max 6, desired 3 at the time of the
@@ -190,6 +204,26 @@ preflight returns 204 and a headless browser POSTed twice to /faro/collect (202)
 - [Local stack guide](../operations/observability.md)
 - [AWS deployment plan](../operations/grafana-aws.md)
 - [AWS Faro/WAF/cost assessment](../infrastructure/aws-observability-assessment.md)
+
+### EKS observability evidence pending
+
+Running `scripts/install-observability.sh` against EKS requires a credentialed
+AWS session and the operational secret/front-door decisions described in
+[Grafana on AWS](../operations/grafana-aws.md). Add evidence only after the
+installation succeeds:
+
+```text
+Prometheus active targets: target names, UP/DOWN, last scrape and value
+Grafana HTTP health: 200
+Dashboard API search: expected dashboard UIDs and titles
+Alert evaluation: alert rules, pending/firing state and evaluation timestamp
+Blackbox probes: landing, store, admin, catalog and health success count
+kubectl rollout status and pod readiness for observability workloads
+```
+
+Include the cluster, namespace, Helm release, commit SHA, Grafana hostname
+used for verification and UTC timestamp. Keep credentials and private secret
+values out of logs and screenshots.
 
 ## Known limitations
 
