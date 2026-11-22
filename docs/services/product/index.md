@@ -4,12 +4,13 @@ icon: lucide/package
 
 # Product
 
+![Tech Stack](https://skillicons.dev/icons?i=java,spring,postgres,redis,aws,docker,kubernetes,grafana,prometheus)
+
 Product owns the product catalogue: product identity, display name, price, unit
 and an optional image.
 
-The [image implementation handoff](images.md) records the approved S3/CloudFront
-design, migrations, upload contract and acceptance work; the implementation now
-lives in the Product service below.
+The [image flow](images.md) covers the S3-backed upload contract, database
+tables and delivery configuration implemented by the Product service.
 
 RESTful API for an online store
 
@@ -32,11 +33,11 @@ This service follows the [Product API exercise](https://insper.github.io/platfor
 
 | Signal | Requirement | Current |
 | --- | --- | --- |
-| Health | `/actuator/health` with liveness/readiness semantics | implemented or planned with the service |
-| Metrics | `/actuator/prometheus` with low-cardinality route/status labels | implemented or planned with the service |
+| Health | `/actuator/health` with liveness/readiness semantics | implemented |
+| Metrics | `/actuator/prometheus` with low-cardinality route/status labels | implemented |
 | Traces | OTLP to Alloy, W3C `traceparent` propagation | OTel Java agent |
-| Logs | structured JSON with service, request/trace ID, route and status | implemented or planned |
-| Profiles | Pyroscope agent where approved | pending |
+| Logs | structured JSON with service, request/trace ID, route and status | implemented |
+| Profiles | Pyroscope agent where approved | not enabled |
 
 See [Service observability requirements](../observability-requirements.md) for
 the full contract, redaction rules and verification commands.

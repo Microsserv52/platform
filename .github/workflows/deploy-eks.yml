@@ -1,0 +1,75 @@
+name: Deploy to AWS EKS
+
+on:
+  workflow_dispatch:
+    inputs:
+      frontends:
+        description: Sync the landing, store and admin builds after the backend rollout
+        type: boolean
+        default: false
+      skip_terraform:
+        description: Skip the Terraform apply and deploy against the current stack
+        type: boolean
+        default: false
+      skip_addons:
+        description: Skip metrics-server and Cluster Autoscaler installation
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-eks
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Apply Terraform and roll out the platform
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out the platform and submodules
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          DEPLOY_EXCHANGE_PROVIDER_URL: ${{ secrets.DEPLOY_EXCHANGE_PROVIDER_URL }}
+          DEPLOY_EXCHANGE_PROVIDER_API_KEY: ${{ secrets.DEPLOY_EXCHANGE_PROVIDER_API_KEY }}
+          DEPLOY_EXCHANGE_PROVIDER_REQUIRES_API_KEY: ${{ vars.DEPLOY_EXCHANGE_PROVIDER_REQUIRES_API_KEY }}
+          TF_VAR_domain_name: ${{ vars.TF_VAR_domain_name }}
+          TF_VAR_api_domain_name: ${{ vars.TF_VAR_api_domain_name }}
+          TF_VAR_hosted_zone_id: ${{ vars.TF_VAR_hosted_zone_id }}
+          TF_VAR_create_dns: ${{ vars.TF_VAR_create_dns }}
+          TF_VAR_acm_certificate_arn: ${{ vars.TF_VAR_acm_certificate_arn }}
+          TF_VAR_enable_observability: ${{ vars.TF_VAR_enable_observability }}
+          TF_VAR_enable_faro_ingest: ${{ vars.TF_VAR_enable_faro_ingest }}
+          TF_VAR_enable_waf: ${{ vars.TF_VAR_enable_waf }}
+          TAG: ${{ github.sha }}
+        run: |
+          args=()
+          if [[ "${{ inputs.frontends }}" == "true" ]]; then args+=(--frontends); fi
+          if [[ "${{ inputs.skip_terraform }}" == "true" ]]; then args+=(--skip-terraform); fi
+          if [[ "${{ inputs.skip_addons }}" == "true" ]]; then args+=(--skip-addons); fi
+          scripts/deploy-aws.sh "${args[@]}"

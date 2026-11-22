@@ -21,7 +21,9 @@ git submodule update --init --recursive
 
 The submodules are independent repositories. Changes to a submodule must be
 committed in that repository first, then the resulting commit must be recorded
-in this repository.
+in this repository. The observability stack is the `observability` submodule;
+initialize it before running `scripts/observability-up.sh` or the observability
+Compose profile.
 
 ## Preview the documentation
 

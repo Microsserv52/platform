@@ -31,7 +31,8 @@ The platform repository owns cross-service validation and the infrastructure
 definitions. Its integration job pulls `sha-<submodule-commit>` images from
 GHCR and builds only when the matching image is unavailable. Deployment is
 shell-first: `scripts/deploy-aws.sh` runs Terraform and applies the Kubernetes
-overlay from an authenticated workstation; no CI/CD workflow deploys to AWS.
+overlay. The manual **Deploy to AWS EKS** workflow calls the same script with
+OIDC credentials and does not run on a push.
 
 ## Pipeline rules
 
@@ -54,11 +55,12 @@ services, not only the Gateway image.
 ## Deployment model in this repository
 
 CI covers build, tests, coverage gates, CodeQL and image publishing for the
-service repositories. Deployment is intentionally **shell-first**:
-`scripts/deploy-aws.sh` runs Terraform, installs the cluster add-ons, builds and
-pushes images, creates the runtime Secret and applies the Kubernetes overlay
-from an authenticated workstation. There is no AWS deploy workflow in
-`.github/workflows/`.
+service repositories. Deployment is **shell-first**: `scripts/deploy-aws.sh`
+runs Terraform, installs the cluster add-ons, builds and pushes images, creates
+the runtime Secret and applies the Kubernetes overlay. The manual
+**Deploy to AWS EKS** workflow (`workflow_dispatch`, `production` environment)
+calls the same script with repository OIDC credentials; it does not run on a
+push.
 
 This is a deliberate trade-off, not an unstated gap:
 
@@ -66,9 +68,9 @@ This is a deliberate trade-off, not an unstated gap:
 - the same script is used for the recorded deployment and for recovery;
 - the operator sees the Terraform plan and rollout failures directly.
 
-If the course requires an automated deploy job, add a `workflow_dispatch`
-workflow that assumes an OIDC role and calls the same script. The script must
-remain the single deployment path so local and CI runs cannot drift.
+Staging is applied manually from `terraform/environments/staging` and
+`k8s/overlays/staging`. No workflow provisions or deploys it, and the staging
+job does not run in CI.
 
 ## EKS image publishing workflow
 

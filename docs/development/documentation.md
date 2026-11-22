@@ -43,4 +43,4 @@ It is also possible to view the documentation online at the deployed github page
 - Keep endpoint examples valid JSON.
 - Document authentication and all relevant success and error status codes.
 - Link to the owning service and to related cross-service contracts.
-- Mark planned behavior explicitly instead of presenting it as implemented.
+- Document implemented behavior and list known limitations separately.

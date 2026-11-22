@@ -4,6 +4,8 @@ icon: lucide/route
 
 # Gateway
 
+![Tech Stack](https://skillicons.dev/icons?i=java,spring,postgres,docker,kubernetes,grafana,prometheus)
+
 The Gateway is the platform's single public entry point. It routes requests to
 internal services and prevents clients from depending on internal hostnames or
 ports.
@@ -33,11 +35,11 @@ for the endpoint table, cookie configuration and real-service acceptance limits.
 
 | Signal | Requirement | Current |
 | --- | --- | --- |
-| Health | `/actuator/health` with liveness/readiness semantics | implemented or planned with the service |
-| Metrics | `/actuator/prometheus` with low-cardinality route/status labels | implemented or planned with the service |
+| Health | `/actuator/health` with liveness/readiness semantics | implemented |
+| Metrics | `/actuator/prometheus` with low-cardinality route/status labels | implemented |
 | Traces | OTLP to Alloy, W3C `traceparent` propagation | OTel Java agent |
-| Logs | structured JSON with service, request/trace ID, route and status | implemented or planned |
-| Profiles | Pyroscope agent where approved | pending |
+| Logs | structured JSON with service, request/trace ID, route and status | implemented |
+| Profiles | Pyroscope agent where approved | not enabled |
 
 See [Service observability requirements](../observability-requirements.md) for
 the full contract, redaction rules and verification commands.

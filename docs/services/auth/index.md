@@ -4,6 +4,8 @@ icon: lucide/lock-keyhole
 
 # Auth
 
+![Tech Stack](https://skillicons.dev/icons?i=java,spring,postgres,redis,docker,kubernetes,grafana,prometheus)
+
 Auth authenticates users and manages the tokens used by protected platform
 requests.
 
@@ -32,11 +34,11 @@ are supplied through environment variables.
 
 | Signal | Requirement | Current |
 | --- | --- | --- |
-| Health | `/actuator/health` with liveness/readiness semantics | implemented or planned with the service |
-| Metrics | `/actuator/prometheus` with low-cardinality route/status labels | implemented or planned with the service |
+| Health | `/actuator/health` with liveness/readiness semantics | implemented |
+| Metrics | `/actuator/prometheus` with low-cardinality route/status labels | implemented |
 | Traces | OTLP to Alloy, W3C `traceparent` propagation | OTel Java agent |
-| Logs | structured JSON with service, request/trace ID, route and status | implemented or planned |
-| Profiles | Pyroscope agent where approved | pending |
+| Logs | structured JSON with service, request/trace ID, route and status | implemented |
+| Profiles | Pyroscope agent where approved | not enabled |
 
 See [Service observability requirements](../observability-requirements.md) for
 the full contract, redaction rules and verification commands.

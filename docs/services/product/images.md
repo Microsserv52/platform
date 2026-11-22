@@ -2,18 +2,15 @@
 icon: lucide/image-plus
 ---
 
-# Image implementation handoff for the Product service
+# Product images
 
-The owner selected **Amazon S3 storage** and approved the AWS SDK. CloudFront
-is the delivery baseline for this handoff. No alternate CDN or object store is
-selected. If delivery changes, revise origin authentication, routing, cache
-headers and purge behavior before provisioning. This document is the required
-backend contract; the Product service now implements it (see
-[Implementation status](#implementation-status)). Do not move product ownership
-into Gateway or a frontend repository. The initial UI supports file uploads
-only; importing external URLs is deferred.
+Product stores images in **Amazon S3** and delivers them through **CloudFront**.
+The contract below is implemented by [`api/product`](../../../api/product/); the
+frontend renders the returned URL with alternative text and dimensions. Product
+owns the image records and objects; Gateway and the frontends do not. The UI
+supports file uploads and does not import external URLs.
 
-## Implementation status
+## Implementation
 
 | Concern | Status |
 | --- | --- |
@@ -66,14 +63,14 @@ the returned product. Use 400/422 for invalid metadata/file, 401/403 for access,
 413 for oversize files, and 429 for upload limits. Mutations do not auto-retry.
 The `uploadUrl` is a short-lived capability, never the saved display URL.
 
-## Required database changes
+## Database tables
 
-- Add image metadata in the Product-owned migration system. Implemented as
-  `V3__add_product_images.sql`; Flyway owns the schema.
-- A product has at most one attached image. Track asset UUID, owning product,
-  object key, content type, byte count, measured dimensions, alternative text,
-  uploader identity and explicit UTC timestamps. Implemented in
-  `product_images`; state and expiry live on `product_image_uploads`.
+- Image metadata is created by `V3__add_product_images.sql`; Flyway owns the
+  Product schema.
+- A product has at most one attached image. `product_images` tracks the asset
+  UUID, owning product, object key, content type, byte count, measured
+  dimensions, alternative text, uploader identity and UTC timestamps.
+  `product_image_uploads` tracks pending state and expiry.
 - Track pending upload tickets separately from the attached image. Generate keys
   server-side under private `pending/products/{productId}/{assetId}/` for uploads
   and `media/products/{productId}/{assetId}/` for validated display assets. Never
@@ -88,7 +85,7 @@ The `uploadUrl` is a short-lived capability, never the saved display URL.
 - Existing products migrate with no image. Rollback must retain asset records
   until recovery/retention decisions are made, not immediately destroy files.
 
-## S3 implementation requirements
+## S3 backend
 
 Use the official AWS SDK in Product's implementation language. The service uses
 AWS SDK for Java v2's S3 client and S3 presigner through its official BOM
@@ -127,7 +124,7 @@ frontend origin and PUT/Content-Type/If-None-Match; the upload client sends no c
 uses no-referrer. Backend logs/telemetry must not record signed query strings,
 file bytes, credentials or private account data.
 
-## CDN and environment configuration
+## CDN and environment
 
 Route `/media/*` on the same domain to the S3 origin with matching `media/`
 object keys. Versioned image responses can use public long-lived immutable
@@ -136,15 +133,12 @@ Alt-only changes do not change image bytes. Immediate removal from all CDN edges
 requires explicit invalidation; deletion in admin must not promise immediate
 purging of previously cached public files.
 
-Ask the owner at deployment for AWS region, bucket, identity/IAM, domain,
-CloudFront origin/behavior, CORS and lifecycle/retention values. Do not provision
-cloud resources or introduce frontend Kubernetes deployment as part of this work.
-
-Admin build values:
+Terraform supplies the region, bucket, IRSA identity, CloudFront origin and
+behavior, CORS origins and lifecycle rules. Admin build values:
 
 | Variable                                   | Meaning                                                                                               |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_ENABLE_PRODUCT_IMAGE_UPLOADS` | Defaults false; enable only when the real contract is accepted. Explicitly true in local fixture mode |
+| `NEXT_PUBLIC_ENABLE_PRODUCT_IMAGE_UPLOADS` | `false` by default; `true` in local fixture mode |
 | `NEXT_PUBLIC_IMAGE_UPLOAD_ORIGINS`         | Comma-separated exact HTTPS S3 origins permitted for uploads; contains no credentials                 |
 
 An HTTPS upload URL outside the allowlist is rejected before file transmission.
@@ -152,19 +146,18 @@ Local fixture mode has a narrow same-origin `/api/fixture-media-upload/` excepti
 That test route uses in-memory tickets/files, trusts fixture dimensions and
 does not prove real image validation, S3 persistence or production security.
 
-## Acceptance at deployment
+## Verification
 
-- The routes, migrations and storage backends are implemented in Product. Verify
-  the published image and the real repository integrate without the fixture
-  service.
-- Verify public product/image reads and admin-only presign/attach/edit/remove,
-  including ordinary users, expired sessions and CSRF failures.
-- Test malformed files, mismatched MIME/size/dimensions, forged/reused/expired
-  tickets, foreign product/account tickets, concurrent saves and cleanup failures.
-- Verify actual S3 object validation, CORS, SDK credentials, retries, object-version
-  protection, CloudFront headers and versioned cache behavior.
-- Run browser upload, replace, alt-edit, cancel and remove flows against the real
-  backend, not just UI fixtures. Only then enable uploads outside fixture mode.
+`ProductImageApiTest` covers admin-only access, the upload-to-attach flow, ticket
+consumption and expiry, content mismatch, replacement, alternative-text editing
+and removal. The fixture tests cover public reads, missing CSRF, non-admin
+access, invalid size/type/dimensions, expired tickets, wrong-length files and
+replay or overwrite rejection.
+
+The AWS path additionally depends on the real bucket policy, IRSA credentials,
+CORS, conditional writes, object-version protection and CloudFront cache
+behavior. Uploads stay disabled outside fixture mode until the browser flows run
+against the real services and CDN.
 
 ## Official implementation references
 

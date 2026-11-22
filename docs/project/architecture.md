@@ -15,15 +15,15 @@ The platform and organization READMEs list the complete technology inventory,
 with each service README limited to its own dependencies and tools. Badges
 identify technologies, not proof of deployment.
 
-Redis is selected for a dedicated Cart service: carts expire seven days after the last change; reads do not renew TTL. The service is not implemented yet; the current Store still uses browser storage. Existing Redis endpoint wiring does not provide carts or service-level caching. The Store PWA remains online-only.
+There is no Cart service. The Store keeps its cart in browser storage, Redis is provisioned as a shared endpoint with `CACHE_ENABLED=false`, and no service-level caching exists. The Store PWA is online-only.
 
-AWS/EKS/ECR deployment configuration and the VPC/RDS architecture are implemented in Terraform. The provisioned inventory is recorded in [delivery evidence](../project/delivery.md). Product implements image persistence with the AWS SDK for Java v2: S3 is the production backend, and a local blob-storage mock backs Compose. Terraform provisions private media and frontend buckets behind CloudFront, and the three static frontends are published there. No alternate CDN is selected.
+AWS/EKS/ECR deployment configuration and the VPC/RDS architecture are implemented in Terraform. The provisioned inventory is recorded in [delivery evidence](../project/delivery.md). Product implements image persistence with the AWS SDK for Java v2: S3 is the production backend, and a local blob-storage mock backs Compose. Terraform provisions private media and frontend buckets behind CloudFront; `scripts/sync-frontends.sh` publishes static builds to them. CloudFront is the only CDN.
 
-Observability is self-hosted with Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy and blackbox. Services use OpenTelemetry; the frontends use Faro. Grafana Cloud is optional, not required. Umami stays a separate analytics integration. Edge protection uses AWS Shield Standard, CloudFront, security groups and an optional AWS WAF. No custom domain is configured. Kafka placement is proposed for post-order events and later Product background work; no broker or client is implemented.
+Observability is self-hosted with Prometheus, Mimir, Loki, Tempo, Pyroscope, Graphite, Telegraf, Grafana, Alloy and blackbox. Services use OpenTelemetry; the frontends use Faro. Grafana Cloud is optional, not required. Umami stays a separate analytics integration. Edge protection uses AWS Shield Standard, CloudFront, security groups and an optional AWS WAF. No custom domain is configured. There is no Kafka broker or client; post-order events are not implemented.
 
-See the [Cart service](../services/cart/index.md), [Kafka proposals](asynchronous-events.md),
+See the [Cart service](../services/cart/index.md), [asynchronous events](asynchronous-events.md),
 [Observability](../operations/observability.md) and
-[AWS edge security](../infrastructure/aws-edge-security.md) for boundaries and rollout.
+[AWS edge security](../infrastructure/aws-edge-security.md) for boundaries.
 
 ## System context
 
@@ -47,8 +47,6 @@ flowchart LR
     gateway --> account
     gateway --> product
     gateway --> order
-    gateway -. planned .-> cart[Future Cart service]
-    cart -. planned .-> redis[(Cart Redis)]
     gateway --> exchange
     auth --> account
     product --> database
@@ -242,13 +240,16 @@ registry and managed database choice are deployment decisions that must be
 recorded in [AWS](../infrastructure/aws.md), [EKS](../infrastructure/eks.md)
 and [Costs](../infrastructure/costs.md).
 
-## Planned staging — TODO
+## Staging configuration
 
-The [staging design](../infrastructure/staging.md) preserves production service
-coverage at smaller fixed capacity, with scheduled developer-only Access,
-synthetic data and isolated observability. Faro remains on for errors; Umami and
-usage analytics remain off. Hosting/budget and domain/CDN decisions are open.
-The implementation checklist is unchecked; no staging runtime exists yet.
+The [staging environment](../infrastructure/staging.md) reuses the same service
+images, contracts and probes at one replica per service. It runs in a dedicated
+VPC and EKS cluster with private RDS, ElastiCache and S3 resources; there is no
+CloudFront, WAF, DNS record or public load balancer. Access uses the EKS
+endpoint and `kubectl port-forward`. The overlay sets
+`deployment.environment=staging`, pins each HPA to one replica and uses a
+single-node SPOT node group. Staging observability has its own storage and
+credentials. No CI/CD workflow provisions or deploys the environment.
 
 ## Build, image and deployment workflow
 

@@ -11,6 +11,7 @@ api/
   gateway/        Gateway submodule
   order/          Java Order API submodule
   order-service/  Order integration/service-layer submodule
+observability/    Observability stack submodule
 docs/             Zensical documentation
   project/        Scope, organization and delivery
   development/    Local development and CI/CD

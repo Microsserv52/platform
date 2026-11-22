@@ -1,0 +1,21 @@
+aws_region         = "us-east-1"
+project            = "platform-staging"
+vpc_cidr           = "10.30.0.0/16"
+az_count           = 2
+kubernetes_version = "1.35"
+
+# One node carries the six services and the staging observability stack.
+# Spot reduces the node line; switch to ON_DEMAND when a fixed-capacity
+# baseline matters more than cost.
+node_instance_types = ["t3.xlarge"]
+node_capacity_type  = "SPOT"
+
+rds_instance_class    = "db.t4g.micro"
+rds_allocated_storage = 20
+redis_node_type       = "cache.t4g.micro"
+
+enable_nat_gateway = true
+
+# Optional: IAM role/user ARN to grant EKS cluster admin. The principal that
+# creates the cluster already receives admin access.
+admin_principal_arn = ""

@@ -105,14 +105,10 @@ optional AWS WAF. There is no custom domain yet; see
 [AWS edge security](../infrastructure/aws-edge-security.md) and
 [custom domains](../infrastructure/custom-domains.md).
 
-## Planned staging telemetry — TODO
+## Staging telemetry
 
-[Staging](../infrastructure/staging.md#separate-observability-faro-on-analytics-off)
-will use a separate self-hosted Faro/Alloy destination with error reporting enabled
-and Umami/usage analytics disabled. The existing shared
-`NEXT_PUBLIC_ENABLE_TELEMETRY` flag does not express that policy independently.
-Future work must add separate Faro and analytics gates in all three apps, guard
-manual tracking calls, omit the Umami script and test accidental configuration.
-No flags or runtime behavior are changed by this plan. Preserve redaction and
-the current opt-out/Do Not Track policy while distinguishing technical errors
-from product analytics.
+The [staging environment](../infrastructure/staging.md) has no public frontend
+origin or Faro collector. The three applications keep the shared
+`NEXT_PUBLIC_ENABLE_TELEMETRY` flag for local builds, and no staging Umami or
+usage-analytics collector is deployed. Browser telemetry stays with the
+production CloudFront origin and the local Compose stack.

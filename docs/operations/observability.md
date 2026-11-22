@@ -9,7 +9,7 @@ locally. The platform covers logs, metrics, traces and profiles across the
 Gateway and every downstream service.
 
 The stack is implemented as configuration-as-code under
-[`observability/`](https://github.com/Microsserv52/platform/tree/main/observability).
+[`observability/`](https://github.com/Microsserv52/observability).
 It runs on Docker Compose for the daily loop, can be installed into the
 LocalStack EKS rehearsal, and has a prepared EKS deployment path.
 
@@ -56,14 +56,32 @@ Tempo is part of the local and EKS stacks, and Alloy accepts OTLP on
 Compose entrypoint or a Kubernetes init container; no service source change is
 needed. The frontends send Faro browser telemetry to Alloy's `faro.receiver`.
 
-Exchange is Python and still exports metrics and structured logs only. Backend
-spans for Exchange need an OpenTelemetry Python package and entrypoint change in
-its own repository; that change is intentionally not made here.
+Exchange is Python and exports metrics and structured logs only. It has no
+OpenTelemetry Python package or trace exporter.
 
 ### Profiles
 
-Pyroscope is hosted locally and on EKS. CPU/allocation profiling still needs a
-language agent and an overhead decision; no profiler is claimed as enabled.
+Pyroscope is hosted locally and on EKS. No service loads a profiling agent, so
+no profiles are collected.
+
+### Container and pod resources
+
+Telegraf collects Docker container metrics locally and kubelet summary metrics
+on EKS, then writes them to Graphite. Graphite is provisioned as the `graphite`
+datasource and feeds the **Pod resources** dashboard plus the pod CPU and memory
+alerts. Locally, Carbon listens on `2003` and the Graphite UI on `8082`; on EKS
+the service is `graphite.observability.svc.cluster.local:2003`. The EKS
+DaemonSet reads the kubelet summary API for the `platform` namespace. The
+**Pod resources** dashboard has a Docker section and an EKS kubelet section for
+CPU cores, working set, network and root filesystem.
+
+### Cross-service traces
+
+Tempo runs the service-graph and span-metric processors and remote-writes them
+to Prometheus. The **Trace service graph** dashboard joins client and server
+spans across Gateway, Auth, Account, Order, Product and Exchange; the
+**Frontend and Faro** dashboard covers browser spans, Faro exceptions and
+frontend trace search.
 
 ## Local stack
 
@@ -153,7 +171,7 @@ same stack with `local-path` storage:
 scripts/install-observability.sh --localstack
 ```
 
-It uses [`values.localstack.yaml`](https://github.com/Microsserv52/platform/blob/main/observability/helm/values.localstack.yaml)
+It uses [`values.localstack.yaml`](https://github.com/Microsserv52/observability/blob/main/helm/values.localstack.yaml)
 and the overlay in
 [`k8s/overlays/localstack/observability`](https://github.com/Microsserv52/platform/tree/main/k8s/overlays/localstack/observability).
 The external `Probe` is omitted there because the rehearsal has no public edge,
@@ -168,9 +186,12 @@ and PVCs use the k3s `local-path` StorageClass.
 | SLO and error budget | `slo-error-budget` | 28-day availability, burn rate, remaining budget |
 | Synthetic health | `synthetic-health` | Are edge pages and API probes succeeding? |
 | Dependencies | `dependencies` | Hikari, Redis/cache and Exchange provider health |
+| Pod resources (Graphite) | `pod-resources` | Container CPU, memory, network, block I/O and restarts |
+| Frontend and Faro | `faro-frontend` | Browser spans, Faro exceptions and frontend trace search |
+| Trace service graph | `trace-service-graph` | Cross-service request rate, failures and p95 latency |
 
 Dashboards are provisioned from
-[`observability/grafana/dashboards`](https://github.com/Microsserv52/platform/tree/main/observability/grafana/dashboards).
+[`observability/grafana/dashboards`](https://github.com/Microsserv52/observability/tree/main/grafana/dashboards).
 Every dashboard uses the provisioned `prometheus` datasource UID, so the same
 JSON works locally and on EKS.
 
@@ -178,7 +199,7 @@ JSON works locally and on EKS.
 
 The 28-day availability SLO is **99.5%** for the service set. The error budget is
 0.5%. Recording rules in
-[`observability/prometheus/rules/sli.yml`](https://github.com/Microsserv52/platform/blob/main/observability/prometheus/rules/sli.yml)
+[`observability/prometheus/rules/sli.yml`](https://github.com/Microsserv52/observability/blob/main/prometheus/rules/sli.yml)
 compute:
 
 - request and error rate by service;
@@ -188,7 +209,7 @@ compute:
 - JVM heap and Hikari utilization.
 
 Grafana unified alerting is provisioned from
-[`observability/grafana/provisioning/alerting/rules.yml`](https://github.com/Microsserv52/platform/blob/main/observability/grafana/provisioning/alerting/rules.yml).
+[`observability/grafana/provisioning/alerting/rules.yml`](https://github.com/Microsserv52/observability/blob/main/grafana/provisioning/alerting/rules.yml).
 Dashboards live in the **Platform** folder; alert rules live in **Platform
 Alerts**. This avoids two folders with the same display name in Grafana. If an
 older Grafana session shows an empty duplicate **Platform** folder, hard-refresh
@@ -204,6 +225,8 @@ or sign in again; the current provisioning creates one dashboard folder.
 | Database connection pool saturation | Hikari > 90% for 5m | ticket |
 | Exchange provider errors | error rate > 0.1/s for 5m | page |
 | Product cache errors | cache error rate > 0 for 10m | ticket |
+| Cross-service trace failures | failed calls between two services > 0 for 10m | ticket |
+| Cross-service trace p95 above 1s | span p95 > 1s for 10m | ticket |
 
 Email is the default contact point (`ALERT_EMAIL_TO`). A Slack example is kept
 as `observability/grafana/examples/contact-points.slack.example.yml`; copy it into the alerting provisioning directory as `.yml` and set
@@ -236,7 +259,7 @@ environment variables; no token is committed.
 | Prometheus / Mimir | Metrics remote write | Configured in `observability/alloy/config.cloud.alloy` |
 | Loki | Logs | Configured through Alloy Docker log collection |
 | Tempo | Traces | OTLP receiver and Cloud exporter configured |
-| Pyroscope | Profiles | Cloud write endpoint configured; agent pending |
+| Pyroscope | Profiles | Cloud write endpoint configured; no service agent |
 | Faro / Frontend Observability | Browser errors, Web Vitals, traces | Frontend SDK present; URL remains a deployment value |
 | Synthetic Monitoring | External checks | Terraform in `terraform/environments/grafana-cloud` |
 | Grafana Alerting | Unified alerting | Provisioned locally; Cloud contact points are Terraform-managed |
@@ -314,8 +337,8 @@ nodes. See [Costs, PaaS and SLA](../infrastructure/costs.md).
 
 ## Known limits
 
-- Backend traces and profiles need an OpenTelemetry/profiling agent; only the
-  collector and storage paths are configured.
+- Java services load the OpenTelemetry agent; Exchange exports metrics and logs
+  only, and no service loads a profiling agent.
 - AWS deployment is prepared and validated, not applied.
 - Grafana Cloud Terraform cannot be applied without a real stack and tokens.
 - LocalStack uses emptyDir for Prometheus/Grafana and `local-path` for the

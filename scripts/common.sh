@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export TF_LOCALSTACK="$ROOT_DIR/terraform/environments/localstack"
 export TF_AWS="$ROOT_DIR/terraform/environments/aws"
+export TF_STAGING="$ROOT_DIR/terraform/environments/staging"
 NAMESPACE="${NAMESPACE:-platform}"
 
 load_env_file() {

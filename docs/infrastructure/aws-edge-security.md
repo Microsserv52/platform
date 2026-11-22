@@ -77,7 +77,7 @@ access path is `kubectl port-forward` or an SSM session. See
 - Keep RDS and ElastiCache in private subnets with no public endpoint.
 - Keep the Gateway NLB restricted to the CloudFront origin-facing prefix list.
 - Add Kubernetes NetworkPolicies for observability scrape traffic.
-- Use IAM/IRSA for S3, EBS CSI and any future WAF log delivery.
+- Use IAM/IRSA for S3, EBS CSI and WAF log delivery.
 - Do not expose Prometheus, Loki, Tempo, Pyroscope, Mimir, Alloy or Grafana with
   a public `LoadBalancer` Service.
 

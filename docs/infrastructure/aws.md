@@ -34,9 +34,10 @@ VPC/subnets, EKS, ECR, RDS, ElastiCache, S3, CloudFront, IAM/IRSA and optional
 Route 53/ACM. Apply it against LocalStack for the rehearsal or against a real
 account for production. Kubernetes workloads live in [`k8s/`](https://github.com/Microsserv52/platform/blob/main/k8s/README.md)
 and are applied by the deployment scripts. A manual **Publish EKS images**
-workflow builds and pushes ECR images; there is no CI deploy step.
+workflow builds and pushes ECR images. The manual **Deploy to AWS EKS**
+workflow calls `scripts/deploy-aws.sh`; it does not run on a push.
 
-## Deployed environment (2026-11-21)
+## Deployed environment
 
 The current account contains exactly one of each resource below; no duplicate
 stacks were created.
@@ -57,7 +58,7 @@ stacks were created.
 | NAT gateway | 1 |
 | Load balancer | Gateway NLB `platform-gateway-ecaafe88209b53bc.elb.us-east-1.amazonaws.com` (internet-facing, HTTP 80, CloudFront-only SG) |
 | Budget | AWS Budget `Limit budget 100`, configured limit **USD 150**; actual `$0.00` is delayed billing |
-| Observability | Full self-hosted stack locally: Prometheus, Mimir, Loki, Tempo, Pyroscope, Grafana, Alloy, blackbox. AWS manifests prepared behind `enable_observability` |
+| Observability | Full self-hosted stack locally: Prometheus, Mimir, Loki, Tempo, Pyroscope, Graphite, Telegraf, Grafana, Alloy, blackbox. AWS manifests prepared behind `enable_observability` |
 | Edge protection | AWS Shield Standard; CloudFront OAC; CloudFront-only NLB security group; AWS WAF prepared behind `enable_waf` and not attached |
 | Custom domain | None; CloudFront hostname is the public URL. See [Custom domains](custom-domains.md). |
 | AWS assessment | [Faro feasibility, WAF and cost investigation](aws-observability-assessment.md) |
