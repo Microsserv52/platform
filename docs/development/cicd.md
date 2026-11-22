@@ -117,6 +117,28 @@ The image contexts match `scripts/build-and-push-images.sh`: order is built from
 their submodule directories. Tests and CodeQL remain in the normal CI jobs; this
 workflow only publishes artifacts.
 
+## GitHub security automation
+
+The repository enables GitHub security automation at the repository level:
+
+| Feature | State |
+| --- | --- |
+| GitHub Code Quality | Configured |
+| Secret Protection | Secret scanning and push protection enabled |
+| GitHub Code Security | CodeQL default setup configured; `.github/workflows/codeql.yml` also runs the Java/Kotlin and Actions analyses |
+| Dependabot vulnerability alerts | Enabled |
+| Dependabot security updates | Enabled |
+
+The existing CodeQL workflow remains the source of Java/Kotlin and Actions
+analysis. Secret scanning and push protection block or report credentials in
+commits and pull requests. Dependabot alerts and security updates monitor
+supported dependency manifests.
+
+Open security findings must be triaged in the repository's
+**Security > Overview** page. Push protection findings should be resolved by
+removing the secret and rotating it; do not bypass protection or encode the
+secret in the commit.
+
 ## Rollback
 
 Images are tagged with the full Git SHA and ECR keeps prior tags. Roll back the
